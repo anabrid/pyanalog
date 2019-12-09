@@ -73,29 +73,50 @@ partlist:
 
 XBAR:
    - adress: 0x1234  # fixme
+     architecture: Single-A8113
+     size: [ 16, 16 ]
      # 10 (of 16) used input rows
-     input_columns: [ PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1 ]
-     # 16 (of 32) used output rows
+     input_columns: [
+         PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1,
+         Unused11, Unused12, Unused13, Unused14, Unused15, Unused16
+     ]
+     # 16 (of 16) used output rows
      output_rows: [
-        I1: di1, I1: di2,
-        I2: di1, I2: di2,
-        I3: di1, I3: di2,
-        M1: di1, M1: di2,
-        M2: di1, M2: di2,
-        S1: di1, S2: di2,
-        S2: di1, S2: di2,
-        S3: di1, S3: di2
+        I1: i1, I1: i2,
+        I2: i1, I2: i2,
+        I3: i1, I3: i2,
+        M1: i1, M1: i2,
+        M2: i1, M2: i2,
+        S1: i1, S1: i2,
+        S2: i1, S2: i2,
+        S3: i1, S3: i2
      ]
 
 DPT24:
    - adress: 0x0060  # example
+     size: 24
      enumeration:
-       I1: { di1:  1, di2:  2 }
-       I2: { di1:  3, di2:  4 }
-       I3: { di1:  5, di2:  6 }
-       M1: { di1:  7, di2:  8 }
-       M2: { di1:  9, di2: 10 }
-       S1: { di1: 11, di2: 12 }
-       S2: { di1: 13, di2: 14 }
-       S3: { di1: 15, di2: 16 }
-
+        - I1: di1    #  1
+        - I1: di2    #  2
+        - I2: di1    #  3
+        - I2: di2    #  4
+        - I3: di1    #  5
+        - I3: di2    #  6
+        - M1: di1    #  7
+        - M1: di2    #  8
+        - M2: di1    #  9
+        - M2: di2    # 10
+        - S1: di1    # 11
+        - S1: di2    # 12
+        - S2: di1    # 13
+        - S2: di2    # 14
+        - S3: di1    # 15
+        - S3: di2    # 16
+        - Unused     # 17
+        - Unused     # 18
+        - Unused     # 19
+        - Unused     # 20
+        - Unused     # 21
+        - Unused     # 22
+        - Unused     # 23
+        - Unused     # 24
