@@ -31,34 +31,44 @@ partlist:
    I1:
      type: INT2p
      variables: [0,0] # defaults
+     input: [] # default
    I2:
      type: INT2p
      variables: [0,0] # defaults
+     input: [] # default
    I3:
      type: INT2p
      variables: [0,0] # defaults
+     input: [] # default
    M1:
      type: MUL2p
      variables: [0,0] # defaults
+     input: [] # default
    M2:
      type: MUL2p
      variables: [0,0] # defaults
+     input: [] # default
    S1:
      type: SUM2p
      variables: [0,0] # defaults
+     input: [] # default
    S2:
      type: SUM2p
      variables: [0,0] # defaults
+     input: [] # default
    S3:
      type: SUM2p
      variables: [0,0] # defaults
+     input: [] # default
    PlusOne:
      cannot_be_allocated: True
      type: ConstantVoltage
+     input: [] # no input
      variables: [ +1 ]
    MinusOne:
      cannot_be_allocated: True
      type: ConstantVoltage
+     input: [] # no input
      variables: [ +1 ]
 
 XBAR:

@@ -9,10 +9,14 @@ from copy import deepcopy
 from collections import OrderedDict
 from pprint import pprint
 from collections.abc import Iterable
+from functools import reduce
 
 # Helper routines for simply nested dictionaries:
-flatten_dict = lambda dct: dict(sum([list(dict(k).items()) for k in dct.values()], start=[]))
+flatten_dict = lambda dct: dict(reduce(lambda a,b: a+b, [list(dict(k).items()) for k in dct.values()]))
 filter_dict = lambda dct: { k:v for k,v in dct.items() if v }
+# no need for bitarray
+boolList2BinString = lambda lst: ''.join(['1' if x else '0' for x in lst])
+boolString2Bin = lambda s: int('0b'+s, base=2)
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
@@ -98,8 +102,18 @@ for pot in arch['DPT24']:
 
 # XBAR matrix
 for xbar in arch['XBAR']:
-    for pout in xbar['output_rows']:
-        for pin in xbar['input_columns']:
-            info(f"XBAR@{xbar['adress']}: Identify wiring for {pout},{pin}...") # TODO
+    N,M = len(xbar['output_rows']), len(xbar['input_columns'])
+
+    boolean_matrix = [ 
+          [ pin in wired_circuit[pout]['input']
+	    for pin in xbar['input_columns']
+          ] for pout in xbar['output_rows']
+    ]
+
+    bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
+    bit_matrix = boolString2Bin("".join(bit_row_vectors))
+    bit_matrix_string = ("%%0%dX"%(N*M)) % bit_matrix
+    for i,s in enumerate(bit_row_vectors): info(f"XBAR@{xbar['adress']}: Writing bitmatrix[%d]: %s"%(i,s) )
+    write("XFIXMEX", xbar['adress'], bit_matrix_string)
 
 # On-Off-Information about parts?

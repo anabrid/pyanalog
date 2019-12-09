@@ -32,5 +32,4 @@ netlist:
     type: SUM2p
     constants: [.01, 0]
     input: [I3, None]
-    
-  
+
