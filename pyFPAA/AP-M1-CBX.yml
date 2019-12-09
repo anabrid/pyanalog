@@ -1,7 +1,7 @@
 # This is a YAML description file for a machine.
 # A poor man's Analog HDL (should use Verilog HDLs instead)
 
-title: Analog Paradigm Model 1 CBX with <16 units
+title: Analog Paradigm Model 1 CBX with 16x16 XBAR
 
 entities:
    SUM2p:
@@ -10,7 +10,7 @@ entities:
      output: [ o ]
      variables: [ di1, di2 ]
    MUL2p:
-     computes: o = id1*i1 * id2*i2  # not correct
+     computes: o = id1*i1 * id2*i2  # not correct!
      input: [ i1, i2 ]
      output: [ o ]
      variables: [ di1, di2 ]
@@ -73,9 +73,20 @@ partlist:
 
 XBAR:
    - adress: 0x1234  # fixme
-     input_columns: [ I1, I2, I3, M1, M2, S1, S2, S3 ]
-     output_rows: [ PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1 ]
-   
+     # 10 (of 16) used input rows
+     input_columns: [ PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1 ]
+     # 16 (of 32) used output rows
+     output_rows: [
+        I1: di1, I1: di2,
+        I2: di1, I2: di2,
+        I3: di1, I3: di2,
+        M1: di1, M1: di2,
+        M2: di1, M2: di2,
+        S1: di1, S2: di2,
+        S2: di1, S2: di2,
+        S3: di1, S3: di2
+     ]
+
 DPT24:
    - adress: 0x0060  # example
      enumeration:
@@ -87,4 +98,4 @@ DPT24:
        S1: { di1: 11, di2: 12 }
        S2: { di1: 13, di2: 14 }
        S3: { di1: 15, di2: 16 }
-   
+

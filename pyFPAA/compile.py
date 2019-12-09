@@ -5,9 +5,10 @@ import yaml # PyYAML
 
 # Python-included
 import sys, os, argparse, glob, pathlib
+from math import ceil
 from copy import deepcopy
 from collections import OrderedDict
-from pprint import pprint
+from pprint import pprint, pformat
 from collections.abc import Iterable
 from functools import reduce
 
@@ -38,9 +39,14 @@ def write_chip(*w,**kw): print(*w,**kw,end="") # todo: file=...
 def yaml_load(fname):
     with open(fname, "r") as cfh:
         return yaml.load(cfh, Loader=yaml.SafeLoader) # may rise ScannerError
-        
+
 arch = yaml_load(available_architectures[args.arch])
 circuit = yaml_load(args.circuit)
+
+
+info("arch:")
+info(pformat(arch))
+sys.exit(1)
 
 assigned_parts_by_entity = filter_dict({
     entity: OrderedDict({ part: None for part,parch in arch['partlist'].items()
@@ -70,10 +76,8 @@ for part in filter_dict(assigned_parts).keys():
 
 # yay
 info("wired_circuit: ")
-pprint(wired_circuit)
+info(pformat(wired_circuit))
 
-info("arch")
-pprint(arch)
 
 def write(command_letter, address, *data):
     write_chip(command_letter)
@@ -82,7 +86,7 @@ def write(command_letter, address, *data):
     write_chip("%X"%address)
     for d in data:
         write_chip(d)
-        
+
 def normalize_potentiometer(value):
     "Map a real value [0..1] to Potentiometer value [0..1023]"
     value = float(value)
@@ -103,6 +107,8 @@ for pot in arch['DPT24']:
 # XBAR matrix
 for xbar in arch['XBAR']:
     N,M = len(xbar['output_rows']), len(xbar['input_columns'])
+    nbits, nbytes, nhexchars = N*M, ceil(N*M/8), ceil(N*M/8*2)
+    info(f"XBAR@{xbar['adress']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
 
     boolean_matrix = [ 
           [ pin in wired_circuit[pout]['input']
@@ -112,8 +118,9 @@ for xbar in arch['XBAR']:
 
     bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
     bit_matrix = boolString2Bin("".join(bit_row_vectors))
-    bit_matrix_string = ("%%0%dX"%(N*M)) % bit_matrix
-    for i,s in enumerate(bit_row_vectors): info(f"XBAR@{xbar['adress']}: Writing bitmatrix[%d]: %s"%(i,s) )
+    bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
+    for i,(bitvec,pout) in enumerate(zip(bit_row_vectors,xbar['output_rows'])):
+        info(f"XBAR@{xbar['adress']}: Writing bitmatrix[{i}]: {bitvec} -> {pout}")
     write("XFIXMEX", xbar['adress'], bit_matrix_string)
 
-# On-Off-Information about parts?
+# Missing: On-Off-Information about outgoing lines of XBAR!
