@@ -1,0 +1,11 @@
+# This is a YAML description file for a machine.
+# A poor man's Analog HDL (should use Verilog HDLs instead)
+
+title: Analog Paradigm Model 1 CBX with <16 units
+
+entities:
+   - name: SUM2p
+     computes: o = -(id1*i1+id2*i2)
+     ports: {o: out, i1: in, i2: in } # all analog
+     variables: { id1: in, id2: in }  # all digital
+   - etc: pp
