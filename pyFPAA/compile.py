@@ -71,22 +71,35 @@ pprint(wired_circuit)
 info("arch")
 pprint(arch)
 
-def write(command_letter, address, data):
+def write(command_letter, address, *data):
     write_chip(command_letter)
     if not isinstance(address,int):
         raise ValueError("Need address as integer (may specify as 0x123)")
     write_chip("%X"%address)
-    if not isinstance(data, Iterable):
-        data = [data]
     for d in data:
-        if not isinstance(d,int):
-            raise ValueError("Want to write numbers")
-        write_chip("%X"%d)
+        write_chip(d)
+        
+def normalize_potentiometer(value):
+    "Map a real value [0..1] to Potentiometer value [0..1023]"
+    value = float(value)
+    if value < 0 or value > 1:
+        raise ValueError("Potentiometer value out of bounds")
+    return int(round(value * 1023))
 
 # DPT24 Potentiometers
 for pot in arch['DPT24']:
-    for part,  pot['enumeration'].items()
+    for part, part_config in pot['enumeration'].items():
+        for variable, port in part_config.items():
+            value = normalize_potentiometer(wired_circuit[part]['variables'][
+                arch['entities'][wired_circuit[part]['type']]['variables'].index(variable)] )
+            info(f"DPT24@{pot['adress']}: Writing {part}/{variable} = {value}")
+            write("P", pot['adress'], "%02X"%port, "%04X"%value)
+            # TODO: Check values, looks wrong so far! But code "runs"
 
-    # TODO Normalization: Potentiometers have value between 0 .. 1023 !!
-    write("P", pot['address'], number, value)
+# XBAR matrix
+for xbar in arch['XBAR']:
+    for pout in xbar['output_rows']:
+        for pin in xbar['input_columns']:
+            info(f"XBAR@{xbar['adress']}: Identify wiring for {pout},{pin}...") # TODO
 
+# On-Off-Information about parts?

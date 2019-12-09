@@ -14,7 +14,7 @@ netlist:
     input: [M1, I2]
   I3:
     type: INT2p
-    constants: [.1536, .0.01]
+    constants: [.1536, .01]
     input: [M2, I3]
   M1:
     type: MUL2p
@@ -30,7 +30,7 @@ netlist:
     input: [I2, PlusOne]
   S2:
     type: SUM2p
-    constants: [.01, NaN]
+    constants: [.01, 0]
     input: [I3, None]
     
   

@@ -30,20 +30,28 @@ entities:
 partlist:
    I1:
      type: INT2p
+     variables: [0,0] # defaults
    I2:
      type: INT2p
+     variables: [0,0] # defaults
    I3:
      type: INT2p
+     variables: [0,0] # defaults
    M1:
      type: MUL2p
+     variables: [0,0] # defaults
    M2:
      type: MUL2p
+     variables: [0,0] # defaults
    S1:
      type: SUM2p
+     variables: [0,0] # defaults
    S2:
      type: SUM2p
+     variables: [0,0] # defaults
    S3:
      type: SUM2p
+     variables: [0,0] # defaults
    PlusOne:
      cannot_be_allocated: True
      type: ConstantVoltage
