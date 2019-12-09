@@ -1,0 +1,36 @@
+# Lorentz Attractor, manually wired after Bernd's book,
+# written down together on paper in Dec 2019
+
+title: Lorentz Attractor, manually
+
+netlist:
+  I1:
+    type: INT2p
+    constants: [1, .18]
+    input: [I1, I2]
+  I2:
+    type: INT2p
+    constants: [.15, .2677]
+    input: [M1, I2]
+  I3:
+    type: INT2p
+    constants: [.1536, .0.01]
+    input: [M2, I3]
+  M1:
+    type: MUL2p
+    constants: [1, 1]
+    input: [I1, I3]
+  M2:
+    type: MUL2p
+    constants: [1, 1]
+    input: [I2, S1]
+  S1:
+    type: SUM2p
+    constants: [.268, .1]
+    input: [I2, PlusOne]
+  S2:
+    type: SUM2p
+    constants: [.01, NaN]
+    input: [I3, None]
+    
+  

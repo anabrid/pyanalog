@@ -1,0 +1,13 @@
+* Die Informationen
+   1) +1 im Crossbar-Chip
+   2) -1 im Crossbar-Chip
+   3) Eingang an/aus
+  liessen sich mit zwei Bits/Schaltern (vor den eigentlichen Rechenelementen)
+  zusammenschalten zu:
+   00: Eingang aus
+   01: Eingang an
+   10: Eingang auf +1
+   11: Eingang auf -1
+   
+* Ein einschaltbarer Inverter nach jedem Rechenelement (ein Bit/Schalter)
+  würde viel Flexibilität geben

@@ -4,8 +4,69 @@
 title: Analog Paradigm Model 1 CBX with <16 units
 
 entities:
-   - name: SUM2p
+   SUM2p:
      computes: o = -(id1*i1+id2*i2)
-     ports: {o: out, i1: in, i2: in } # all analog
-     variables: { id1: in, id2: in }  # all digital
-   - etc: pp
+     input: [ i1, i2 ]
+     output: [ o ]
+     variables: [ di1, di2 ]
+   MUL2p:
+     computes: o = id1*i1 * id2*i2  # not correct
+     input: [ i1, i2 ]
+     output: [ o ]
+     variables: [ di1, di2 ]
+   INT2p:
+     computes: o = -integral( (id1*i1(t)+id2*i2(t)), t)
+     input: [ i1, i2 ]
+     output: [ o ]
+     variables: [ di1, di2 ]
+   ConstantVoltage:
+     computes: o = value
+     input: []
+     output: [ o ]
+     variables: [ value ]
+   None:
+     computes: not-connected-part
+
+partlist:
+   I1:
+     type: INT2p
+   I2:
+     type: INT2p
+   I3:
+     type: INT2p
+   M1:
+     type: MUL2p
+   M2:
+     type: MUL2p
+   S1:
+     type: SUM2p
+   S2:
+     type: SUM2p
+   S3:
+     type: SUM2p
+   PlusOne:
+     cannot_be_allocated: True
+     type: ConstantVoltage
+     variables: [ +1 ]
+   MinusOne:
+     cannot_be_allocated: True
+     type: ConstantVoltage
+     variables: [ +1 ]
+
+XBAR:
+   - adress: 0x1234  # fixme
+     input_columns: [ I1, I2, I3, M1, M2, S1, S2, S3 ]
+     output_rows: [ PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1 ]
+   
+DPT24:
+   - adress: 0x0060  # example
+     enumeration:
+       I1: { di1:  1, di2:  2 }
+       I2: { di1:  3, di2:  4 }
+       I3: { di1:  5, di2:  6 }
+       M1: { di1:  7, di2:  8 }
+       M2: { di1:  9, di2: 10 }
+       S1: { di1: 11, di2: 12 }
+       S2: { di1: 13, di2: 14 }
+       S3: { di1: 15, di2: 16 }
+   
