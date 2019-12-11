@@ -46,6 +46,9 @@ circuit = yaml_load(args.circuit)
 
 info("arch:")
 info(pformat(arch))
+
+#info("circuit:")
+#info(pformat(circuit))
 sys.exit(1)
 
 assigned_parts_by_entity = filter_dict({
@@ -123,4 +126,4 @@ for xbar in arch['XBAR']:
         info(f"XBAR@{xbar['adress']}: Writing bitmatrix[{i}]: {bitvec} -> {pout}")
     write("XFIXMEX", xbar['adress'], bit_matrix_string)
 
-# Missing: On-Off-Information about outgoing lines of XBAR!
+    # Missing: On-Off-Information about outgoing lines of XBAR!

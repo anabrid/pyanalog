@@ -1,13 +1,19 @@
 # This is a YAML description file for a machine.
 # A poor man's Analog HDL (should use Verilog HDLs instead)
 
-title: Analog Paradigm Model 1 CBX with 16x16 XBAR
+title: Analog Paradigm/Model-1 CBX with 16x16 XBAR
+
+description: |
+   This file describes the hardware layout of a particular Model-1 machine
+   with software-definable XBAR.
 
 logic:
    boolean: [ True, False ]
    machine_units: [ +1, -1 ]
    voltage_range: [ +10, -10 ]
    voltage_unit: V
+   DGND_voltage: 0 # won't this be different
+   AGND_voltage: 0 # on the chip?
 
 entities:
    SUM2p:
@@ -81,13 +87,13 @@ entities:
                                   |
          HC digital output,       |
          icSign -----+            |
-                     | set        | controls
+                     | switches   | controls
                      v            v
-          +1 ---->[ Compa- ]-->[DPT24, pin x]
+          +1 ---->[ Compa- ]-*->[HC DPT, pin x]
           -1 ---->[ rator  ]      |
-                                  |
+                                  * Line -*- refered to internally as "analogIC"
           a0 ------+              |
-                   | controls     | sets IC
+                   | controls     * sets IC
                    v              v
           a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> plus
                                [ Integrator ]->-+
@@ -113,8 +119,11 @@ entities:
          type: analog
        - name: ic
          type: numeric
-         description: Initial conditions. Sign is realized by compiler.
-         range: [-1, 1]
+         description: Value for initial condition
+         range: [0, 1]
+       - name: icSign
+         type: boolean
+         description: Sign of initial condition value
      output:
        - name: plus
          type: analog
@@ -125,6 +134,23 @@ entities:
      default_inputs:
        a0: 0
        b0: 0
+     internal_wires:
+       # Internal wires are used by the modules defined at the end of this file
+       - name: analogIC
+         type: analog
+         description: output of Comparator and multiplied by HC DPT
+     # The following lines are actually not needed but were a proposal
+     # to make the internal structure of a macrocell transparent. Would be
+     # needed by an actual HDL where one wants to simulate the system/the macrocell
+     internal_partlist:
+       IC_Comp:
+         type: ComparatorDA
+         input: [ parent: icSign, PlusOne, MinusOne ]
+       INT2p_Raw:
+         type:
+           input: [ a:analog, b:analog, realIc:analog ]
+           output: [ out:analog ]
+         input: [ parent: a, parent: b, IC_Comp ]
 
    MUL2p:
      description: |
@@ -152,6 +178,9 @@ entities:
          type: analog
      computes:
        o: o = a0*a*b0*b/voltage_level
+     default_inputs:
+       a0: 0
+       b0: 0
 
    ConstantVoltage:
      description: |
@@ -175,7 +204,9 @@ entities:
          type: analog
 
    ComparatorAD:
-     description: The left part of a CMP4 comparator (analog2digital)
+     description: |
+        The left part of a CMP4 comparator (analog2digital),
+        i.e. a treshold based binarization.
      computes:
        res: res = a+b>0
      input:
@@ -188,7 +219,10 @@ entities:
          type: digital
 
    ComparatorDA:
-     description: The right part of a CMP4 comparator (digital2analog)
+     description: |
+        The right part of a CMP4 comparator (digital2analog),
+        i.e. a single electronic switch switching between two analog
+        signals.
      computes:
        u: u = if(i, a, b)
      input:
@@ -215,7 +249,7 @@ entities:
        - name: none
          type: analog
 
-partlist:
+configurable_parts:
    I1:
      type: INT2p
      address: 0x0021
@@ -241,100 +275,105 @@ partlist:
      type: SUM2p
      address: 0x0013
    PlusOne:
+     description: |
+       Positive supply voltage/machine unit, also refered to as Vcc or Vdd,
+       i.e. +10V in this machine.
      cannot_be_allocated: True
      type: ConstantVoltage
      input: [ +1 ]
    MinusOne:
+     description: |
+       Negative supply voltage/machine unit, also refered to as Vss,
+       i.e. -10V in this machine.
      cannot_be_allocated: True
      type: ConstantVoltage
      input: [ -1 ]
-   I1_IC_Comp:
-     type: ComparatorDA
-     input: [ HC:ic1sign, PlusOne, MinusOne ]
-   I2_IC_Comp:
-     type: ComparatorDA
-     input: [ HC:ic2sign, PlusOne, MinusOne ]
-   I3_IC_Comp:
-     type: ComparatorDA
-     input: [ HC:ic3sign, PlusOne, MinusOne ]
 
-XBAR:
-   # FIXME: Adress of XBAR
-   - address: 0x0020
-     architecture: Single-A8113
-     size: [ 16, 16 ]
-     input_columns:
-        - PlusOne
-        - MinusOne
-        - S3: plus
-        - S3: minus
-        - S2: plus
-        - S2: minus
-        - M2
-        - M1
-        - I3: plus
-        - I3: minus
-        - I2: plus
-        - I2: minus
-        - I1: plus
-        - I1: minus
-     # TODO: MOVE OUTPUTS to ELEMENTS!
-     output_rows:
-        - I1: a
-        - I1: b
-        - I2: a
-        - I2: b
-        - I3: a
-        - I3: b
-        - M1: a
-        - M1: b
-        - M2: a
-        - M2: b
-        - S1: a
-        - S1: b
-        - S2: a
-        - S2: b
-        - S3: a
-        - S3: b
+# Each of the wired hardware needs configuration by the HC
+# (which also needs to be configured itself)
+wired_parts:
+  X1:
+    type: XBAR
+    address: 0x0020  # FIXME
+    architecture: Single-A8113
+    size: [ 16, 16 ]
+    input_columns:
+       - PlusOne      #  1
+       - MinusOne     #  2
+       - S3: plus     #  3
+       - S3: minus    #  4
+       - S2: plus     #  5
+       - S2: minus    #  6
+       - S1: plus     #  7
+       - S1: minus    #  8
+       - M2           #  9
+       - M1           # 10
+       - I3: plus     # 11
+       - I3: minus    # 12
+       - I2: plus     # 13
+       - I2: minus    # 14
+       - I1: plus     # 15
+       - I1: minus    # 16
+    output_rows:
+       - I1: a        #  1
+       - I1: b        #  2
+       - I2: a        #  3
+       - I2: b        #  4
+       - I3: a        #  5
+       - I3: b        #  6
+       - M1: a        #  7
+       - M1: b        #  8
+       - M2: a        #  9
+       - M2: b        # 10
+       - S1: a        # 11
+       - S1: b        # 12
+       - S2: a        # 13
+       - S2: b        # 14
+       - S3: a        # 15
+       - S3: b        # 16
 
-DPT24:
-   # FIXME: address of DPT24
-   - address: 0x0060
-     size: 24
-     enumeration:
-        - I1: a0    #  1
-        - I1: b0    #  2
-        - I2: a0    #  3
-        - I2: b0    #  4
-        - I3: a0    #  5
-        - I3: b0    #  6
-        - M1: a0    #  7
-        - M1: b0    #  8
-        - M2: a0    #  9
-        - M2: b0    # 10
-        - S1: a0    # 11
-        - S1: b0    # 12
-        - S2: a0    # 13
-        - S2: b0    # 14
-        - S3: a0    # 15
-        - S3: b0    # 16
-        - I1: 
-        - Unused    # 20
-        - Unused    # 21
-        - Unused    # 22
-        - Unused    # 23# 17
-        - Unused    # 24# 18
-        - Unused    # 19
-        - Unused    # 20
-        - Unused    # 21
-        - Unused    # 22
-        - Unused    # 23
-        - Unused    # 24
+  D1:
+    type: DPT24
+    address: 0x0060 # FIXME: address of DPT24
+    size: 24
+    enumeration:
+       - I1: a0    #  1
+       - I1: b0    #  2
+       - I2: a0    #  3
+       - I2: b0    #  4
+       - I3: a0    #  5
+       - I3: b0    #  6
+       - M1: a0    #  7
+       - M1: b0    #  8
+       - M2: a0    #  9
+       - M2: b0    # 10
+       - S1: a0    # 11
+       - S1: b0    # 12
+       - S2: a0    # 13
+       - S2: b0    # 14
+       - S3: a0    # 15
+       - S3: b0    # 16
+       - Unused    # 17
+       - Unused    # 18
+       - Unused    # 19
+       - Unused    # 20
+       - Unused    # 21
+       - Unused    # 22
+       - Unused    # 23
+       - Unused    # 24
 
-HC:
-   # note that outputs are never defined at the element but
-   # instead at the inputs. See the netlist above for the
-   # outputs of HC.
-   - address: 0x0080
-     analog_dpt_input: [ I1, I2, I3, M1, M2, S1, S2, S3 ]
-     digital_io_input: []
+  Main:
+    # A Hybrid Controller has 8 DPTs, 8 digital inputs and
+    # 8 digital outputs. There can actually be only one HC per
+    # machine.
+    type: HC
+    address: 0x0080
+    dpt_enumeration:
+      - I1: analogIC
+      - I2: analogIC
+      - I3: analogIC
+    digital_input: []
+    digital_output:
+      - I1: icSign
+      - I2: icSign
+      - I3: icSign
