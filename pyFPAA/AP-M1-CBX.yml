@@ -3,120 +3,338 @@
 
 title: Analog Paradigm Model 1 CBX with 16x16 XBAR
 
+logic:
+   boolean: [ True, False ]
+   machine_units: [ +1, -1 ]
+   voltage_range: [ +10, -10 ]
+   voltage_unit: V
+
 entities:
    SUM2p:
-     computes: o = -(id1*i1+id2*i2)
-     input: [ i1, i2 ]
-     output: [ o ]
-     variables: [ di1, di2 ]
-   MUL2p:
-     computes: o = id1*i1 * id2*i2  # not correct!
-     input: [ i1, i2 ]
-     output: [ o ]
-     variables: [ di1, di2 ]
+     description: |
+        A macro component made of two summers (SUM8 module) and two digital
+        potentiometers (on DPT24).
+        Each summer is a (negating) summer with two inputs.
+        The main summer (Summer1) use weights a=10. The inverting summer
+        (Summer2) uses weight a=1.
+        We dont make use of the summing junctions (SJ).
+        The flow chart looks like
+
+          a0 ------+
+                   |  controls
+                   v
+          a ->[DPT24, pin x]------>[         ]   +--[ Summer2 ]-> plus
+                                   [ Summer1 ]->-+
+          b ->[DPT24, pin y]------>[         ]   +--------------> minus
+                   ^
+                   |  controls
+          b0 ------+
+
+     computes:
+       plus:  plus  =   a0*a + b0*b
+       minus: minus = -(a0*a + b0*b)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+     output:
+       - name: plus
+         type: analog
+         description: Output of plus operation (negation of summer output)
+       - name: minus
+         type: analog
+         description: Output of minus operation (actual summer output)
+     default_inputs:
+       a0: 0
+       b0: 0
+
    INT2p:
-     computes: o = -integral( (id1*i1(t)+id2*i2(t)), t)
-     input: [ i1, i2 ]
-     output: [ o ]
-     variables: [ di1, di2 ]
+     description: |
+        A macro component made of an integrator (one in the INT4 module),
+        two potentiometers (on DPT24) and a summer (on SUM8, used for
+        negation).
+
+        The integrator is an (implicite negative summing) intergrator
+        with two inputs. For the moment, we dont make use of ModeIC and
+        ModeOP. All inputs use weight a=10.
+
+        In the moment, the ICs are realized by one potentiometer and
+        a comparator. The compiler creates the binary sign which steers
+        the comparator and is outputted by the Hybrid Controller (HC).
+
+        The summer is a (negating) summer with a single input.
+        The summer uses weight a=1.
+        Neither in integrator nor summer, we make use of the SJ.
+
+        The flow chart looks like
+
+         ic ----------------------+
+                                  |
+         HC digital output,       |
+         icSign -----+            |
+                     | set        | controls
+                     v            v
+          +1 ---->[ Compa- ]-->[DPT24, pin x]
+          -1 ---->[ rator  ]      |
+                                  |
+          a0 ------+              |
+                   | controls     | sets IC
+                   v              v
+          a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> plus
+                               [ Integrator ]->-+
+          b ->[DPT24, pin z]-->[            ]   +--------------> minus
+                   ^
+                   |  controls
+          b0 ------+
+     computes:
+       plus:  plus  =  integral( a0*a(t) + b0*b(t), t)
+       minus: minus = -integral( a0*a(t) + b0*b(t), t)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+       - name: ic
+         type: numeric
+         description: Initial conditions. Sign is realized by compiler.
+         range: [-1, 1]
+     output:
+       - name: plus
+         type: analog
+         description: Output of plus operation (negation of summer output)
+       - name: minus
+         type: analog
+         description: Output of minus operation (actual summer output)
+     default_inputs:
+       a0: 0
+       b0: 0
+
+   MUL2p:
+     description: |
+       A simple macro element made of a single multiplier (MLT8) and two
+       digital potentiometers (on DPT24).
+       Note that multiplication is implemented normalized. For instance,
+       if machine voltage is level=+10V (actually +-10V), the multiplication
+       computes res = (a/level * b/level)*level in order to make sure
+       |res|<10V.
+       -> In order to decouple analog programming from the machine where
+          it runs, the normalization should be implemented in the
+          compilation step!
+       For the moment, outputs of MUL2p are *not* provided in negated form.
+     input:
+       - name: a
+         type: analog
+       - name: b
+         type: analog
+       - name: a0          # for the multiplier,
+         type: digital     # we could also
+       - name: b0          # skip the potentiometers
+         type: digital     # for the time being
+     output:
+       - name: o
+         type: analog
+     computes:
+       o: o = a0*a*b0*b/voltage_level
+
    ConstantVoltage:
-     computes: o = value
-     input: []
-     output: [ o ]
-     variables: [ value ]
+     description: |
+       This is a pseudo-element only used for allocate a logic +1 and
+       logic -1 on the XBAR.
+       Usage examples are given in the partlist with the instances
+       PlusOne and MinusOne. These parts are subject to be used
+       also in the actual programs (for the time being), in order to
+       realize constant inputs for computatational parts. We need
+       +1 and -1 because the potentiometers only implement range [0,1].
+       The operation x-0.5 is then realized by the pseudo-code
+       SUMMER(a=x,a0=1,b=MinusOne,b0=0.5), while x+0.7 is realized by
+       SUMMER(a=x,a0=1,b=PlusOne,b0=0.7).
+     computes:
+       value: value = x
+     input:
+       - name: x
+         type: analog
+     output:
+       - name: value
+         type: analog
+
+   ComparatorAD:
+     description: The left part of a CMP4 comparator (analog2digital)
+     computes:
+       res: res = a+b>0
+     input:
+       - name: a
+         type: analog
+       - name: b
+         type: analog
+     output:
+       - name: res
+         type: digital
+
+   ComparatorDA:
+     description: The right part of a CMP4 comparator (digital2analog)
+     computes:
+       u: u = if(i, a, b)
+     input:
+       - name: i
+         type: digital
+       - name: a
+         type: analog
+       - name: b
+         type: analog
+     output:
+       - name: u
+         type: analog
+
    None:
-     computes: not-connected-part
+     description: |
+       This pseudo-element is only used to implement computational
+       elements with unconnected inputs. For instance, the pseudo-code
+       SUMMER(x)=-x is actually implemented as
+       SUMMER(a=x,a0=1,b=None,b0=0)  (the value of b0 is not relevant!).
+       The compiler will throw out None elements in favour of disabling
+       the corresponding output line of the XBAR.
+     computes: nothing
+     output:
+       - name: none
+         type: analog
 
 partlist:
    I1:
      type: INT2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0021
    I2:
      type: INT2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0022
    I3:
      type: INT2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0023
    M1:
      type: MUL2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0051
    M2:
      type: MUL2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0052
    S1:
      type: SUM2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0011
    S2:
      type: SUM2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0012
    S3:
      type: SUM2p
-     variables: [0,0] # defaults
-     input: [] # default
+     address: 0x0013
    PlusOne:
      cannot_be_allocated: True
      type: ConstantVoltage
-     input: [] # no input
-     variables: [ +1 ]
+     input: [ +1 ]
    MinusOne:
      cannot_be_allocated: True
      type: ConstantVoltage
-     input: [] # no input
-     variables: [ +1 ]
+     input: [ -1 ]
+   I1_IC_Comp:
+     type: ComparatorDA
+     input: [ HC:ic1sign, PlusOne, MinusOne ]
+   I2_IC_Comp:
+     type: ComparatorDA
+     input: [ HC:ic2sign, PlusOne, MinusOne ]
+   I3_IC_Comp:
+     type: ComparatorDA
+     input: [ HC:ic3sign, PlusOne, MinusOne ]
 
 XBAR:
-   - adress: 0x1234  # fixme
+   # FIXME: Adress of XBAR
+   - address: 0x0020
      architecture: Single-A8113
      size: [ 16, 16 ]
-     # 10 (of 16) used input rows
-     input_columns: [
-         PlusOne, MinusOne, S3, S2, S2, M2, M1, I3, I2, I1,
-         Unused11, Unused12, Unused13, Unused14, Unused15, Unused16
-     ]
-     # 16 (of 16) used output rows
-     output_rows: [
-        I1: i1, I1: i2,
-        I2: i1, I2: i2,
-        I3: i1, I3: i2,
-        M1: i1, M1: i2,
-        M2: i1, M2: i2,
-        S1: i1, S1: i2,
-        S2: i1, S2: i2,
-        S3: i1, S3: i2
-     ]
+     input_columns:
+        - PlusOne
+        - MinusOne
+        - S3: plus
+        - S3: minus
+        - S2: plus
+        - S2: minus
+        - M2
+        - M1
+        - I3: plus
+        - I3: minus
+        - I2: plus
+        - I2: minus
+        - I1: plus
+        - I1: minus
+     # TODO: MOVE OUTPUTS to ELEMENTS!
+     output_rows:
+        - I1: a
+        - I1: b
+        - I2: a
+        - I2: b
+        - I3: a
+        - I3: b
+        - M1: a
+        - M1: b
+        - M2: a
+        - M2: b
+        - S1: a
+        - S1: b
+        - S2: a
+        - S2: b
+        - S3: a
+        - S3: b
 
 DPT24:
-   - adress: 0x0060  # example
+   # FIXME: address of DPT24
+   - address: 0x0060
      size: 24
      enumeration:
-        - I1: di1    #  1
-        - I1: di2    #  2
-        - I2: di1    #  3
-        - I2: di2    #  4
-        - I3: di1    #  5
-        - I3: di2    #  6
-        - M1: di1    #  7
-        - M1: di2    #  8
-        - M2: di1    #  9
-        - M2: di2    # 10
-        - S1: di1    # 11
-        - S1: di2    # 12
-        - S2: di1    # 13
-        - S2: di2    # 14
-        - S3: di1    # 15
-        - S3: di2    # 16
-        - Unused     # 17
-        - Unused     # 18
-        - Unused     # 19
-        - Unused     # 20
-        - Unused     # 21
-        - Unused     # 22
-        - Unused     # 23
-        - Unused     # 24
+        - I1: a0    #  1
+        - I1: b0    #  2
+        - I2: a0    #  3
+        - I2: b0    #  4
+        - I3: a0    #  5
+        - I3: b0    #  6
+        - M1: a0    #  7
+        - M1: b0    #  8
+        - M2: a0    #  9
+        - M2: b0    # 10
+        - S1: a0    # 11
+        - S1: b0    # 12
+        - S2: a0    # 13
+        - S2: b0    # 14
+        - S3: a0    # 15
+        - S3: b0    # 16
+        - I1: 
+        - Unused    # 20
+        - Unused    # 21
+        - Unused    # 22
+        - Unused    # 23# 17
+        - Unused    # 24# 18
+        - Unused    # 19
+        - Unused    # 20
+        - Unused    # 21
+        - Unused    # 22
+        - Unused    # 23
+        - Unused    # 24
+
+HC:
+   # note that outputs are never defined at the element but
+   # instead at the inputs. See the netlist above for the
+   # outputs of HC.
+   - address: 0x0080
+     analog_dpt_input: [ I1, I2, I3, M1, M2, S1, S2, S3 ]
+     digital_io_input: []

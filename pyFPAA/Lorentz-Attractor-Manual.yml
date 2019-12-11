@@ -6,8 +6,7 @@ title: Lorentz Attractor, manually
 netlist:
   I1:
     type: INT2p
-    constants: [1, .18]
-    input: [I1, I2]
+    input: [ 1, {I1: minus}, .18, {I2: minus} ]
   I2:
     type: INT2p
     constants: [.15, .2677]
