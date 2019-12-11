@@ -11,6 +11,7 @@ from collections import OrderedDict
 from pprint import pprint, pformat
 from collections.abc import Iterable
 from functools import reduce
+from numbers     import Number
 
 # Helper routines for simply nested dictionaries:
 flatten_dict = lambda dct: dict(reduce(lambda a,b: a+b, [list(dict(k).items()) for k in dct.values()]))
@@ -46,18 +47,18 @@ circuit = yaml_load(args.circuit)
 
 info("arch:")
 info(pformat(arch))
-
-#info("circuit:")
-#info(pformat(circuit))
-sys.exit(1)
+info("-----------------------------------------------------")
+info("circuit:")
+info(pformat(circuit))
+info("-----------------------------------------------------")
 
 assigned_parts_by_entity = filter_dict({
-    entity: OrderedDict({ part: None for part,parch in arch['partlist'].items()
+    entity: OrderedDict({ part: None for part,parch in arch['configurable_parts'].items()
         if parch['type']==entity and not 'cannot_be_allocated' in parch })
     for entity in arch['entities'].keys() })
 
 # Determine mapping of part names (circuit -> arch)
-for part, spec in circuit['netlist'].items():
+for part, spec in circuit['program'].items():
     t = spec['type']
     if not t in arch['entities']:
         raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {arch['entities']}")
@@ -73,13 +74,78 @@ for part, spec in circuit['netlist'].items():
 assigned_parts = flatten_dict(assigned_parts_by_entity)
 
 # Setup the wired circuit
-wired_circuit = deepcopy(arch['partlist'])
+wired_circuit = deepcopy(arch['configurable_parts'])
 for part in filter_dict(assigned_parts).keys():
-    wired_circuit[part].update(circuit['netlist'][assigned_parts[part]])
+    wired_circuit[part].update(circuit['program'][assigned_parts[part]])
+
+# Sweep over all configurable parts
+for pname, part in wired_circuit.items():
+    # Prepare for giving output information in next sweep
+    part['output'] = []
+    
+    if not 'input' in part: continue
+    reference = arch['entities'][part['type']]
+
+    # ensure the inputs are dictionaries
+    if isinstance(part['input'], list):
+        new_input = {}
+        for i, inputdesc in enumerate(reference['input']):
+            if i < len(part['input']):
+                new_input[ inputdesc['name'] ] = part['input'][i]
+        part['input'] = new_input
+
+    # fill up defaults
+    for name, value in reference.get('default_inputs', {}).items():
+        if name not in part['input']:
+            part['input'][name] = value
+
+    # Name implicit (first) output lines
+    for name, target in part['input'].items():
+        if isinstance(target, str):
+            part['input'][name] = {target: arch['entities'][wired_circuit[target]['type']]['output'][0]['name'] }
+
+
+# final sweep over all configurable parts:
+for pname, part in wired_circuit.items():
+    if not 'input' in part: continue
+
+    # Check wire types
+    for name, target in part['input'].items():
+        adesc = { dct['name']: dct for dct in arch['entities'][part['type']]['input'] }
+        if not name in adesc:
+            raise ValueError(f"Part {pname} constructs input line {name} which doesn't exist for type {part['type']}")
+        adesc = adesc[name]
+        if adesc['type'] == 'numeric' and not isinstance(target, Number):
+            raise ValueError(f"Part {pname} input line {name} requires a number, but {target} given")
+        if isinstance(target, dict):
+            if len(target) > 1:
+                raise ValueError(f"Part {pname} input line {name} contains too many information. {target} given")
+            (tpart,tline), = target.items()
+            tpart_reference = {dct['name']:dct for dct in arch['entities'][wired_circuit[tpart]['type']]['output'] }
+            if not tline in tpart_reference:
+                raise ValueError(f"Part {pname} wires to nonexisting target in input {target}")
+            tpart_reference = tpart_reference[tline]
+            if tpart_reference['type'] != adesc['type']:
+                raise ValueError(f"Incompatible target line for {pname}, line {name}. Required type: {tpart_reference['type']}, but lined to {adesc}")
+            
+            # Give output information, because we can.
+            wired_circuit[tpart]['output'].append({pname,name})
+
+    # Check if everything is given
+    missing_keys = set([i['name'] for i in arch['entities'][part['type']]['input']]) \
+                   - set(part['input'].keys())
+    if missing_keys:
+        raise ValueError(f"Too few input given for Part {pname}: Missing keys {missing_keys}")
+
+# really final sweep: Ensure nonused parts have no output
+for pname, part in wired_circuit.items():
+    if not 'input' in part and len(part['output']) > 0 and not 'cannot_be_allocated' in part:
+        raise ValueError(f"Part {pname} has no input but is wired to {part['output']}. The universe will collapse into a black hole!")
 
 # yay
 info("wired_circuit: ")
 info(pformat(wired_circuit))
+sys.exit(-1)
 
 
 def write(command_letter, address, *data):
@@ -94,36 +160,42 @@ def normalize_potentiometer(value):
     "Map a real value [0..1] to Potentiometer value [0..1023]"
     value = float(value)
     if value < 0 or value > 1:
-        raise ValueError("Potentiometer value out of bounds")
+        raise ValueError(f"Digital potentiometer value {value} out of bounds")
     return int(round(value * 1023))
 
-# DPT24 Potentiometers
-for pot in arch['DPT24']:
-    for part, part_config in pot['enumeration'].items():
-        for variable, port in part_config.items():
-            value = normalize_potentiometer(wired_circuit[part]['variables'][
-                arch['entities'][wired_circuit[part]['type']]['variables'].index(variable)] )
-            info(f"DPT24@{pot['adress']}: Writing {part}/{variable} = {value}")
-            write("P", pot['adress'], "%02X"%port, "%04X"%value)
-            # TODO: Check values, looks wrong so far! But code "runs"
+# Go over hardwired parts
+for hwname, hw in arch['wired_parts'].items():
+    if part['type'] == "DPT24":
+        # DPT24 Potentiometers
+        for part, part_config in hw['enumeration'].items():
+            for variable, port in part_config.items():
+                value = normalize_potentiometer(wired_circuit[part]['variables'][
+                    arch['entities'][wired_circuit[part]['type']]['variables'].index(variable)] )
+                info(f"DPT24@{hw['address']}: Writing {part}/{variable} = {value}")
+                write("P", hw['address'], "%02X"%port, "%04X"%value)
+                # TODO: Check values, looks wrong so far! But code "runs"
+    else if part['type'] == 'XBAR':
+        # XBAR matrix
+        N,M = len(hw['output_rows']), len(hw['input_columns'])
+        nbits, nbytes, nhexchars = N*M, ceil(N*M/8), ceil(N*M/8*2)
+        info(f"XBAR@{hw['adress']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
 
-# XBAR matrix
-for xbar in arch['XBAR']:
-    N,M = len(xbar['output_rows']), len(xbar['input_columns'])
-    nbits, nbytes, nhexchars = N*M, ceil(N*M/8), ceil(N*M/8*2)
-    info(f"XBAR@{xbar['adress']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
+        boolean_matrix = [ 
+            [ pin in wired_circuit[pout]['input']
+            for pin in hw['input_columns']
+            ] for pout in hw['output_rows']
+        ]
 
-    boolean_matrix = [ 
-          [ pin in wired_circuit[pout]['input']
-	    for pin in xbar['input_columns']
-          ] for pout in xbar['output_rows']
-    ]
+        bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
+        bit_matrix = boolString2Bin("".join(bit_row_vectors))
+        bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
+        for i,(bitvec,pout) in enumerate(zip(bit_row_vectors,hw['output_rows'])):
+            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i}]: {bitvec} -> {pout}")
+        write("XFIXMEX", hw['address'], bit_matrix_string)
 
-    bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
-    bit_matrix = boolString2Bin("".join(bit_row_vectors))
-    bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
-    for i,(bitvec,pout) in enumerate(zip(bit_row_vectors,xbar['output_rows'])):
-        info(f"XBAR@{xbar['adress']}: Writing bitmatrix[{i}]: {bitvec} -> {pout}")
-    write("XFIXMEX", xbar['adress'], bit_matrix_string)
-
-    # Missing: On-Off-Information about outgoing lines of XBAR!
+        # Missing: On-Off-Information about outgoing lines of XBAR!
+    else if part['type'] == 'HC':
+        # Hybrid controller
+        info("HC needs to be implemented")
+    else:
+        raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")

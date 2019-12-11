@@ -3,32 +3,30 @@
 
 title: Lorentz Attractor, manually
 
-netlist:
+program:
   I1:
     type: INT2p
     input: [ 1, {I1: minus}, .18, {I2: minus} ]
   I2:
     type: INT2p
-    constants: [.15, .2677]
-    input: [M1, I2]
+    input: [.15, M1, .2677, I2]
   I3:
     type: INT2p
-    constants: [.1536, .01]
-    input: [M2, I3]
+    input: [.1536, M2, .01, I3]
   M1:
     type: MUL2p
-    constants: [1, 1]
-    input: [I1, I3]
+    input: [1, I1, 1, I3]
   M2:
     type: MUL2p
-    constants: [1, 1]
-    input: [I2, S1]
+    input: [1, I2, 1, S1]
   S1:
     type: SUM2p
-    constants: [.268, .1]
-    input: [I2, PlusOne]
+    input: [.268, I2, .1, PlusOne]
   S2:
     type: SUM2p
-    constants: [.01, 0]
-    input: [I3, None]
+    input: [.01, I3, 0, None]
 
+observables:
+  minusX: I1  # fixme
+  y: I2
+  z: I3

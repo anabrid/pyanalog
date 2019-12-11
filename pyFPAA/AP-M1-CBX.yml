@@ -7,6 +7,8 @@ description: |
    This file describes the hardware layout of a particular Model-1 machine
    with software-definable XBAR.
 
+# We currently not make (yet) use of these levels anywhere, but they
+# are later required for evaluating MUL's, for instance.
 logic:
    boolean: [ True, False ]
    machine_units: [ +1, -1 ]
@@ -53,12 +55,12 @@ entities:
        - name: b
          type: analog
      output:
-       - name: plus
-         type: analog
-         description: Output of plus operation (negation of summer output)
        - name: minus
          type: analog
          description: Output of minus operation (actual summer output)
+       - name: plus
+         type: analog
+         description: Output of plus operation (negation of summer output)
      default_inputs:
        a0: 0
        b0: 0
@@ -117,23 +119,25 @@ entities:
          range: [0, 1]
        - name: b
          type: analog
+       - name: icSign
+         type: boolean
+         description: Sign of initial condition value
        - name: ic
          type: numeric
          description: Value for initial condition
          range: [0, 1]
-       - name: icSign
-         type: boolean
-         description: Sign of initial condition value
      output:
-       - name: plus
-         type: analog
-         description: Output of plus operation (negation of summer output)
        - name: minus
          type: analog
          description: Output of minus operation (actual summer output)
+       - name: plus
+         type: analog
+         description: Output of plus operation (negation of summer output)
      default_inputs:
        a0: 0
        b0: 0
+       icSign: True
+       ic: 0
      internal_wires:
        # Internal wires are used by the modules defined at the end of this file
        - name: analogIC
@@ -165,14 +169,14 @@ entities:
           compilation step!
        For the moment, outputs of MUL2p are *not* provided in negated form.
      input:
+       - name: a0
+         type: digital
        - name: a
          type: analog
+       - name: b0
+         type: digital
        - name: b
          type: analog
-       - name: a0          # for the multiplier,
-         type: digital     # we could also
-       - name: b0          # skip the potentiometers
-         type: digital     # for the time being
      output:
        - name: o
          type: analog
@@ -236,7 +240,7 @@ entities:
        - name: u
          type: analog
 
-   None:
+   NoneType:
      description: |
        This pseudo-element is only used to implement computational
        elements with unconnected inputs. For instance, the pseudo-code
@@ -288,6 +292,10 @@ configurable_parts:
      cannot_be_allocated: True
      type: ConstantVoltage
      input: [ -1 ]
+   None:
+     description: See description of NoneType
+     cannot_be_allocated: True
+     type: NoneType
 
 # Each of the wired hardware needs configuration by the HC
 # (which also needs to be configured itself)
