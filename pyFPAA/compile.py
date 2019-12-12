@@ -7,7 +7,7 @@ import yaml # PyYAML
 import sys, os, argparse, glob, pathlib
 from math import ceil
 from copy import deepcopy
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict, namedtuple, defaultdict
 from pprint import pprint, pformat
 from collections.abc import Iterable
 from functools import reduce
@@ -102,7 +102,7 @@ def expand_shortpin_notation(item):
 # Sweep over all configurable parts
 for pname, part in wired_circuit.items():
     # Prepare for giving output information in next sweep
-    part['output'] = []
+    part['output'] = defaultdict(list)
 
     if not 'input' in part:
         part['input'] = []
@@ -151,7 +151,7 @@ for pname, part in wired_circuit.items():
                 raise ValueError(f"Incompatible target line for {pname}, line {name}. Required type: {tpart_reference['type']}, but lined to {adesc}")
 
             # Give output information, because we can.
-            wired_circuit[tpart]['output'].append({pname:name})
+            wired_circuit[tpart]['output'][tline].append({pname:name})
 
     # Check if everything is given
     missing_keys = set([i['name'] for i in arch['entities'][part['type']]['input']]) \
@@ -208,7 +208,7 @@ for hwname, hw in arch['wired_parts'].items():
         assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
         for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['dpt_enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"HC@{hw['address']}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"HC@{hw['address']}: Storing value {value:4} at DPT port {port} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
         # Hybrid controller: Digital output
         assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
@@ -224,18 +224,35 @@ for hwname, hw in arch['wired_parts'].items():
         cols = pins2tuples(map(expand_shortpin_notation, hw['input_columns']))
         rows = pins2tuples(map(expand_shortpin_notation, hw['output_rows']))
         # use output not input lists because machine elements such as PlusOne/MinusOne don't have full input information
-        outputs = { pname: pins2tuples(part['output']) for pname,part in wired_circuit.items() }
+        outputs = { pname: dict(part['output']) for pname,part in wired_circuit.items() }
+        
+        #### CONTINUE HERE: output is not nice, because it has multiple outputs per
+        #####  line. Use inputs here instead, as usual. Works better.
 
-        boolean_matrix = [[ #op in wired_circuit[ip]['input'][il] and wired_circuit[ip]['input'][il] == ol
-            op in outputs[ip] and outputs[ip] == il
-            for (ip, il) in cols] for (op, ol) in rows]
+        # The AD8113 enforces that there is only one connection per (output) row.
+        # In other words: In the XBAR, an output line can be connected only to one input
+        #   line, but an input line in the XBAR can connect up to 16 outputs.
+        # This is realized by having an output row being encoded in only 4 bits instead of 16.
+        boolean_matrix = [[ incol in outputs[op] for incol in cols] for (op,ol) in rows]
+        
+        ## ^^ this cannot work correctly and is always wrong.
+
+        # for debugging:
         bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
+        for i,(bitvec,(op,ol)) in enumerate(zip(bit_row_vectors,rows)):
+            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i:2}]: {bitvec} -> {op}:{ol}")
+
+        if not all([sum(row)==1 for row in boolean_matrix ]):
+            raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only one bit per row allowed.")
+
         bit_matrix = boolString2Bin("".join(bit_row_vectors))
         bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
-        for i,(bitvec,(op,ol)) in enumerate(zip(bit_row_vectors,rows)):
-            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i}]: {bitvec} -> {op}:{ol}")
+
         write("XFIXMEX", hw['address'], bit_matrix_string)
         # FIXME: Proof-check values. Currently they are all zero!
+
+	# Or, alternatively: Create nibbles+OUTPUT_ENABLED signal.
+	
 
         # Missing: On-Off-Information about outgoing lines of XBAR!
     else:
