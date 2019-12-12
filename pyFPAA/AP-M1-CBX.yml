@@ -62,6 +62,8 @@ entities:
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
+       a: None
+       b: None
        a0: 0
        b0: 0
 
@@ -91,11 +93,11 @@ entities:
          icSign -----+            |
                      | switches   | controls
                      v            v
-          +1 ---->[ Compa- ]-*->[HC DPT, pin x]
+          +1 ---->[ Compa- ]--->[HC DPT, pin x]
           -1 ---->[ rator  ]      |
-                                  * Line -*- refered to internally as "analogIC"
+                                  | Line "analogIC"
           a0 ------+              |
-                   | controls     * sets IC
+                   | controls     | sets IC
                    v              v
           a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> plus
                                [ Integrator ]->-+
@@ -134,6 +136,8 @@ entities:
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
+       a: None
+       b: None
        a0: 0
        b0: 0
        icSign: True
@@ -152,8 +156,8 @@ entities:
          input: [ parent: icSign, PlusOne, MinusOne ]
        INT2p_Raw:
          type:
-           input: [ a:analog, b:analog, realIc:analog ]
-           output: [ out:analog ]
+           input: [ a: analog, b: analog, realIc: analog ]
+           output: [ out: analog ]
          input: [ parent: a, parent: b, IC_Comp ]
 
    MUL2p:
@@ -183,6 +187,8 @@ entities:
      computes:
        o: o = a0*a*b0*b/voltage_level
      default_inputs:
+       a: PlusOne
+       b: PlusOne
        a0: 0
        b0: 0
 
@@ -248,10 +254,13 @@ entities:
        SUMMER(a=x,a0=1,b=None,b0=0)  (the value of b0 is not relevant!).
        The compiler will throw out None elements in favour of disabling
        the corresponding output line of the XBAR.
+
+       The None is also used for slurping input from the DPTs, therefore
+       they have an input.
      computes: nothing
-     output:
-       - name: none
-         type: analog
+     input:          [{ name: none, type: analog }]
+     output:         [{ name: none, type: analog }]
+     default_inputs: { none: 0 }
 
 configurable_parts:
    I1:
@@ -303,7 +312,9 @@ wired_parts:
   X1:
     type: XBAR
     address: 0x0020  # FIXME
-    architecture: Single-A8113
+    # Datasheet of chip AD8113:
+    # https://www.analog.com/media/en/technical-documentation/data-sheets/AD8113.pdf
+    topology: Single AD8113
     size: [ 16, 16 ]
     input_columns:
        - PlusOne      #  1
@@ -361,14 +372,6 @@ wired_parts:
        - S2: b0    # 14
        - S3: a0    # 15
        - S3: b0    # 16
-       - Unused    # 17
-       - Unused    # 18
-       - Unused    # 19
-       - Unused    # 20
-       - Unused    # 21
-       - Unused    # 22
-       - Unused    # 23
-       - Unused    # 24
 
   Main:
     # A Hybrid Controller has 8 DPTs, 8 digital inputs and
@@ -377,9 +380,9 @@ wired_parts:
     type: HC
     address: 0x0080
     dpt_enumeration:
-      - I1: analogIC
-      - I2: analogIC
-      - I3: analogIC
+      - I1: ic
+      - I2: ic
+      - I3: ic
     digital_input: []
     digital_output:
       - I1: icSign

@@ -7,7 +7,7 @@ import yaml # PyYAML
 import sys, os, argparse, glob, pathlib
 from math import ceil
 from copy import deepcopy
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from pprint import pprint, pformat
 from collections.abc import Iterable
 from functools import reduce
@@ -16,9 +16,15 @@ from numbers     import Number
 # Helper routines for simply nested dictionaries:
 flatten_dict = lambda dct: dict(reduce(lambda a,b: a+b, [list(dict(k).items()) for k in dct.values()]))
 filter_dict = lambda dct: { k:v for k,v in dct.items() if v }
+# Map [{'I1':'a'},{'I2':'b'},...] -> [('I1','a'),('I2','b'),...]
+Target = namedtuple("Target", ['part','pin'])
+pins2tuples = lambda pl: [ Target(t,p) for tp in pl for (t,p) in tp.items() ]
 # no need for bitarray
 boolList2BinString = lambda lst: ''.join(['1' if x else '0' for x in lst])
 boolString2Bin = lambda s: int('0b'+s, base=2)
+
+
+
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
@@ -78,12 +84,29 @@ wired_circuit = deepcopy(arch['configurable_parts'])
 for part in filter_dict(assigned_parts).keys():
     wired_circuit[part].update(circuit['program'][assigned_parts[part]])
 
+def expand_shortpin_notation(item):
+    """
+    Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
+    where the default signal is the first output signal
+
+    Note: Hopefully this pseudo-OOP aka closure over wired_circuit won't
+          shoot me in the foot.
+    """
+    if isinstance(item, str):
+        return {item: arch['entities'][wired_circuit[item]['type']]['output'][0]['name'] }
+    elif (isinstance(item, dict) and len(item)==1) or isinstance(item, Number):
+        return item
+    else:
+        raise ValueError(f"Malformed target notation: {item}")
+
 # Sweep over all configurable parts
 for pname, part in wired_circuit.items():
     # Prepare for giving output information in next sweep
     part['output'] = []
-    
-    if not 'input' in part: continue
+
+    if not 'input' in part:
+        part['input'] = []
+
     reference = arch['entities'][part['type']]
 
     # ensure the inputs are dictionaries
@@ -101,14 +124,13 @@ for pname, part in wired_circuit.items():
 
     # Name implicit (first) output lines
     for name, target in part['input'].items():
-        if isinstance(target, str):
-            part['input'][name] = {target: arch['entities'][wired_circuit[target]['type']]['output'][0]['name'] }
+        part['input'][name] = expand_shortpin_notation(target)
+        #if isinstance(target, str):
+        #    part['input'][name] = {target: arch['entities'][wired_circuit[target]['type']]['output'][0]['name'] }
 
 
 # final sweep over all configurable parts:
 for pname, part in wired_circuit.items():
-    if not 'input' in part: continue
-
     # Check wire types
     for name, target in part['input'].items():
         adesc = { dct['name']: dct for dct in arch['entities'][part['type']]['input'] }
@@ -127,9 +149,9 @@ for pname, part in wired_circuit.items():
             tpart_reference = tpart_reference[tline]
             if tpart_reference['type'] != adesc['type']:
                 raise ValueError(f"Incompatible target line for {pname}, line {name}. Required type: {tpart_reference['type']}, but lined to {adesc}")
-            
+
             # Give output information, because we can.
-            wired_circuit[tpart]['output'].append({pname,name})
+            wired_circuit[tpart]['output'].append({pname:name})
 
     # Check if everything is given
     missing_keys = set([i['name'] for i in arch['entities'][part['type']]['input']]) \
@@ -139,13 +161,13 @@ for pname, part in wired_circuit.items():
 
 # really final sweep: Ensure nonused parts have no output
 for pname, part in wired_circuit.items():
-    if not 'input' in part and len(part['output']) > 0 and not 'cannot_be_allocated' in part:
+    if len(part['input']) == 0 and len(part['output']) > 0 and not 'cannot_be_allocated' in part:
         raise ValueError(f"Part {pname} has no input but is wired to {part['output']}. The universe will collapse into a black hole!")
 
 # yay
-info("wired_circuit: ")
-info(pformat(wired_circuit))
-sys.exit(-1)
+#info("wired_circuit: ")
+#info(pformat(wired_circuit))
+#sys.exit(-1)
 
 
 def write(command_letter, address, *data):
@@ -163,39 +185,58 @@ def normalize_potentiometer(value):
         raise ValueError(f"Digital potentiometer value {value} out of bounds")
     return int(round(value * 1023))
 
+"""
+def get_numeric_input(part, pin):
+    if pin in wired_circuit[part]['input']:
+        return wired_circuit[part]['input'][pin]
+    parch = arch['entities'][ wired_circuit[part]['type'] ]
+    if 'internal_wires' in parch and pin in parch['internal_wires']:
+        pass
+"""
+
 # Go over hardwired parts
 for hwname, hw in arch['wired_parts'].items():
-    if part['type'] == "DPT24":
+    if hw['type'] == "DPT24":
         # DPT24 Potentiometers
-        for part, part_config in hw['enumeration'].items():
-            for variable, port in part_config.items():
-                value = normalize_potentiometer(wired_circuit[part]['variables'][
-                    arch['entities'][wired_circuit[part]['type']]['variables'].index(variable)] )
-                info(f"DPT24@{hw['address']}: Writing {part}/{variable} = {value}")
-                write("P", hw['address'], "%02X"%port, "%04X"%value)
-                # TODO: Check values, looks wrong so far! But code "runs"
-    else if part['type'] == 'XBAR':
+        assert len(hw['enumeration']) <= 24, "DPT24 has only 24 digital potentiometers"
+        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['enumeration']))):
+            value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
+            info(f"DPT24@{hw['address']}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            write("P", hw['address'], "%02X"%port, "%04d"%value)
+    elif hw['type'] == 'HC':
+        # Hybrid controller: DPTs (same code as DPT24)
+        assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
+        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['dpt_enumeration']))):
+            value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
+            info(f"HC@{hw['address']}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            write("P", hw['address'], "%02X"%port, "%04d"%value)
+        # Hybrid controller: Digital output
+        assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
+        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['digital_output']))):
+            value = wired_circuit[t.part]['input'][t.pin]
+            info(f"HC@{hw['address']}: Storing {value} at digital output port {port} (corresponding to {t.part}:{t.pin})")
+            write("D" if value else "d", hw['address'], "%1d"%port)
+    elif hw['type'] == 'XBAR':
         # XBAR matrix
         N,M = len(hw['output_rows']), len(hw['input_columns'])
         nbits, nbytes, nhexchars = N*M, ceil(N*M/8), ceil(N*M/8*2)
-        info(f"XBAR@{hw['adress']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
+        info(f"XBAR@{hw['address']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
+        cols = pins2tuples(map(expand_shortpin_notation, hw['input_columns']))
+        rows = pins2tuples(map(expand_shortpin_notation, hw['output_rows']))
+        # use output not input lists because machine elements such as PlusOne/MinusOne don't have full input information
+        outputs = { pname: pins2tuples(part['output']) for pname,part in wired_circuit.items() }
 
-        boolean_matrix = [ 
-            [ pin in wired_circuit[pout]['input']
-            for pin in hw['input_columns']
-            ] for pout in hw['output_rows']
-        ]
-
+        boolean_matrix = [[ #op in wired_circuit[ip]['input'][il] and wired_circuit[ip]['input'][il] == ol
+            op in outputs[ip] and outputs[ip] == il
+            for (ip, il) in cols] for (op, ol) in rows]
         bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
         bit_matrix = boolString2Bin("".join(bit_row_vectors))
         bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
-        for i,(bitvec,pout) in enumerate(zip(bit_row_vectors,hw['output_rows'])):
-            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i}]: {bitvec} -> {pout}")
+        for i,(bitvec,(op,ol)) in enumerate(zip(bit_row_vectors,rows)):
+            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i}]: {bitvec} -> {op}:{ol}")
         write("XFIXMEX", hw['address'], bit_matrix_string)
+        # FIXME: Proof-check values. Currently they are all zero!
 
         # Missing: On-Off-Information about outgoing lines of XBAR!
-    else if part['type'] == 'HC':
-        # Hybrid controller
-        info("HC needs to be implemented")
     else:
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
