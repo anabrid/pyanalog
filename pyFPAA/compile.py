@@ -288,12 +288,11 @@ if args.plot:
     plt.ion() # only for debugging
 
     mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
-    fig = plt.figure()
+    fig = plt.figure(figsize=[7.,7.5])
     ax = fig.gca()
     plt.xticks(np.arange(M), [ f'{part}:{pin}' for part,pin in cols ], rotation=30, ha="left")
     plt.yticks(np.arange(N), [ f'{part}:{pin}' for part,pin in rows ])
     
-    ax.invert_yaxis()
     ax.xaxis.tick_top()
     ax.yaxis.tick_right()
     ax.set_axisbelow(True) # grid in background
@@ -303,8 +302,12 @@ if args.plot:
     Y,X = np.where(np.array(boolean_matrix))
     plt.scatter(X,Y)
     
+    plt.xlim(-1,M)
+    plt.ylim(-1,N)
+    ax.invert_yaxis()
+
     plt.title(f"XBAR for {circuit['title']}", y=1.18, fontweight="bold")
-    
     plt.tight_layout()
+
     plt.savefig(args.plot)
     
