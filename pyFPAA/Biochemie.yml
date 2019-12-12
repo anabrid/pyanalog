@@ -1,5 +1,15 @@
 title: Biochemie-Beispiel (n1.pdf)
 
+description: |
+  This system implements the equations
+    n'      = -k_{+1} n
+    n'_R    =  k_{+1} n - k_u n_R - k_{+2} n_R d + k_{-2} n_{RD}
+    n'_{RD} =  k_{+2} n_R d - k_{-2} n_{RD}
+    d'      = -n'_{RD} + d(0)
+  In this notation, x' means the time derivative of x.
+  The time scale factors of all integrators are expected as k_0 = 10^3.
+  All integrators have intput weights 10.
+
 coefficients:
   kp1: 0.1
   kp2: 0.2
