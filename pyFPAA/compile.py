@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
 
+"""
+This is a compiler for programmable analog computers (FPAAs). It was written by SvenK in Dec 2019
+for quickly approaching a testing infrastructure for the XBAR module for the Analog Paradigm M-1
+analog computer.
+
+The script requires a (lengthy) machine description, which encodes the computational parts
+available and is quite similar to a machine library in VHDL. That file encodes especially the
+hard-wired vs. configurable parts of the machine.
+The actual program is then rather short and describes how the configurable computational parts
+are connected with each other. It also specifies constant coefficients which are set with
+digital potentiometers or other digital steering parameters.
+
+The output of this script is a single line of text, which are mostly hexadecimal encoded
+instructions together with command characters, all following the serial console protocol which
+the HybridController of the machine expects (http://analogparadigm.com/downloads/hc_handbook.pdf).
+
+In order to run this program, all you need is PyYAML to read the YAML files. If you want
+to draw circuit plots, you need matplotlib.
+"""
+
 # external dependencies:
 import yaml # PyYAML
 
@@ -18,45 +38,49 @@ flatten_dict = lambda dct: dict(reduce(lambda a,b: a+b, [list(dict(k).items()) f
 filter_dict = lambda dct: { k:v for k,v in dct.items() if v }
 # Map [{'I1':'a'},{'I2':'b'},...] -> [('I1','a'),('I2','b'),...]
 Target = namedtuple("Target", ['part','pin'])
+pin2tuple = lambda dct: [ Target(t,p) for (t,p) in dct.items() ][0]
 pins2tuples = lambda pl: [ Target(t,p) for tp in pl for (t,p) in tp.items() ]
 # no need for bitarray
-boolList2BinString = lambda lst: ''.join(['1' if x else '0' for x in lst])
-boolString2Bin = lambda s: int('0b'+s, base=2)
+bool2bin = lambda boolean: '1' if boolean else '0'
+int2bin = lambda number: bin(number)[2:] # cutting away the 0b from 0b10101
+boolList2BinString = lambda lst: ''.join(map(bool2bin, lst))
+bitstring2bin = lambda s: int('0b'+s, base=2)
 
+#curdir = os.path.dirname(os.path.realpath(__file__))
+#available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
 
-
-
-curdir = os.path.dirname(os.path.realpath(__file__))
-available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
-
-parser = argparse.ArgumentParser(description="An experimental synthesizer for some FPAA chips")
+parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-v", "--verbose", action="store_true", help="Be more verbose")
-parser.add_argument("-a", "--arch", choices=available_architectures.keys(),
-    default=iter(available_architectures), help="Target machine architecture description")
-parser.add_argument("circuit", help="The YAML file holding the circuit description")
+parser.add_argument("-d", "--debug", action="store_true", help="Be even more verbose (debug mode)")
+parser.add_argument("-o", "--output", default="-", metavar="OUTPUT.txt", help="Put output string into file (default is '-' and means stdout)")
+parser.add_argument("-p", "--plot", metavar="OUTPUT.pdf", help="Plot crossbar switch")
+parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description") #choices=available_architectures.keys(), default=iter(available_architectures),
+parser.add_argument("circuit", metavar="CIRCUIT.yml", help="The YAML file holding the circuit description")
 args = parser.parse_args()
 
-if args.verbose:
-    def info(*w,**kw): print(*w,**kw,file=sys.stderr)
-else:
-    def info(*w,**kw): pass
+info  = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.verbose or args.debug else 1
+debug = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.debug else 1
 
-def write_chip(*w,**kw): print(*w,**kw,end="") # todo: file=...
+chipout = open(args.output, "w") if args.output != "-" else sys.stdout
+def write_chip(*w,**kw): print(*w,**kw,end="",file=chipout)
 
 def yaml_load(fname):
     with open(fname, "r") as cfh:
         return yaml.load(cfh, Loader=yaml.SafeLoader) # may rise ScannerError
 
-arch = yaml_load(available_architectures[args.arch])
+arch = yaml_load(args.arch)
 circuit = yaml_load(args.circuit)
 
+info("Welcome to the HyConAVR.ino Program Compiler.")
+info("Input program:", circuit['title'])
+info("Target machine:", arch['title'])
 
-info("arch:")
-info(pformat(arch))
-info("-----------------------------------------------------")
-info("circuit:")
-info(pformat(circuit))
-info("-----------------------------------------------------")
+debug("arch:")
+debug(pformat(arch))
+debug("-----------------------------------------------------")
+debug("circuit:")
+debug(pformat(circuit))
+debug("-----------------------------------------------------")
 
 assigned_parts_by_entity = filter_dict({
     entity: OrderedDict({ part: None for part,parch in arch['configurable_parts'].items()
@@ -219,41 +243,68 @@ for hwname, hw in arch['wired_parts'].items():
     elif hw['type'] == 'XBAR':
         # XBAR matrix
         N,M = len(hw['output_rows']), len(hw['input_columns'])
-        nbits, nbytes, nhexchars = N*M, ceil(N*M/8), ceil(N*M/8*2)
-        info(f"XBAR@{hw['address']}: Writing bitmatrix of size NxM={N}x{M} ({nbits} bits = {nbytes} bytes = {nhexchars} in hex)")
+        assert N==16 and M==16, "XBAR only implemented for 16x16"
+        info(f"XBAR@{hw['address']}: Computing XBAR of size NxM={N}x{M}")
         cols = pins2tuples(map(expand_shortpin_notation, hw['input_columns']))
         rows = pins2tuples(map(expand_shortpin_notation, hw['output_rows']))
-        # use output not input lists because machine elements such as PlusOne/MinusOne don't have full input information
-        outputs = { pname: dict(part['output']) for pname,part in wired_circuit.items() }
-        
-        #### CONTINUE HERE: output is not nice, because it has multiple outputs per
-        #####  line. Use inputs here instead, as usual. Works better.
+        #outputs = { pname: dict(part['output']) for pname,part in wired_circuit.items() }
+        inputs = { pname: { line: pin2tuple(target) for line,target in part['input'].items()
+                   if isinstance(target,dict) } #and not "None" in target } # filter out empty inputs
+                   for pname,part in wired_circuit.items() }
 
         # The AD8113 enforces that there is only one connection per (output) row.
         # In other words: In the XBAR, an output line can be connected only to one input
         #   line, but an input line in the XBAR can connect up to 16 outputs.
         # This is realized by having an output row being encoded in only 4 bits instead of 16.
-        boolean_matrix = [[ incol in outputs[op] for incol in cols] for (op,ol) in rows]
-        
-        ## ^^ this cannot work correctly and is always wrong.
 
-        # for debugging:
-        bit_row_vectors = list(map(boolList2BinString, boolean_matrix))
-        for i,(bitvec,(op,ol)) in enumerate(zip(bit_row_vectors,rows)):
-            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i:2}]: {bitvec} -> {op}:{ol}")
+        boolean_matrix = [[ incol == inputs[op][ol] for incol in cols] for (op,ol) in rows]
+        row_bitstrings = list(map(boolList2BinString, boolean_matrix))
+        row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
+        row_active = [sum(row)==1 for row in boolean_matrix]
+        row_bitstring = [ f"{num:04b}{active:b}" for num,active in zip(row_numbers, row_active) ]
 
-        if not all([sum(row)==1 for row in boolean_matrix ]):
-            raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only one bit per row allowed.")
+        for i,(bitvec,num,active,bitvec2,(op,ol)) in enumerate(zip(row_bitstrings,row_numbers,row_active,row_bitstring,rows)):
+            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i:2}]:",
+                 f"{bitvec}={num:2d}=0x{num:1x} -> {op}:{ol}       [sending {bitvec2}]" if active else
+                 f"{bitvec} [output not enabled] [sending {bitvec2}]")
 
-        bit_matrix = boolString2Bin("".join(bit_row_vectors))
-        bit_matrix_string = ("%%0%dX"%nhexchars) % bit_matrix
+        if not all([sum(row) in (0,1) for row in boolean_matrix ]):
+            raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only a maximum of one `True` bit per row allowed.")
 
-        write("XFIXMEX", hw['address'], bit_matrix_string)
-        # FIXME: Proof-check values. Currently they are all zero!
+        bitstring = "".join(row_bitstring)
+        assert len(bitstring)==80, "XBAR bitstring has wrong length"
+        bitstring_hex = "%040x" % int('0b'+bitstring, base=2)
 
-	# Or, alternatively: Create nibbles+OUTPUT_ENABLED signal.
-	
-
-        # Missing: On-Off-Information about outgoing lines of XBAR!
+        write("XFIXMEX", hw['address'], bitstring_hex)
     else:
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
+
+if args.plot:
+    info("Drawing the XBAR...")
+
+    import numpy as np
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    plt.ion() # only for debugging
+
+    mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
+    fig = plt.figure()
+    ax = fig.gca()
+    plt.xticks(np.arange(M), [ f'{part}:{pin}' for part,pin in cols ], rotation=30, ha="left")
+    plt.yticks(np.arange(N), [ f'{part}:{pin}' for part,pin in rows ])
+    
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+    ax.yaxis.tick_right()
+    ax.set_axisbelow(True) # grid in background
+    ax.set_aspect(1)
+    plt.grid()
+    
+    Y,X = np.where(np.array(boolean_matrix))
+    plt.scatter(X,Y)
+    
+    plt.title(f"XBAR for {circuit['title']}", y=1.18, fontweight="bold")
+    
+    plt.tight_layout()
+    plt.savefig(args.plot)
+    
