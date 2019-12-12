@@ -1,29 +1,42 @@
 title: Biochemie-Beispiel (n1.pdf)
 
+coefficients:
+  kp1: 0.1
+  kp2: 0.2
+  km2: 0.3
+  ku:  0.4
+  d0:  0.5
+  n0:  0.6
+
 program:
   I1:
     type: INT2p
-    input: []
+    input:
+      a0: kp1
+      a: I
+      ic: n0
+      icSign: False # -1
   I2:
     type: INT2p
-    input: [.15, M1, .2677, I2]
+    input: [1, S3: plus, 1, S2: plus]
   I3:
     type: INT2p
-    input: [.1536, M2, .01, I3]
+    input: [1, M1: plus, km2, I3: minus]
   M1:
     type: MUL2p
-    input: [1, I1, 1, I3]
-  M2:
-    type: MUL2p
-    input: [1, I2, 1, S1]
+    input: [1, S1: minus, kp2, I2: minus]
   S1:
     type: SUM2p
-    input: [.268, I2, .1, PlusOne]
+    input: [1, I3: plus, d0, MinusOne]
   S2:
     type: SUM2p
-    input: [.01, I3, 0, None]
+    input: [1, M1: minus, ku, I2: minus]
+  S3:
+    type: SUM2p
+    input: [kp1, I1, km2, I3: plus]
 
 observables:
-  minusX: I1  # fixme
-  y: I2
-  z: I3
+  n: {I1: minus}
+  nR: {I2: plus}
+  nRD: {I3: plus}
+  d: {S1: minus}
