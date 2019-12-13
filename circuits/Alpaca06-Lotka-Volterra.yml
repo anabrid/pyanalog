@@ -1,0 +1,55 @@
+title: Lotka-Volterra (Zombies, Alpaca6)
+
+description: |
+  This system implements the Lotka-Voltera system
+
+    h' = alpha h - beta h z
+    z' = delta h z - gamma h z - xi z
+
+  with initial conditions z0 and h0.
+  
+  In Alpaca6 ("Zombie Apocalypse"), the integrator time constant
+  is k0=10^3, all integrators have weight 10, IC-time short,
+  OP-time is 60ms.
+  
+  In this code here, summers and integrators have weight 10.
+  (Internal negating summers always have weight 1)
+  
+coefficients:
+  h0: 0.6
+  z0: 0.6
+  alpha: 0.365
+  beta: 0.95
+  delta: 0.84
+  gamma: 0.44
+  xi: 0.09
+
+program:
+  I1:
+    type: INT2m
+    input:
+      a0: alpha
+      a: {I1: pos}
+      b0: beta
+      b: {M: pos}
+      ic: h0
+      icSign: True # +1
+  I2:
+    type: INT2pm
+    input:
+      a0: xi
+      a: {I2: neg}
+      b0: 0.1
+      b: {S: pos}
+      ic: z0
+      icSign: True # +1
+  M:
+    type: MUL2pm
+    input: [alpha, I1: pos, 1, I2: pos]
+  S:
+    type: SUM2pm
+    input: [delta, M: pos, gamma, M: neg]
+
+observables:
+  h: {I1: pos}
+  z: {I2: pos}

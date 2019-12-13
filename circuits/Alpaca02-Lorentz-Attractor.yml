@@ -1,29 +1,32 @@
 # Lorentz Attractor, manually wired after Bernd's book,
 # written down together on paper in Dec 2019
 
-title: Lorentz Attractor, manually
+title: Lorentz Attractor
+
+description: |
+  Manual version (not Mathematica-generated).
 
 program:
   I1:
-    type: INT2p
+    type: INT2pm
     input: [ 1, I1, .18, S2 ]
   I2:
-    type: INT2p
+    type: INT2pm
     input: [.15, M1, .2677, I2]
   I3:
-    type: INT2p
+    type: INT2m
     input: [.1536, M2, .01, I3]
   M1:
-    type: MUL2p
+    type: MUL2pm
     input: [1, I1, 1, I3]
   M2:
     type: MUL2p
     input: [1, I2, 1, S1]
   S1:
-    type: SUM2p
+    type: SUM2pm
     input: [.268, I2, .1, PlusOne]
   S2:
-    type: SUM2p
+    type: SUM2pm
     input: [.01, I3, 0, None]
 
 observables:

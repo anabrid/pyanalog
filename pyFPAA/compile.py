@@ -20,7 +20,8 @@ In order to run this program, all you need is PyYAML to read the YAML files. If 
 to draw circuit plots, you need matplotlib.
 """
 
-# external dependencies:
+# external dependencies, install with "pip install pyyaml"
+# If you don't have pip, install pip with "easy_install pip"
 import yaml # PyYAML
 
 # Python-included
@@ -46,15 +47,19 @@ int2bin = lambda number: bin(number)[2:] # cutting away the 0b from 0b10101
 boolList2BinString = lambda lst: ''.join(map(bool2bin, lst))
 bitstring2bin = lambda s: int('0b'+s, base=2)
 
-#curdir = os.path.dirname(os.path.realpath(__file__))
-#available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
+machines_from_list = True # choose Machines from current directory instead of providing YAML file
 
 parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-v", "--verbose", action="store_true", help="Be more verbose")
 parser.add_argument("-d", "--debug", action="store_true", help="Be even more verbose (debug mode)")
 parser.add_argument("-o", "--output", default="-", metavar="OUTPUT.txt", help="Put output string into file (default is '-' and means stdout)")
 parser.add_argument("-p", "--plot", metavar="OUTPUT.pdf", help="Plot crossbar switch")
-parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description") #choices=available_architectures.keys(), default=iter(available_architectures),
+if machines_from_list:
+    curdir = os.path.dirname(os.path.realpath(__file__))
+    available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
+    parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default=iter(available_architectures), help=f"Target machine architecture description (any YAML file in directory {curdir} is available as machine)") 
+else:
+    parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description")
 parser.add_argument("circuit", metavar="CIRCUIT.yml", help="The YAML file holding the circuit description")
 args = parser.parse_args()
 
@@ -68,7 +73,7 @@ def yaml_load(fname):
     with open(fname, "r") as cfh:
         return yaml.load(cfh, Loader=yaml.SafeLoader) # may rise ScannerError
 
-arch = yaml_load(args.arch)
+arch = yaml_load(args.arch if not machines_from_list else available_architectures[args.arch])
 circuit = yaml_load(args.circuit)
 
 info("Welcome to the HyConAVR.ino Program Compiler.")
@@ -91,7 +96,7 @@ assigned_parts_by_entity = filter_dict({
 for part, spec in circuit['program'].items():
     t = spec['type']
     if not t in arch['entities']:
-        raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {arch['entities']}")
+        raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {arch['entities'].keys()}")
     assigned_parts = assigned_parts_by_entity[t]
     none_allocated_parts = [k for k,v in assigned_parts.items() if not v ]
     #import ipdb; ipdb.set_trace() 
@@ -101,27 +106,49 @@ for part, spec in circuit['program'].items():
     info(f"Allocating Type {t}: Mapping circuit part {part} onto architecture part {target}")
     assigned_parts[target] = part
 
+# Mapping from architectured parts to user-named parts (having also None's for unallocated parts)
 assigned_parts = flatten_dict(assigned_parts_by_entity)
+# Identity mapping for architectured parts
+default_mapping = { k:k for k in arch['configurable_parts'].keys() }
+# Extend the architectured parts with basically the nonallocable ones
+arch2user = {**default_mapping, **assigned_parts}
+user2arch = { v:k for k,v in arch2user.items() }
 
-# Setup the wired circuit
+# Setup the wired circuit. In this dictionary, the parts are named as in
+# the architecture and *not* as from the user view. Use arch2user to translate
+# the user view, i.e. access like wired_circuit[arch2user[userpartname]]...
 wired_circuit = deepcopy(arch['configurable_parts'])
 for part in filter_dict(assigned_parts).keys():
     wired_circuit[part].update(circuit['program'][assigned_parts[part]])
 
-def expand_shortpin_notation(item):
+def resolve_user_pin(item):
     """
+    Excepts a user-named part and always returns an architecture part name.
     Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
-    where the default signal is the first output signal
-
-    Note: Hopefully this pseudo-OOP aka closure over wired_circuit won't
-          shoot me in the foot.
+    where the default signal is the first output signal.
+    (Note: This is a closoure over wired_circuit in a pseudo-OOP fashion.)
+    """
+    if isinstance(item, str):
+        item = user2arch[item]
+        return {item: arch['entities'][wired_circuit[item]['type']]['output'][0]['name'] }
+    elif (isinstance(item, dict) and len(item)==1):
+        return { user2arch[k]: v for k,v in item.items() } # could also convert to Target() at this place
+    elif isinstance(item, Number):
+        return item
+    else: raise ValueError(f"Malformed target notation: {item}")
+    
+def resolve_machine_pin(item):
+    """
+    Expects an architecture part name. Never comes in touch with user names.
+    Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
+    where the default signal is the first output signal.
+    (Note: This is a closoure over wired_circuit in a pseudo-OOP fashion.)
     """
     if isinstance(item, str):
         return {item: arch['entities'][wired_circuit[item]['type']]['output'][0]['name'] }
     elif (isinstance(item, dict) and len(item)==1) or isinstance(item, Number):
         return item
-    else:
-        raise ValueError(f"Malformed target notation: {item}")
+    else: raise ValueError(f"Malformed target notation: {item}")
 
 # Sweep over all configurable parts
 for pname, part in wired_circuit.items():
@@ -146,33 +173,48 @@ for pname, part in wired_circuit.items():
         if name not in part['input']:
             part['input'][name] = value
 
+    # Resolve variables (inteded for numerical values):
+    if 'coefficients' in circuit:
+        for name, target in part['input'].items():
+            if isinstance(target, str) and target in circuit['coefficients'].keys():
+                part['input'][name] = circuit['coefficients'][target]
+                info(f"Resolving variable {target}={part['input'][name]} at architecture part {pname}/{name}")
+
+
     # Name implicit (first) output lines
     for name, target in part['input'].items():
-        part['input'][name] = expand_shortpin_notation(target)
+        try:
+            part['input'][name] = resolve_user_pin(target)
+        except KeyError: # thrown by user2arch
+            #debug(f"Will pass malformed user target '{target}' at users {pname} to next sweep")
+            userdesc = f"Architecture part {pname} (User part {arch2user[pname]})"
+            raise ValueError(f"{userdesc}, input {name}: Cannot understand {target}, certainly because it is nonexistent")
         #if isinstance(target, str):
         #    part['input'][name] = {target: arch['entities'][wired_circuit[target]['type']]['output'][0]['name'] }
 
 
 # final sweep over all configurable parts:
 for pname, part in wired_circuit.items():
+    userdesc = f"Architecture part {pname} (User part {arch2user[pname]})"
     # Check wire types
     for name, target in part['input'].items():
         adesc = { dct['name']: dct for dct in arch['entities'][part['type']]['input'] }
         if not name in adesc:
-            raise ValueError(f"Part {pname} constructs input line {name} which doesn't exist for type {part['type']}")
+            raise ValueError(f"{userdesc} constructs input line {name} which doesn't exist for type {part['type']}")
         adesc = adesc[name]
         if adesc['type'] == 'numeric' and not isinstance(target, Number):
-            raise ValueError(f"Part {pname} input line {name} requires a number, but {target} given")
+            raise ValueError(f"{userdesc} requires a number, but {target} given. (Hint: Maybe you used an undefined variable)")
         if isinstance(target, dict):
             if len(target) > 1:
-                raise ValueError(f"Part {pname} input line {name} contains too many information. {target} given")
+                raise ValueError(f"{userdesc} contains too many information. {target} given")
             (tpart,tline), = target.items()
             tpart_reference = {dct['name']:dct for dct in arch['entities'][wired_circuit[tpart]['type']]['output'] }
             if not tline in tpart_reference:
-                raise ValueError(f"Part {pname} wires to nonexisting target in input {target}")
+                usertarget = { arch2user[k]:v for k,v in target.items() }
+                raise ValueError(f"{userdesc} wires to nonexisting target in input {target} (User provided {usertarget})")
             tpart_reference = tpart_reference[tline]
             if tpart_reference['type'] != adesc['type']:
-                raise ValueError(f"Incompatible target line for {pname}, line {name}. Required type: {tpart_reference['type']}, but lined to {adesc}")
+                raise ValueError(f"I{userdesc}: Incompatible target line {name}. Required type: {tpart_reference['type']}, but lined to {adesc}")
 
             # Give output information, because we can.
             wired_circuit[tpart]['output'][tline].append({pname:name})
@@ -181,12 +223,12 @@ for pname, part in wired_circuit.items():
     missing_keys = set([i['name'] for i in arch['entities'][part['type']]['input']]) \
                    - set(part['input'].keys())
     if missing_keys:
-        raise ValueError(f"Too few input given for Part {pname}: Missing keys {missing_keys}")
+        raise ValueError(f"{userdesc}: Too few input lines given: Missing keys {missing_keys}")
 
 # really final sweep: Ensure nonused parts have no output
 for pname, part in wired_circuit.items():
     if len(part['input']) == 0 and len(part['output']) > 0 and not 'cannot_be_allocated' in part:
-        raise ValueError(f"Part {pname} has no input but is wired to {part['output']}. The universe will collapse into a black hole!")
+        raise ValueError(f"{userdesc} has no input but is wired to {part['output']}. The universe will collapse into a black hole!")
 
 # yay
 #info("wired_circuit: ")
@@ -209,34 +251,26 @@ def normalize_potentiometer(value):
         raise ValueError(f"Digital potentiometer value {value} out of bounds")
     return int(round(value * 1023))
 
-"""
-def get_numeric_input(part, pin):
-    if pin in wired_circuit[part]['input']:
-        return wired_circuit[part]['input'][pin]
-    parch = arch['entities'][ wired_circuit[part]['type'] ]
-    if 'internal_wires' in parch and pin in parch['internal_wires']:
-        pass
-"""
 
 # Go over hardwired parts
 for hwname, hw in arch['wired_parts'].items():
     if hw['type'] == "DPT24":
         # DPT24 Potentiometers
         assert len(hw['enumeration']) <= 24, "DPT24 has only 24 digital potentiometers"
-        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['enumeration']))):
+        for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
             info(f"DPT24@{hw['address']}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
     elif hw['type'] == 'HC':
         # Hybrid controller: DPTs (same code as DPT24)
         assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
-        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['dpt_enumeration']))):
+        for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['dpt_enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
             info(f"HC@{hw['address']}: Storing value {value:4} at DPT port {port} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
         # Hybrid controller: Digital output
         assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
-        for port, t in enumerate(pins2tuples(map(expand_shortpin_notation,hw['digital_output']))):
+        for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['digital_output']))):
             value = wired_circuit[t.part]['input'][t.pin]
             info(f"HC@{hw['address']}: Storing {value} at digital output port {port} (corresponding to {t.part}:{t.pin})")
             write("D" if value else "d", hw['address'], "%1d"%port)
@@ -245,8 +279,8 @@ for hwname, hw in arch['wired_parts'].items():
         N,M = len(hw['output_rows']), len(hw['input_columns'])
         assert N==16 and M==16, "XBAR only implemented for 16x16"
         info(f"XBAR@{hw['address']}: Computing XBAR of size NxM={N}x{M}")
-        cols = pins2tuples(map(expand_shortpin_notation, hw['input_columns']))
-        rows = pins2tuples(map(expand_shortpin_notation, hw['output_rows']))
+        cols = pins2tuples(map(resolve_machine_pin, hw['input_columns']))
+        rows = pins2tuples(map(resolve_machine_pin, hw['output_rows']))
         #outputs = { pname: dict(part['output']) for pname,part in wired_circuit.items() }
         inputs = { pname: { line: pin2tuple(target) for line,target in part['input'].items()
                    if isinstance(target,dict) } #and not "None" in target } # filter out empty inputs
@@ -257,7 +291,7 @@ for hwname, hw in arch['wired_parts'].items():
         #   line, but an input line in the XBAR can connect up to 16 outputs.
         # This is realized by having an output row being encoded in only 4 bits instead of 16.
 
-        boolean_matrix = [[ incol == inputs[op][ol] for incol in cols] for (op,ol) in rows]
+        boolean_matrix = [[ Target(ip,il) == inputs[op][ol] and op!="None" and ip!="None" for (ip,il) in cols] for (op,ol) in rows]
         row_bitstrings = list(map(boolList2BinString, boolean_matrix))
         row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
         row_active = [sum(row)==1 for row in boolean_matrix]
@@ -280,12 +314,12 @@ for hwname, hw in arch['wired_parts'].items():
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
 
 if args.plot:
-    info("Drawing the XBAR...")
+    info(f"Drawing the XBAR to {args.plot}...")
 
     import numpy as np
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.ion() # only for debugging
+    if args.debug: plt.ion() # interactive plotting
 
     mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
     fig = plt.figure(figsize=[7.,7.5])
@@ -308,6 +342,7 @@ if args.plot:
 
     plt.title(f"XBAR for {circuit['title']}", y=1.18, fontweight="bold")
     plt.tight_layout()
+    plt.subplots_adjust(top=0.82)
 
     plt.savefig(args.plot)
     

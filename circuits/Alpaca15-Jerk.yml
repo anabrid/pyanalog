@@ -1,0 +1,53 @@
+title: Jerk system (Alpaca 15)
+
+description: |
+  This system implements the "jerk systems", a special case
+  of autonomous dissipative systems, driven by the ODE
+
+    D_3 x = -D_2 x +9 D x - x^2 D x - 5 x
+
+  with D_i being the ith time derivative operator.
+
+  In this code, all summers and integrators have factor 10.
+
+
+coefficients:
+  p1: 0.1
+  p2: 0.75
+  p3: 0.17  # or 0.12
+  p3tenth: 0.017
+  p4: 0.2
+  p5: 0.1  # or o.333
+  p5tenth: 0.01
+  p6: 1 # or o.333
+  p6tenth: 0.1
+
+program:
+  I1:
+    type: INT2pm # only INT2m needed
+    input: [ 1, S3, 1, S2: pos ]
+  I2:
+    type: INT2m
+    input: [ p2, I1, 0, None ]
+  I3:
+    type: INT2pm # using I3:pos for observable
+    input: [ p4, I2, 0, None ]
+  M1:
+    type: MUL2pm # only MUL2m needed
+    input: [ 1, I3, 1, I3 ]
+  M2:
+    type: MUL2p
+    input: [ 1, M2, 1, I2 ]
+  S1:
+    type: SUM2pm
+    input: [ p3tenth, I2, p5tenth, I3 ]
+  S2:
+    type: SUM2pm
+    input: [ 0.1, S1: pos, 0.01, I1 ]
+  S3:
+    type: SUM2m
+    input: [ p6tenth, M2, 0.1, M2 ]
+
+observables:
+  x: {I3: pos}
+ 
