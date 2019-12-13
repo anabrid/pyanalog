@@ -261,26 +261,26 @@ for hwname, hw in arch['wired_parts'].items():
         assert len(hw['enumeration']) <= 24, "DPT24 has only 24 digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"DPT24@{hw['address']}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
     elif hw['type'] == 'HC':
         # Hybrid controller: DPTs (same code as DPT24)
         assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['dpt_enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"HC@{hw['address']}: Storing value {value:4} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"HC@{hw['address']:x}: Storing value {value:4} at DPT port {port} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
         # Hybrid controller: Digital output
         assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['digital_output']))):
             value = wired_circuit[t.part]['input'][t.pin]
-            info(f"HC@{hw['address']}: Storing {value} at digital output port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"HC@{hw['address']:x}: Storing {value} at digital output port {port} (corresponding to {t.part}:{t.pin})")
             write("D" if value else "d", hw['address'], "%1d"%port)
     elif hw['type'] == 'XBAR':
         # XBAR matrix
         N,M = len(hw['output_rows']), len(hw['input_columns'])
         assert N==16 and M==16, "XBAR only implemented for 16x16"
-        info(f"XBAR@{hw['address']}: Computing XBAR of size NxM={N}x{M}")
+        info(f"XBAR@{hw['address']:x}: Computing XBAR of size NxM={N}x{M}")
         cols = pins2tuples(map(resolve_machine_pin, hw['input_columns']))
         rows = pins2tuples(map(resolve_machine_pin, hw['output_rows']))
         #outputs = { pname: dict(part['output']) for pname,part in wired_circuit.items() }
@@ -300,7 +300,7 @@ for hwname, hw in arch['wired_parts'].items():
         row_bitstring = [ f"{num:04b}{active:b}" for num,active in zip(row_numbers, row_active) ]
 
         for i,(bitvec,num,active,bitvec2,(op,ol)) in enumerate(zip(row_bitstrings,row_numbers,row_active,row_bitstring,rows)):
-            info(f"XBAR@{hw['address']}: Writing bitmatrix[{i:2}]:",
+            info(f"XBAR@{hw['address']:x}: Writing bitmatrix[{i:2}]:",
                  f"{bitvec}={num:2d}=0x{num:1x} -> {op}:{ol}       [sending {bitvec2}]" if active else
                  f"{bitvec} [output not enabled] [sending {bitvec2}]")
 
@@ -308,8 +308,9 @@ for hwname, hw in arch['wired_parts'].items():
             raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only a maximum of one `True` bit per row allowed.")
 
         bitstring = "".join(row_bitstring)
+        info(f"Bitstream to send ({len(bitstring)} characters): {bitstring}")
         assert len(bitstring)==80, "XBAR bitstring has wrong length"
-        bitstring_hex = "%040x" % int('0b'+bitstring, base=2)
+        bitstring_hex = "%020x" % int('0b'+bitstring, base=2)
 
         write("PREFIX_FOR_XBAR", hw['address'], bitstring_hex)
     else:
