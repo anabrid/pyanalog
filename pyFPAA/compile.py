@@ -18,6 +18,8 @@ the HybridController of the machine expects (http://analogparadigm.com/downloads
 
 In order to run this program, all you need is PyYAML to read the YAML files. If you want
 to draw circuit plots, you need matplotlib.
+
+See the README file for further information.
 """
 
 # external dependencies, install with "pip install pyyaml"
