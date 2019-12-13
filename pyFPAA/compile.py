@@ -291,7 +291,7 @@ for hwname, hw in arch['wired_parts'].items():
         #   line, but an input line in the XBAR can connect up to 16 outputs.
         # This is realized by having an output row being encoded in only 4 bits instead of 16.
 
-        boolean_matrix = [[ incol == inputs[op][ol] for incol in cols] for (op,ol) in rows]
+        boolean_matrix = [[ Target(ip,il) == inputs[op][ol] and op!="None" and ip!="None" for (ip,il) in cols] for (op,ol) in rows]
         row_bitstrings = list(map(boolList2BinString, boolean_matrix))
         row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
         row_active = [sum(row)==1 for row in boolean_matrix]
@@ -314,7 +314,7 @@ for hwname, hw in arch['wired_parts'].items():
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
 
 if args.plot:
-    info("Drawing the XBAR...")
+    info(f"Drawing the XBAR to {args.plot}...")
 
     import numpy as np
     import matplotlib as mpl
@@ -342,6 +342,7 @@ if args.plot:
 
     plt.title(f"XBAR for {circuit['title']}", y=1.18, fontweight="bold")
     plt.tight_layout()
+    plt.subplots_adjust(top=0.82)
 
     plt.savefig(args.plot)
     
