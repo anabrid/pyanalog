@@ -28,25 +28,25 @@ program:
       icSign: False # -1
   I2:
     type: INT2p
-    input: [1, S3: plus, 1, S2: plus]
+    input: [1, S3: pos, 1, S2: pos]
   I3:
     type: INT2p
-    input: [1, M1: plus, km2, I3: minus]
+    input: [1, M1: pos, km2, I3: neg]
   M1:
     type: MUL2p
-    input: [1, S1: minus, kp2, I2: minus]
+    input: [1, S1: neg, kp2, I2: neg]
   S1:
     type: SUM2p
-    input: [1, I3: plus, d0, MinusOne]
+    input: [1, I3: pos, d0, MinusOne]
   S2:
     type: SUM2p
-    input: [1, M1: minus, ku, I2: minus]
+    input: [1, M1: neg, ku, I2: neg]
   S3:
     type: SUM2p
-    input: [kp1, I1, km2, I3: plus]
+    input: [kp1, I1, km2, I3: pos]
 
 observables:
-  n: {I1: minus}
-  nR: {I2: plus}
-  nRD: {I3: plus}
-  d: {S1: minus}
+  n: {I1: neg}
+  nR: {I2: pos}
+  nRD: {I3: pos}
+  d: {S1: neg}

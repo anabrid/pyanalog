@@ -209,14 +209,6 @@ def normalize_potentiometer(value):
         raise ValueError(f"Digital potentiometer value {value} out of bounds")
     return int(round(value * 1023))
 
-"""
-def get_numeric_input(part, pin):
-    if pin in wired_circuit[part]['input']:
-        return wired_circuit[part]['input'][pin]
-    parch = arch['entities'][ wired_circuit[part]['type'] ]
-    if 'internal_wires' in parch and pin in parch['internal_wires']:
-        pass
-"""
 
 # Go over hardwired parts
 for hwname, hw in arch['wired_parts'].items():
@@ -285,7 +277,7 @@ if args.plot:
     import numpy as np
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.ion() # only for debugging
+    if args.debug: plt.ion() # interactive plotting
 
     mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
     fig = plt.figure(figsize=[7.,7.5])

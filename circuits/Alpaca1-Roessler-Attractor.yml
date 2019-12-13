@@ -1,0 +1,49 @@
+title: Rössler-attractor (Alpaca1)
+
+description: |
+  This system implements the equations
+
+    x' = - 0.8y - 2.3z
+    y' = 1.25x + aStar y
+    z' = bStar + 15z (x-cStar)
+
+  with aPrime=0.2, bPrime=0.005 and cPrime=0.3796
+  In this notation, x' means the time derivative of x.
+  
+  In Alpaca1, the integrators have different weights
+  and the adders most likely weight one.
+  Multipliers always have weight one.
+  
+  In this code here, summers and integrators have weight 10.
+  (Internal negating summers always have weight 1)
+
+program:
+  I1:
+    type: INT2m
+    input:
+      a0: 0.08 # 0.8/10
+      a: {I3: pos}
+      b0: 0.23
+      b: {I2: pos}
+      ic: 0.066
+      icSign: True # +1
+  I2:
+    type: INT2pm
+    input: [0.125, I1, 0.02, I2: pos]
+  I3:
+    type: INT2pm
+    input: [0.005, PlusOne, 0.1, S1: pos]
+  M1:
+    type: MUL2p
+    input: [1, S2: pos, 1, I3: pos]
+  S1:
+    type: SUM2pm
+    input: [0.1, M1: pos, 0.05, M1: pos]
+  S2:
+    type: SUM2pm
+    input: [0.03796, MinusOne, 0.1, I1: neg]
+
+observables:
+  x: {I1: neg}
+  y: {I2: pos}
+  z: {I3: pos}

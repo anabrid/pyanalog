@@ -1,0 +1,39 @@
+title: Nosé-Hoover oscillator (Alpaca 15)
+
+description: |
+  This system implements the Nosé-Hoover oscillator, an chaotic
+  system determined by
+
+    dx/dt = y
+    dy/dt = y z - x
+    dz/dt = 1 - y^2
+
+  In this code, all summers and integrators have factor 10.
+
+
+program:
+  I1:
+    type: INT2pm # only INT2m needed
+    input:
+      a0: 0.1
+      a: { I2: pos }
+      b0: 0
+      b: None
+      ic: 0.4
+      icSign: False # -1
+  I2:
+    type: INT2pm
+    input: [ 0.1, I1, 0.9, M2 ]
+  I3:
+    type: INT2m
+    input: [ 0.1, M1, 0.033, MinusOne ]
+  M1:
+    type: MUL2pm # only MUL2m needed
+    input: [ 0.675, I2: pos, 1, I2: pos ]
+  M2:
+    type: MUL2p
+    input: [ 1, I3, 1, I2: pos ]
+
+observables:
+  y: {I2:pos}
+ 
