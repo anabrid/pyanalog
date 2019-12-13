@@ -183,7 +183,12 @@ for pname, part in wired_circuit.items():
 
     # Name implicit (first) output lines
     for name, target in part['input'].items():
-        part['input'][name] = resolve_user_pin(target)
+        try:
+            part['input'][name] = resolve_user_pin(target)
+        except KeyError: # thrown by user2arch
+            #debug(f"Will pass malformed user target '{target}' at users {pname} to next sweep")
+            userdesc = f"Architecture part {pname} (User part {arch2user[pname]})"
+            raise ValueError(f"{userdesc}, input {name}: Cannot understand {target}, certainly because it is nonexistent")
         #if isinstance(target, str):
         #    part['input'][name] = {target: arch['entities'][wired_circuit[target]['type']]['output'][0]['name'] }
 
