@@ -44,7 +44,7 @@ program:
       ic: z0
       icSign: True # +1
   M:
-    type: MUL2p
+    type: MUL2pm
     input: [alpha, I1: pos, 1, I2: pos]
   S:
     type: SUM2pm

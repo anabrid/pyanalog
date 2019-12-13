@@ -20,6 +20,7 @@ coefficients:
   p5: 0.1  # or o.333
   p5tenth: 0.01
   p6: 1 # or o.333
+  p6tenth: 0.1
 
 program:
   I1:
@@ -35,7 +36,7 @@ program:
     type: MUL2pm # only MUL2m needed
     input: [ 1, I3, 1, I3 ]
   M2:
-    type: MUL2m
+    type: MUL2p
     input: [ 1, M2, 1, I2 ]
   S1:
     type: SUM2pm
@@ -48,5 +49,5 @@ program:
     input: [ p6tenth, M2, 0.1, M2 ]
 
 observables:
-  x: {I3:pos}
+  x: {I3: pos}
  

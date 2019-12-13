@@ -40,7 +40,7 @@ configurable_parts:
      address: 0x0051
      inverting_summer: 0x0018 # SUM8.8
    M2:
-     type: MUL2m
+     type: MUL2p
      address: 0x0052
    S1:
      type: SUM2pm
@@ -96,14 +96,14 @@ entities:
                    |  controls
                    v
           a ->[DPT24, pin x]------>[        ]
-                                   [ Summer ]-----> minus
+                                   [ Summer ]-----> neg
           b ->[DPT24, pin y]------>[        ]
                    ^
                    |  controls
           b0 ------+
 
      computes:
-       minus: minus = -(a0*a + b0*b)
+       neg: neg = -(a0*a + b0*b)
      input:
        - name: a0
          type: numeric
@@ -118,7 +118,7 @@ entities:
        - name: b
          type: analog
      output:
-       - name: minus
+       - name: neg
          type: analog
          description: Output of negating summer
      default_inputs:
@@ -164,10 +164,10 @@ entities:
        - name: b
          type: analog
      output:
-       - name: minus
+       - name: neg
          type: analog
          description: Output of minus operation (actual summer output)
-       - name: plus
+       - name: pos
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
@@ -204,10 +204,10 @@ entities:
          description: Value for initial condition
          range: [0, 1]
      output:
-       - name: minus
+       - name: neg
          type: analog
          description: Output of minus operation (actual summer output)
-       - name: plus
+       - name: pos
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:

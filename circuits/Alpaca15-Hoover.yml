@@ -1,4 +1,4 @@
-title: Nosé-Hoover oscillator (Alpaca 15)
+title: Nose-Hoover oscillator (Alpaca 15)
 
 description: |
   This system implements the Nosé-Hoover oscillator, an chaotic
@@ -35,5 +35,5 @@ program:
     input: [ 1, I3, 1, I2: pos ]
 
 observables:
-  y: {I2:pos}
- 
+  y: {I2: pos}
+
