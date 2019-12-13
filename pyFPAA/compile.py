@@ -311,7 +311,7 @@ for hwname, hw in arch['wired_parts'].items():
         assert len(bitstring)==80, "XBAR bitstring has wrong length"
         bitstring_hex = "%040x" % int('0b'+bitstring, base=2)
 
-        write("XFIXMEX", hw['address'], bitstring_hex)
+        write("PREFIX_FOR_XBAR", hw['address'], bitstring_hex)
     else:
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
 
