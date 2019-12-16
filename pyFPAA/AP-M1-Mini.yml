@@ -24,35 +24,43 @@ description: |
    definition.
 
 configurable_parts:
-   I1:
+   INT0-0:
      type: INT2pm
-     address: 0x0021
-     inverting_summer: 0x0016 # SUM8.6
-   I2:
+     address:
+       neg: 0x0160 # integrator INT8.1
+       pos: 0x0123 # summer SUM8.4 as inverter
+   INT0-1:
      type: INT2pm
-     address: 0x0022
-     inverting_summer: 0x0017 # SUM8.7
-   I3:
+     address:
+       neg: 0x0161 # integrator INT8.2
+       pos: 0x0126 # summer SUM8.7 as inverter
+   INT0-2:
      type: INT2m
-     address: 0x0023
-   M1:
+     address:
+       neg: 0x0162 # integrator INT8.3
+   MLT8-0:
      type: MUL2pm
-     address: 0x0051
-     inverting_summer: 0x0018 # SUM8.8
-   M2:
+     address:
+       pos: 0x0100 # multiplier MUL4.1
+       neg: 0x0127 # summer SUM8.8 as inverter
+   MTL8-1:
      type: MUL2p
-     address: 0x0052
-   S1:
+     address:
+       pos: 0x0100 # multiplier MUL4.2
+   SUM0-0:
      type: SUM2pm
-     address: 0x0011 # SUM8.1
-     inverting_summer: 0x0012
-   S2:
+     address:
+       neg: 0x0120 # summer SUM8.1
+       pos: 0x0124 # summer SUM8.5 as inverter (is below 1)
+   SUM0-1:
      type: SUM2pm
-     address: 0x0013 # SUM8.3
-     inverting_summer: 0x0014 # SUM8.4
-   S3:
+     address:
+       neg: 0x0121 # summer SUM8.2
+       pos: 0x0125 # summer SUM8.6 as inverter (is below 2)
+   SUM0-2:
      type: SUM2m
-     address: 0x0015 # SUM8.5
+     address:
+       pos: 0x0122 # summer SUM8.3
    PlusOne:
      description: |
        Positive supply voltage/machine unit, also refered to as Vcc or Vdd,
@@ -450,7 +458,7 @@ entities:
 wired_parts:
   X1:
     type: XBAR
-    address: 0x0020  # FIXME
+    address: 0x0040
     # Datasheet of chip AD8113:
     # https://www.analog.com/media/en/technical-documentation/data-sheets/AD8113.pdf
     topology: Single AD8113
@@ -492,7 +500,7 @@ wired_parts:
 
   D1:
     type: DPT24
-    address: 0x0060 # FIXME: address of DPT24
+    address: 0x0060
     size: 24
     enumeration:
        - I1: a0    #  1

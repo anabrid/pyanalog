@@ -232,6 +232,15 @@ for pname, part in wired_circuit.items():
     if len(part['input']) == 0 and len(part['output']) > 0 and not 'cannot_be_allocated' in part:
         raise ValueError(f"{userdesc} has no input but is wired to {part['output']}. The universe will collapse into a black hole!")
 
+# As a service, for the time being, provide the readout/measurement positions as info
+if "observables" in circuit:
+    for var, utarget in circuit["observables"].items():
+        (tpart,tline), = resolve_user_pin(utarget).items()
+        try: address = arch["configurable_parts"][tpart]['address'][tline]
+        except KeyError:
+            raise ValueError(f"Archtecture missing address for output line {tline} in part {tpart} in section configurable_parts")
+        info(f"Observable {var} (user defined part {utarget}) can be measured at architecture part output {tpart}:{tline}, adress 0x{address:04x}")
+
 # yay
 #info("wired_circuit: ")
 #info(pformat(wired_circuit))
