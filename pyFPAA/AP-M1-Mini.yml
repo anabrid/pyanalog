@@ -460,6 +460,7 @@ wired_parts:
   X1:
     type: XBAR
     address: 0x0040
+    number_of_config_bytes: 10
     # Datasheet of chip AD8113:
     # https://www.analog.com/media/en/technical-documentation/data-sheets/AD8113.pdf
     topology: Single AD8113
@@ -480,7 +481,7 @@ wired_parts:
        - INT0-1: neg      # 13
        - INT0-0: pos      # 14
        - INT0-0: neg      # 15
-       - None         # 16, empty!
+       - None             # 16, empty!
     output_rows:
        - INT0-0: a        #  1
        - INT0-0: b        #  2
@@ -527,6 +528,9 @@ wired_parts:
     # machine.
     type: HC
     address: 0x0080
+    number_of_digital_output_ports: 8
+    numbre_of_digital_input_ports: 8
+    dpt_resolution: 10
     dpt_enumeration:
       - INT0-0: ic
       - INT0-1: ic

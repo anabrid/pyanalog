@@ -73,7 +73,9 @@ info  = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.verbose or args.d
 debug = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.debug else 1
 
 chipout = open(args.output, "w") if args.output != "-" else sys.stdout
-def write_chip(*w,**kw): print(*w,**kw,end="",file=chipout)
+
+def write_chip(*w,**kw):
+    print(*w,**kw,end="",file=chipout)
 
 def yaml_load(fname):
     with open(fname, "r") as cfh:
@@ -275,22 +277,27 @@ for hwname, hw in arch['wired_parts'].items():
         # DPT24 Potentiometers
         assert len(hw['enumeration']) <= 24, "DPT24 has only 24 digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['enumeration']))):
-            value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%value} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
-            write("P", hw['address'], "%02X"%port, "%04d"%value)
+            numeric_value = wired_circuit[t.part]['input'][t.pin]
+            normalized_value = normalize_potentiometer(numeric_value)
+            info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%normalized_value} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
+            print(f'$ac->set_pt("DPT24-{port}", {numeric_value});')
+            #write("P", hw['address'], "%02X"%port, "%04d"%value)
     elif hw['type'] == 'HC':
         # Hybrid controller: DPTs (same code as DPT24)
         assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['dpt_enumeration']))):
-            value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"HC@{hw['address']:x}: Storing value {value:4} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
-            write("P", hw['address'], "%02X"%port, "%04d"%value)
+            numeric_value = wired_circuit[t.part]['input'][t.pin]
+            normalized_value = normalize_potentiometer(numeric_value)
+            info(f"HC@{hw['address']:x}: Storing value {normalized_value:4} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
+            #write("P", hw['address'], "%02X"%port, "%04d"%value)
+            print(f'$ac->set_pt("HCDPT-{port}", {numeric_value});')
         # Hybrid controller: Digital output
         assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['digital_output']))):
             value = wired_circuit[t.part]['input'][t.pin]
             info(f"HC@{hw['address']:x}: Storing {value} at digital output port {port} (corresponding to {t.part}:{t.pin})")
-            write("D" if value else "d", hw['address'], "%1d"%port)
+            # write("D" if value else "d", hw['address'], "%1d"%port)
+            print(f'$ac->digital_output({port}, %d);' % (1 if value else 0))
     elif hw['type'] == 'XBAR':
         # XBAR matrix
         N,M = len(hw['output_rows']), len(hw['input_columns'])
@@ -312,11 +319,8 @@ for hwname, hw in arch['wired_parts'].items():
         row_bitstrings = list(map(boolList2BinString, boolean_matrix))
         row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
         row_active = [sum(row)==1 for row in boolean_matrix]
-        reverse_bits = lambda bitstring: bitstring[::-1]
         row_bitstring = [ f"{active:b}{num:04b}" for num,active in zip(row_numbers, row_active) ]
-        
-        # about the row ordering: It comes first row 15 down to row 0.
-        
+                
         for i,(bitvec,num,active,bitvec2,(op,ol)) in enumerate(zip(row_bitstrings,row_numbers,row_active,row_bitstring,rows)):
             info(f"XBAR@{hw['address']:x}: Writing bitmatrix[row {i:2}]:",
                  f"{bitvec}={num:2d}=0x{num:1x} -> {op}:{ol}       [sending {bitvec2}]" if active else
@@ -329,10 +333,11 @@ for hwname, hw in arch['wired_parts'].items():
         # Caveat 2: Don't try to convert a bitstring of length 80 to a single int, it will overflow.
         bitstring = "".join(row_bitstring[::-1])
         assert len(bitstring)==80, "XBAR bitstring has wrong length"
-        bitstring_hex = "".join(["%x"%int(x, base=2) for x in chunks( "".join(row_bitstring[::-1]), 8)])
+        bitstring_hex = "".join(["%02X"%int(x, base=2) for x in chunks( "".join(row_bitstring[::-1]), 8)])
         info(f"Bitstream to send ({len(bitstring)} characters): {bitstring}")
         info(f"Hextream  to send ({len(bitstring_hex)} characters): {bitstring_hex}")
-        write("X", hw['address'], bitstring_hex)
+        #write("X", hw['address'], bitstring_hex)
+        print(f"$ac->set_xbar('XBAR16', '{bitstring_hex}');")
     else:
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
 
@@ -347,8 +352,8 @@ if args.plot:
     mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
     fig = plt.figure(figsize=[7.,7.5])
     ax = fig.gca()
-    plt.xticks(np.arange(M), [ f'{part}:{pin}' for part,pin in cols ], rotation=30, ha="left")
-    plt.yticks(np.arange(N), [ f'{part}:{pin}' for part,pin in rows ])
+    plt.xticks(np.arange(M), [ f'{i} ({part}:{pin})' for i,(part,pin) in enumerate(cols) ], rotation=30, ha="left")
+    plt.yticks(np.arange(N), [ f'{i} ({part}:{pin})' for i,(part,pin) in enumerate(rows) ])
     
     ax.xaxis.tick_top()
     ax.yaxis.tick_right()
