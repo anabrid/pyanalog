@@ -49,6 +49,10 @@ int2bin = lambda number: bin(number)[2:] # cutting away the 0b from 0b10101
 boolList2BinString = lambda lst: ''.join(map(bool2bin, lst))
 bitstring2bin = lambda s: int('0b'+s, base=2)
 
+def chunks(lst, n):
+    for i in range(0, len(lst),n):
+        yield lst[i:i+n]
+
 machines_from_list = True # choose Machines from current directory instead of providing YAML file
 
 parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter)
@@ -309,7 +313,9 @@ for hwname, hw in arch['wired_parts'].items():
         row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
         row_active = [sum(row)==1 for row in boolean_matrix]
         reverse_bits = lambda bitstring: bitstring[::-1]
-        row_bitstring = [ reverse_bits(f"{num:04b}{active:b}") for num,active in zip(row_numbers, row_active) ]
+        row_bitstring = [ f"{active:b}{num:04b}" for num,active in zip(row_numbers, row_active) ]
+        
+        # about the row ordering: It comes first row 15 down to row 0.
         
         for i,(bitvec,num,active,bitvec2,(op,ol)) in enumerate(zip(row_bitstrings,row_numbers,row_active,row_bitstring,rows)):
             info(f"XBAR@{hw['address']:x}: Writing bitmatrix[row {i:2}]:",
@@ -319,12 +325,14 @@ for hwname, hw in arch['wired_parts'].items():
         if not all([sum(row) in (0,1) for row in boolean_matrix ]):
             raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only a maximum of one `True` bit per row allowed.")
 
-        bitstring = "".join(row_bitstring[::-1]) # Rows in reverse order!
-        info(f"Bitstream to send ({len(bitstring)} characters): {bitstring}")
+        # Caveat 1: Chip expects rows in order row15...row0
+        # Caveat 2: Don't try to convert a bitstring of length 80 to a single int, it will overflow.
+        bitstring = "".join(row_bitstring[::-1])
         assert len(bitstring)==80, "XBAR bitstring has wrong length"
-        bitstring_hex = "%020x" % int('0b'+bitstring, base=2)
-
-        write("PREFIX_FOR_XBAR", hw['address'], bitstring_hex)
+        bitstring_hex = "".join(["%x"%int(x, base=2) for x in chunks( "".join(row_bitstring[::-1]), 8)])
+        info(f"Bitstream to send ({len(bitstring)} characters): {bitstring}")
+        info(f"Hextream  to send ({len(bitstring_hex)} characters): {bitstring_hex}")
+        write("X", hw['address'], bitstring_hex)
     else:
         raise ValueError(f"Wired part {hwname}: Don't know what to do with type {hw['type']}.")
 
