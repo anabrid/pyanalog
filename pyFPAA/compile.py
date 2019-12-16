@@ -59,7 +59,7 @@ parser.add_argument("-p", "--plot", metavar="OUTPUT.pdf", help="Plot crossbar sw
 if machines_from_list:
     curdir = os.path.dirname(os.path.realpath(__file__))
     available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
-    parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default=iter(available_architectures), help=f"Target machine architecture description (any YAML file in directory {curdir} is available as machine)") 
+    parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default="AP-M1-Mini", help=f"Target machine architecture description (any YAML file in directory {curdir} is available as machine)") 
 else:
     parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description")
 parser.add_argument("circuit", metavar="CIRCUIT.yml", help="The YAML file holding the circuit description")
@@ -304,21 +304,22 @@ for hwname, hw in arch['wired_parts'].items():
         #   line, but an input line in the XBAR can connect up to 16 outputs.
         # This is realized by having an output row being encoded in only 4 bits instead of 16.
 
-        boolean_matrix = [[ Target(ip,il) == inputs[op][ol] and op!="None" and ip!="None" for (ip,il) in cols] for (op,ol) in rows]
+        boolean_matrix = [[ ol in inputs[op] and Target(ip,il) == inputs[op][ol] and op!="None" and ip!="None" for (ip,il) in cols] for (op,ol) in rows]
         row_bitstrings = list(map(boolList2BinString, boolean_matrix))
         row_numbers = [ row.index(True) if sum(row) else 0 for row in boolean_matrix ]
         row_active = [sum(row)==1 for row in boolean_matrix]
-        row_bitstring = [ f"{num:04b}{active:b}" for num,active in zip(row_numbers, row_active) ]
-
+        reverse_bits = lambda bitstring: bitstring[::-1]
+        row_bitstring = [ reverse_bits(f"{num:04b}{active:b}") for num,active in zip(row_numbers, row_active) ]
+        
         for i,(bitvec,num,active,bitvec2,(op,ol)) in enumerate(zip(row_bitstrings,row_numbers,row_active,row_bitstring,rows)):
-            info(f"XBAR@{hw['address']:x}: Writing bitmatrix[{i:2}]:",
+            info(f"XBAR@{hw['address']:x}: Writing bitmatrix[row {i:2}]:",
                  f"{bitvec}={num:2d}=0x{num:1x} -> {op}:{ol}       [sending {bitvec2}]" if active else
                  f"{bitvec} [output not enabled] [sending {bitvec2}]")
 
         if not all([sum(row) in (0,1) for row in boolean_matrix ]):
             raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only a maximum of one `True` bit per row allowed.")
 
-        bitstring = "".join(row_bitstring)
+        bitstring = "".join(row_bitstring[::-1]) # Rows in reverse order!
         info(f"Bitstream to send ({len(bitstring)} characters): {bitstring}")
         assert len(bitstring)==80, "XBAR bitstring has wrong length"
         bitstring_hex = "%020x" % int('0b'+bitstring, base=2)
