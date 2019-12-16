@@ -24,6 +24,7 @@ description: |
    definition.
 
 configurable_parts:
+   # naming follows the HyCon YML file, part "elements"
    INT0-0:
      type: INT2pm
      address:
@@ -38,12 +39,12 @@ configurable_parts:
      type: INT2m
      address:
        neg: 0x0162 # integrator INT8.3
-   MLT8-0:
+   MLT0-0: # HyCon calls it MLT8-0
      type: MUL2pm
      address:
        pos: 0x0100 # multiplier MUL4.1
        neg: 0x0127 # summer SUM8.8 as inverter
-   MTL8-1:
+   MLT0-1: # HyCon calls it MLT8-1
      type: MUL2p
      address:
        pos: 0x0100 # multiplier MUL4.2
@@ -464,61 +465,61 @@ wired_parts:
     topology: Single AD8113
     size: [ 16, 16 ]
     input_columns:
-       - PlusOne      #  1
-       - MinusOne     #  2
-       - S3           #  3
-       - S2: pos      #  4
-       - S2: neg      #  5
-       - S1: pos      #  6
-       - S1: neg      #  7
-       - M2           #  8
-       - M1: pos      #  9
-       - M1: neg      # 10
-       - I3           # 11
-       - I2: pos      # 12
-       - I2: neg      # 13
-       - I1: pos      # 14
-       - I1: neg      # 15
+       - PlusOne          #  1
+       - MinusOne         #  2
+       - SUM0-2           #  3
+       - SUM0-1: pos      #  4
+       - SUM0-1: neg      #  5
+       - SUM0-0: pos      #  6
+       - SUM0-0: neg      #  7
+       - MLT0-1           #  8
+       - MLT0-0: pos      #  9
+       - MLT0-0: neg      # 10
+       - INT0-2           # 11
+       - INT0-1: pos      # 12
+       - INT0-1: neg      # 13
+       - INT0-0: pos      # 14
+       - INT0-0: neg      # 15
        - None         # 16, empty!
     output_rows:
-       - I1: a        #  1
-       - I1: b        #  2
-       - I2: a        #  3
-       - I2: b        #  4
-       - I3: a        #  5
-       - I3: b        #  6
-       - M1: a        #  7
-       - M1: b        #  8
-       - M2: a        #  9
-       - M2: b        # 10
-       - S1: a        # 11
-       - S1: b        # 12
-       - S2: a        # 13
-       - S2: b        # 14
-       - S3: a        # 15
-       - S3: b        # 16
+       - INT0-0: a        #  1
+       - INT0-0: b        #  2
+       - INT0-1: a        #  3
+       - INT0-1: b        #  4
+       - INT0-2: a        #  5
+       - INT0-2: b        #  6
+       - MLT0-0: a        #  7
+       - MLT0-0: b        #  8
+       - MLT0-1: a        #  9
+       - MLT0-1: b        # 10
+       - SUM0-0: a        # 11
+       - SUM0-0: b        # 12
+       - SUM0-1: a        # 13
+       - SUM0-1: b        # 14
+       - SUM0-2: a        # 15
+       - SUM0-2: b        # 16
 
   D1:
     type: DPT24
     address: 0x0060
     size: 24
     enumeration:
-       - I1: a0    #  1
-       - I1: b0    #  2
-       - I2: a0    #  3
-       - I2: b0    #  4
-       - I3: a0    #  5
-       - I3: b0    #  6
-       - M1: a0    #  7
-       - M1: b0    #  8
-       - M2: a0    #  9
-       - M2: b0    # 10
-       - S1: a0    # 11
-       - S1: b0    # 12
-       - S2: a0    # 13
-       - S2: b0    # 14
-       - S3: a0    # 15
-       - S3: b0    # 16
+       - INT0-0: a0    #  1
+       - INT0-0: b0    #  2
+       - INT0-1: a0    #  3
+       - INT0-1: b0    #  4
+       - INT0-2: a0    #  5
+       - INT0-2: b0    #  6
+       - MLT0-0: a0    #  7
+       - MLT0-0: b0    #  8
+       - MLT0-1: a0    #  9
+       - MLT0-1: b0    # 10
+       - SUM0-0: a0    # 11
+       - SUM0-0: b0    # 12
+       - SUM0-1: a0    # 13
+       - SUM0-1: b0    # 14
+       - SUM0-2: a0    # 15
+       - SUM0-2: b0    # 16
 
   Main:
     # A Hybrid Controller has 8 DPTs, 8 digital inputs and
@@ -527,11 +528,11 @@ wired_parts:
     type: HC
     address: 0x0080
     dpt_enumeration:
-      - I1: ic
-      - I2: ic
-      - I3: ic
+      - INT0-0: ic
+      - INT0-1: ic
+      - INT0-2: ic
     digital_input: []
     digital_output:
-      - I1: icSign
-      - I2: icSign
-      - I3: icSign
+      - INT0-0: icSign
+      - INT0-1: icSign
+      - INT0-2: icSign

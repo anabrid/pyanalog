@@ -115,6 +115,8 @@ default_mapping = { k:k for k in arch['configurable_parts'].keys() }
 # Extend the architectured parts with basically the nonallocable ones
 arch2user = {**default_mapping, **assigned_parts}
 user2arch = { v:k for k,v in arch2user.items() }
+# Note that arch2user is not always invertible. Several arch parts could
+# not be used and resolve to None.
 
 # Setup the wired circuit. In this dictionary, the parts are named as in
 # the architecture and *not* as from the user view. Use arch2user to translate
@@ -248,12 +250,11 @@ if "observables" in circuit:
 
 
 def write(command_letter, address, *data):
-    write_chip(command_letter)
     if not isinstance(address,int):
         raise ValueError("Need address as integer (may specify as 0x123)")
-    write_chip("%X"%address)
-    for d in data:
-        write_chip(d)
+    command = f"{command_letter}{address:04X}" + "".join(data)
+    debug(f"Writing out: {command}")
+    write_chip(command)    
 
 def normalize_potentiometer(value):
     "Map a real value [0..1] to Potentiometer value [0..1023]"
@@ -270,14 +271,14 @@ for hwname, hw in arch['wired_parts'].items():
         assert len(hw['enumeration']) <= 24, "DPT24 has only 24 digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%value} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%value} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
     elif hw['type'] == 'HC':
         # Hybrid controller: DPTs (same code as DPT24)
         assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
         for port, t in enumerate(pins2tuples(map(resolve_machine_pin,hw['dpt_enumeration']))):
             value = normalize_potentiometer(wired_circuit[t.part]['input'][t.pin])
-            info(f"HC@{hw['address']:x}: Storing value {value:4} at DPT port {port} (corresponding to {t.part}:{t.pin})")
+            info(f"HC@{hw['address']:x}: Storing value {value:4} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
             write("P", hw['address'], "%02X"%port, "%04d"%value)
         # Hybrid controller: Digital output
         assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
