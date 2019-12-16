@@ -61,7 +61,7 @@ configurable_parts:
    SUM0-2:
      type: SUM2m
      address:
-       pos: 0x0122 # summer SUM8.3
+       neg: 0x0122 # summer SUM8.3
    PlusOne:
      description: |
        Positive supply voltage/machine unit, also refered to as Vcc or Vdd,

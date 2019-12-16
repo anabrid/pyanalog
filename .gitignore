@@ -1,3 +1,5 @@
 *.pdf
 *.png
 .directory
+*.err
+*.out

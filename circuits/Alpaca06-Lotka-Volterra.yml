@@ -26,7 +26,7 @@ coefficients:
 
 program:
   I1:
-    type: INT2m
+    type: INT2pm # pos only for convenient output
     input:
       a0: alpha
       a: {I1: pos}

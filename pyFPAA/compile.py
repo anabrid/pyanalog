@@ -240,7 +240,8 @@ if "observables" in circuit:
         (tpart,tline), = resolve_user_pin(utarget).items()
         try: address = arch["configurable_parts"][tpart]['address'][tline]
         except KeyError:
-            raise ValueError(f"Archtecture missing address for output line {tline} in part {tpart} in section configurable_parts")
+            # should check before if tpart actually has output named tline.
+            raise ValueError(f"At requesting output for {var}: Archtecture missing address for output line {tline} in part {tpart} in section configurable_parts")
         info(f"Observable {var} (user defined part {utarget}) can be measured at architecture part output {tpart}:{tline}, adress 0x{address:04x}")
 
 # yay
