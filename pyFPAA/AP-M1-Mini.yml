@@ -529,7 +529,7 @@ wired_parts:
     type: HC
     address: 0x0080
     number_of_digital_output_ports: 8
-    numbre_of_digital_input_ports: 8
+    number_of_digital_input_ports: 8
     dpt_resolution: 10
     dpt_enumeration:
       - INT0-0: ic
