@@ -1,1 +1,23 @@
-PREFIX_FOR_XBAR0040f7afa9d6be9cc1705794P0060001023P0060011023P0060020205P0060030000P0060040767P0060050000P0060061023P0060071023P0060081023P0060091023P00600A0017P00600B0010P00600C0102P00600D0010P00600E0102P00600F0102P0080000000P0080010000P0080020000D00800D00801D00802
+$ac->set_xbar('XBAR16', 'BDFD5E6B57E701E06A72');
+$ac->set_pt("DPT24-0", 1);
+$ac->set_pt("DPT24-1", 1);
+$ac->set_pt("DPT24-2", 0.2);
+$ac->set_pt("DPT24-3", 0);
+$ac->set_pt("DPT24-4", 0.75);
+$ac->set_pt("DPT24-5", 0);
+$ac->set_pt("DPT24-6", 1);
+$ac->set_pt("DPT24-7", 1);
+$ac->set_pt("DPT24-8", 1);
+$ac->set_pt("DPT24-9", 1);
+$ac->set_pt("DPT24-10", 0.017);
+$ac->set_pt("DPT24-11", 0.01);
+$ac->set_pt("DPT24-12", 0.1);
+$ac->set_pt("DPT24-13", 0.01);
+$ac->set_pt("DPT24-14", 0.1);
+$ac->set_pt("DPT24-15", 0.1);
+$ac->set_pt("HCDPT-0", 0);
+$ac->set_pt("HCDPT-1", 0);
+$ac->set_pt("HCDPT-2", 0);
+$ac->digital_output(0, 1);
+$ac->digital_output(1, 1);
+$ac->digital_output(2, 1);

@@ -12,23 +12,24 @@ Observable minusX (user defined part I1) can be measured at architecture part ou
 Observable y (user defined part I2) can be measured at architecture part output INT0-1:neg, adress 0x0161
 Observable z (user defined part I3) can be measured at architecture part output INT0-2:neg, adress 0x0162
 XBAR@40: Computing XBAR of size NxM=16x16
-XBAR@40: Writing bitmatrix[row  0]: 0000000000000010=14=0xe -> INT0-0:a       [sending 10111]
-XBAR@40: Writing bitmatrix[row  1]: 0000100000000000= 4=0x4 -> INT0-0:b       [sending 10010]
-XBAR@40: Writing bitmatrix[row  2]: 0000000010000000= 8=0x8 -> INT0-1:a       [sending 10001]
-XBAR@40: Writing bitmatrix[row  3]: 0000000000001000=12=0xc -> INT0-1:b       [sending 10011]
-XBAR@40: Writing bitmatrix[row  4]: 0000000100000000= 7=0x7 -> INT0-2:a       [sending 11110]
-XBAR@40: Writing bitmatrix[row  5]: 0000000000100000=10=0xa -> INT0-2:b       [sending 10101]
-XBAR@40: Writing bitmatrix[row  6]: 0000000000000010=14=0xe -> MLT0-0:a       [sending 10111]
-XBAR@40: Writing bitmatrix[row  7]: 0000000000100000=10=0xa -> MLT0-0:b       [sending 10101]
-XBAR@40: Writing bitmatrix[row  8]: 0000000000001000=12=0xc -> MLT0-1:a       [sending 10011]
+XBAR@40: Writing bitmatrix[row  0]: 0000000000000010=14=0xe -> INT0-0:a       [sending 11110]
+XBAR@40: Writing bitmatrix[row  1]: 0000100000000000= 4=0x4 -> INT0-0:b       [sending 10100]
+XBAR@40: Writing bitmatrix[row  2]: 0000000010000000= 8=0x8 -> INT0-1:a       [sending 11000]
+XBAR@40: Writing bitmatrix[row  3]: 0000000000001000=12=0xc -> INT0-1:b       [sending 11100]
+XBAR@40: Writing bitmatrix[row  4]: 0000000100000000= 7=0x7 -> INT0-2:a       [sending 10111]
+XBAR@40: Writing bitmatrix[row  5]: 0000000000100000=10=0xa -> INT0-2:b       [sending 11010]
+XBAR@40: Writing bitmatrix[row  6]: 0000000000000010=14=0xe -> MLT0-0:a       [sending 11110]
+XBAR@40: Writing bitmatrix[row  7]: 0000000000100000=10=0xa -> MLT0-0:b       [sending 11010]
+XBAR@40: Writing bitmatrix[row  8]: 0000000000001000=12=0xc -> MLT0-1:a       [sending 11100]
 XBAR@40: Writing bitmatrix[row  9]: 0000001000000000= 6=0x6 -> MLT0-1:b       [sending 10110]
-XBAR@40: Writing bitmatrix[row 10]: 0000000000001000=12=0xc -> SUM0-0:a       [sending 10011]
+XBAR@40: Writing bitmatrix[row 10]: 0000000000001000=12=0xc -> SUM0-0:a       [sending 11100]
 XBAR@40: Writing bitmatrix[row 11]: 1000000000000000= 0=0x0 -> SUM0-0:b       [sending 10000]
-XBAR@40: Writing bitmatrix[row 12]: 0000000000100000=10=0xa -> SUM0-1:a       [sending 10101]
+XBAR@40: Writing bitmatrix[row 12]: 0000000000100000=10=0xa -> SUM0-1:a       [sending 11010]
 XBAR@40: Writing bitmatrix[row 13]: 0000000000000000 [output not enabled] [sending 00000]
 XBAR@40: Writing bitmatrix[row 14]: 0000000000000000 [output not enabled] [sending 00000]
 XBAR@40: Writing bitmatrix[row 15]: 0000000000000000 [output not enabled] [sending 00000]
-Bitstream to send (80 characters): 00000000000000010101100001001110110100111010110111101011111010011100011001010111
+Bitstream to send (80 characters): 00000000000000011010100001110010110111001101011110110101011111100110001010011110
+Hextream  to send (20 characters): 0001A872DCD7B57E629E
 DPT24@60: Storing value 1023 at DPT port  0 (corresponding to INT0-0:a0)
 DPT24@60: Storing value  184 at DPT port  1 (corresponding to INT0-0:b0)
 DPT24@60: Storing value  153 at DPT port  2 (corresponding to INT0-1:a0)
