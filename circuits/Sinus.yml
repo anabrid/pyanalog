@@ -1,0 +1,13 @@
+title: Test3
+
+program:
+  I1:
+    type: INT2pm
+    input: [ 0.1, I2: pos, 0, None ]
+  I2:
+    type: INT2pm
+    input:
+      a0: 0.1
+      a: I1
+      ic: 1
+      icSign: False # -1

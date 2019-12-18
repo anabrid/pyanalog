@@ -1,0 +1,28 @@
+title: Test mit +-1
+
+
+program:
+  I0:
+    type: INT2pm
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  I1:
+    type: INT2pm
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  I2:
+    type: INT2m
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  M1:
+    type: MUL2pm
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  M2:
+    type: MUL2p
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  S1:
+    type: SUM2pm
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  S2:
+    type: SUM2pm
+    input: [0.1, PlusOne, 0.1, MinusOne ]
+  S3:
+    type: SUM2m
+    input: [0.1, PlusOne, 0.1, MinusOne ]

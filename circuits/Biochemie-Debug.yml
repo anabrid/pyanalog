@@ -1,7 +1,5 @@
 title: Biochemie-Beispiel (n1.pdf)
 
-#### OLD AND CERTAINLY WRONG
-
 description: |
   This system implements the equations
     n'      = -k_{+1} n
@@ -14,42 +12,50 @@ description: |
 
 coefficients:
   kp1: 0.5
+  kp1overTen: 0.05
   kp2: 0.8
+  kp2overTen: 0.08
   km2: 0.7
+  km2overTen: 0.07
   ku:  0.3
+  kuOverTen: 0.03
   
   d0:  0.5
+  d0overTen: 0.05
   n0:  0.5
 
 program:
-  I1:
+  I0:
     type: INT2m
     input:
-      a0: kp1
-      a: I1
+      a0: kp1overTen
+      a: I0
       ic: n0
-      icSign: False # -1
+      icSign: True # Soll plus sein!
+  I1:
+    type: INT2pm
+    input: [0.1, S3, 0.1, S2]
   I2:
     type: INT2pm
-    input: [1, S3: pos, 1, S2: pos]
-  I3:
-    type: INT2pm
-    input: [1, M1: pos, km2, I3: neg]
-  M1:
+    input: [0.1, M: neg, km2overTen, I2: neg]
+  M:
     type: MUL2pm
-    input: [1, S1: neg, kp2, I2: neg]
+    input: [0.1, S1, kp2overTen, I1 ]
   S1:
     type: SUM2m
-    input: [1, I3: pos, d0, MinusOne]
+    input: [0.1, I2: pos, d0overTen, MinusOne ]
   S2:
     type: SUM2pm
-    input: [1, M1: neg, ku, I2: neg]
+    input: [0.1, None, kuOverTen, I1 ] # M->None zum Testen
   S3:
     type: SUM2pm
-    input: [kp1, I1, km2, I3: pos]
+    input: [kp1overTen, I0, kuOverTen, None ] # I2->None zum Testen
 
 observables:
-  n: {I1: neg}
-  nR: {I2: pos}
-  nRD: {I3: pos}
-  d: {S1: neg}
+  n: I0
+  d: S1
+  nRD: {I2: pos}
+  nR: {I1: pos}
+    
+    
+    

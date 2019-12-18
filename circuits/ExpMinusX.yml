@@ -1,0 +1,10 @@
+title: Test3
+
+program:
+  I1:
+    type: INT2m
+    input:
+      a0: 0.1
+      a: I1
+      ic: 1
+      icSign: False # -1
