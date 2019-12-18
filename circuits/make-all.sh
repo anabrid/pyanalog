@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 for x in *.yml; do
 	base=../circuits-compiled/$(basename ${x/.yml/}) # without dirname, without suffix
 	DO_IMAGES="-p $base.png" # comment out this line if you want to skip
