@@ -28,40 +28,40 @@ configurable_parts:
    INT0-0:
      type: INT2pm
      address:
-       neg: 0x0160 # integrator INT8.1
-       pos: 0x0123 # summer SUM8.4 as inverter
+       inv: 0x0160 # integrator INT8.1
+       out: 0x0123 # summer SUM8.4 as inverter
    INT0-1:
      type: INT2pm
      address:
-       neg: 0x0161 # integrator INT8.2
-       pos: 0x0126 # summer SUM8.7 as inverter
+       inv: 0x0161 # integrator INT8.2
+       out: 0x0126 # summer SUM8.7 as inverter
    INT0-2:
      type: INT2m
      address:
-       neg: 0x0162 # integrator INT8.3
+       inv: 0x0162 # integrator INT8.3
    MLT0-0: # HyCon calls it MLT8-0
      type: MUL2pm
      address:
-       pos: 0x0100 # multiplier MUL4.1
-       neg: 0x0127 # summer SUM8.8 as inverter
+       out: 0x0100 # multiplier MUL4.1
+       inv: 0x0127 # summer SUM8.8 as inverter
    MLT0-1: # HyCon calls it MLT8-1
      type: MUL2p
      address:
-       pos: 0x0100 # multiplier MUL4.2
+       out: 0x0100 # multiplier MUL4.2
    SUM0-0:
      type: SUM2pm
      address:
-       neg: 0x0120 # summer SUM8.1
-       pos: 0x0124 # summer SUM8.5 as inverter (is below 1)
+       inv: 0x0120 # summer SUM8.1
+       out: 0x0124 # summer SUM8.5 as inverter (is below 1)
    SUM0-1:
      type: SUM2pm
      address:
-       neg: 0x0121 # summer SUM8.2
-       pos: 0x0125 # summer SUM8.6 as inverter (is below 2)
+       inv: 0x0121 # summer SUM8.2
+       out: 0x0125 # summer SUM8.6 as inverter (is below 2)
    SUM0-2:
      type: SUM2m
      address:
-       neg: 0x0122 # summer SUM8.3
+       inv: 0x0122 # summer SUM8.3
    PlusOne:
      description: |
        Positive supply voltage/machine unit, also refered to as Vcc or Vdd,
@@ -105,14 +105,14 @@ entities:
                    |  controls
                    v
           a ->[DPT24, pin x]------>[        ]
-                                   [ Summer ]-----> neg
+                                   [ Summer ]-----> inv
           b ->[DPT24, pin y]------>[        ]
                    ^
                    |  controls
           b0 ------+
 
      computes:
-       neg: neg = -(a0*a + b0*b)
+       inv: inv = -(a0*a + b0*b)
      input:
        - name: a0
          type: numeric
@@ -127,7 +127,7 @@ entities:
        - name: b
          type: analog
      output:
-       - name: neg
+       - name: inv
          type: analog
          description: Output of negating summer
      default_inputs:
@@ -149,16 +149,16 @@ entities:
           a0 ------+
                    |  controls
                    v
-          a ->[DPT24, pin x]------>[         ]   +--[ Summer2 ]-> pos
+          a ->[DPT24, pin x]------>[         ]   +--[ Summer2 ]-> out
                                    [ Summer1 ]->-+
-          b ->[DPT24, pin y]------>[         ]   +--------------> neg
+          b ->[DPT24, pin y]------>[         ]   +--------------> inv
                    ^
                    |  controls
           b0 ------+
 
      computes:
-       pos: pos  =   a0*a + b0*b
-       neg: neg = -(a0*a + b0*b)
+       out: out =   a0*a + b0*b
+       inv: inv = -(a0*a + b0*b)
      input:
        - name: a0
          type: numeric
@@ -173,10 +173,10 @@ entities:
        - name: b
          type: analog
      output:
-       - name: neg
+       - name: inv
          type: analog
          description: Output of minus operation (actual summer output)
-       - name: pos
+       - name: out
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
@@ -191,7 +191,8 @@ entities:
         before it. For more information, see the description of the extended
         version below, the INT2pm.
      computes:
-       neg: neg = -integral( a0*a(t) + b0*b(t), t)
+       out: out = -integral( a0*a(t) + b0*b(t), t)
+       inv: inv = +integral( a0*a(t) + b0*b(t), t)
      input:
        - name: a0
          type: numeric
@@ -213,10 +214,10 @@ entities:
          description: Value for initial condition
          range: [0, 1]
      output:
-       - name: neg
+       - name: inv
          type: analog
          description: Output of minus operation (actual summer output)
-       - name: pos
+       - name: out
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
@@ -238,7 +239,7 @@ entities:
         two potentiometers (on DPT24) and a summer (on SUM8, used for
         negation).
 
-        The integrator is an (implicite negative summing) intergrator
+        The integrator is an (implicite negating summing) intergrator
         with two inputs. For the moment, we dont make use of ModeIC and
         ModeOP. All inputs use weight a=10.
 
@@ -264,15 +265,15 @@ entities:
           a0 ------+              |
                    | controls     | sets IC
                    v              v
-          a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> pos
+          a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> out
                                [ Integrator ]->-+
-          b ->[DPT24, pin z]-->[            ]   +--------------> neg
+          b ->[DPT24, pin z]-->[            ]   +--------------> inv
                    ^
                    |  controls
           b0 ------+
      computes:
-       pos: pos  =  integral( a0*a(t) + b0*b(t), t)
-       neg: neg  = -integral( a0*a(t) + b0*b(t), t)
+       out: out  =  integral( a0*a(t) + b0*b(t), t)
+       inv: inv  = -integral( a0*a(t) + b0*b(t), t)
      input:
        - name: a0
          type: numeric
@@ -294,10 +295,10 @@ entities:
          description: Value for initial condition
          range: [0, 1]
      output:
-       - name: neg
+       - name: inv
          type: analog
          description: Output of minus operation (actual summer output)
-       - name: pos
+       - name: out
          type: analog
          description: Output of plus operation (negation of summer output)
      default_inputs:
@@ -346,10 +347,10 @@ entities:
        - name: b
          type: analog
      output:
-       - name: pos
+       - name: out
          type: analog
      computes:
-       pos: pos = a0*a*b0*b/voltage_level
+       out: out = a0*a*b0*b/voltage_level
      default_inputs:
        a: PlusOne
        b: PlusOne
@@ -370,13 +371,13 @@ entities:
        - name: b
          type: analog
      output:
-       - name: pos
+       - name: out
          type: analog
-       - name: neg
+       - name: inv
          type: analog
      computes:
-       pos: pos = a0*a*b0*b/voltage_level
-       neg: neg = a0*a*b0*b/voltage_level
+       out: out = a0*a*b0*b/voltage_level
+       inv: inv = a0*a*b0*b/voltage_level
      default_inputs:
        a: PlusOne
        b: PlusOne
@@ -469,18 +470,18 @@ wired_parts:
        - PlusOne          #  1
        - MinusOne         #  2
        - SUM0-2           #  3
-       - SUM0-1: pos      #  4
-       - SUM0-1: neg      #  5
-       - SUM0-0: pos      #  6
-       - SUM0-0: neg      #  7
+       - SUM0-1: out      #  4
+       - SUM0-1: inv      #  5
+       - SUM0-0: out      #  6
+       - SUM0-0: inv      #  7
        - MLT0-1           #  8
-       - MLT0-0: pos      #  9
-       - MLT0-0: neg      # 10
+       - MLT0-0: out      #  9
+       - MLT0-0: inv      # 10
        - INT0-2           # 11
-       - INT0-1: pos      # 12
-       - INT0-1: neg      # 13
-       - INT0-0: pos      # 14
-       - INT0-0: neg      # 15
+       - INT0-1: out      # 12
+       - INT0-1: inv      # 13
+       - INT0-0: out      # 14
+       - INT0-0: inv      # 15
        - None             # 16, empty!
     output_rows:
        - INT0-0: a        #  1
