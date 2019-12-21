@@ -10,9 +10,13 @@ client-side luxury (such as address mapping). It is the task of the
 user to implement something high-level ontop of this.
 """
 
-def expect(**q): #eq=None, re=None, split=None, as=None):
-    def response_matcher(r):
-        basemsg = f"Unexpected response: Command {r.command} yielded '{r.response}'"
+import re
+from collections import namedtuple
+
+class expect:
+    def __init__(self, **q): self.q=q
+    def __call__(self, r): # r: HyConRequest
+        q = self.q; basemsg = f"Unexpected response: Command {r.command} yielded '{r.response}'"
         # 1. Checkers
         if 'eq' in q and not r.response == q['eq']:
             raise ValueError(f"{basemsg} but should give '{q['eq']}'")
@@ -25,15 +29,13 @@ def expect(**q): #eq=None, re=None, split=None, as=None):
             if 'split' in q: return map(mapper, re.split(q['split'], r.response))
             return mapper(r.response)
         except ValueError:  raise ValueError(f"{basemsg} but cannot be casted/mapped to {mapper}")
-    response_matcher.__str__="response_matcher(%s)"%str(q)
-    return response_matcher
+    def __str__(self): return "expect(%s)"%str(self.q)[1:-1].replace("'",'')
 
 def wont_implement(reason):
     def not_implemented(*v,**kw): raise NotImplementedError(reason)
     not_implemented.__doc__ = f"Not implemented because {reason}"
     return not_implemented
 
-# naming aka HTTP: Query consists of Request and Response?
 class HyConRequest:
     def __init__(self, command, expected_response=None):
         self.executed = False
@@ -44,21 +46,27 @@ class HyConRequest:
         if self.executed:
             raise ValueError("Shall not execute same command twice.")
         self.executed = True
-        hycon.fh.write(command)
+        ###hycon.fh.write(self.command)
+        print(f"Would write: {self.command}")
         return self # chainable
     
     def read(self, hycon, read_again=False):
         "Returns matching (can be None or re.Match object"
         # The HyConAVR always answers with a full line.
-        print(f"... waiting for response {response} ... ")
+        print(f"... waiting for response {self.expected_response} ... ")
         if read_again or not hasattr(self, "response"):
-            self.response = hycon.fh.readline()
+            self.response = input(f"Expecting {self.expected_response} >>")
+            #self.response = hycon.fh.readline()
         if not self.response:
             raise ValueError(f"No Response from Hybrid controller! Command was '{self.command}'")
-        return self.expected_response(self.response) # provides mapping and check
+        return self.expected_response(self) # provides mapping and check
 
 
 class HyCon:
+    """
+    Hybrid Controller OOP interface, similar to the Perl Hybrid controller.
+    """
+    
     DIGITAL_OUTPUT_PORTS = 8
     DIGITAL_INPUT_PORTS = 8
     DPT_RESOLUTION = 10
@@ -72,11 +80,11 @@ class HyCon:
         """
         self.fh = fh
     
-    def query(self, command, expected_response=None):
+    def query(self, key, expected_response=None):
         return HyConRequest(key, expected_response).write(self).read(self)
     
     def command(key, resp_pattern=None, *args, help=None):
-        method = lambda: query(self, key, *args, resp_pattern)
+        method = lambda self: self.query(key, *args, resp_pattern)
         method.__doc__ = help
         return method
     
@@ -92,7 +100,7 @@ class HyCon:
     pot_set          = command('S', '^PS',            help="Activate POTSET-mode")
 
     def single_run_sync(self):
-        q = query('F', '^SINGLE-RUN')
+        q = self.query('F', '^SINGLE-RUN')
         timeout = 1.1 * (self.times['ic_time'] + self.times['op_time'])
         res = q.read('^EOSR(HLT)?', read_again=True)
         was_terminated_by_ext_halt_condition = res.groups()[0]=="HLT" # EOSRHLT
@@ -100,36 +108,36 @@ class HyCon:
     
     def set_ic_time(self, ictime):
         assert ictime in range(0,999999)
-        return query('C%06d' % ictime, expect(eq=f"T_IC={ictime}"))
+        return self.query('C%06d' % ictime, expect(eq=f"T_IC={ictime}"))
     
     def set_op_time(self, optime):
         assert optime in range(0,999999)
-        return query('c%06d' % optime, expect(eq=f"T_OP={optime}"))
+        return self.query('c%06d' % optime, expect(eq=f"T_OP={optime}"))
     
     def read_element_by_address(self, address):
         ensure(isinstance(address, int), "Expecting 16-bit address as integer")
-        response_match = query("g%04X" % address).match_response(r"(?P<value>.+)\s+(?P<id>.+)")
+        response_match = self.query("g%04X" % address).match_response(r"(?P<value>.+)\s+(?P<id>.+)")
         return response_match.groupdict() # return the dictionary value-> ..., id-> ..., caveat, should be all numeric!?
     
     def set_ro_group(self, addresses):
         # What about address formatting, as well as hex or int?
-        query("G" + ";".join(hex(addresses)))
+        self.query("G" + ";".join(hex(addresses)))
     
     read_ro_group = command('f', expect(split=";", type=float))
-    read_digital = command("R", expect(re="^"+"\d\s"*(HyCon.DIGITAL_INPUT_PORTS-1), split='', type=bool), help="Read digital inputs")
+    read_digital = command("R", expect(re="^"+"\d\s"*(DIGITAL_INPUT_PORTS-1), split='', type=bool), help="Read digital inputs")
     
     # Q: Does this reset the Readout group on the HyConAVR?
     # because of line $self->{'RO-GROUP'} = [];
     def digital_output(self, port, state):
         "Set digital output pins of the Hybrid Controller"
         ensure(port in range(0, DIGITAL_OUTPUT_PORTS)); ensure(state in [True, False])
-        query(f"{'D' if state else 'd'}{port:04X}")
+        self.query(f"{'D' if state else 'd'}{port:04X}")
 
     def set_xbar(self, address, config):
         ensure(isinstance(address, int), "XBAR address must be given as integer")
         ensure(len(config)==self.XBAR_CONFIG_BYTES*2,
             f"Exactly {self.XBAR_CONFIG_BYTES*2} HEX-nibbles are required to config data. {len(config)} found.")
-        query("X{address:04X}{config}", expect(eq="XBAR READY"))
+        self.query("X{address:04X}{config}", expect(eq="XBAR READY"))
     
     read_mpts = wont_implement("because it is just a high-level function which calls pot_set and iterates a list of potentiometer address/names.")
     
@@ -138,17 +146,22 @@ class HyCon:
         ensure(value >= 0 and value <= 1, "Value must be >= 0 and <= 1")
         value = int(value * (2 ** self.DPT_RESOLUTION - 1)) # 0000 <= value <= 1023
         input = (address, number, value)
-        output = query(f"P{address:04X}{number:02X}{value:04d}").match_response("^P([^.]+)\.([^=]+)=(\d+)$").groups()
-        ensure(all([i==o for i,o in zip(input,output)], f"Set_PT failed, input was {input} but output is {output}")
+        output = self.query(f"P{address:04X}{number:02X}{value:04d}").match_response("^P([^.]+)\.([^=]+)=(\d+)$").groups()
+        ensure(all([i==o for i,o in zip(input,output)], f"Set_PT failed, input was {input} but output is {output}"))
     
-    read_dpts = wont_implement("because it doesn't actually query the hardware but just ask the HC about its internal storage.")
+    read_dpts = wont_implement("because it doesn't actually self.query the hardware but just ask the HC about its internal storage.")
     
     def get_status(self):
-        response = query('s')
-        state = { k:v for items.split("=") for items in response.split(",") }
+        response = self.query('s')
+        state = { k:v for k,v in items.split("=") for items in response.split(",") }
         state['RO-GROUP'] = state['RO-GROUP'].split(";")
         state['DPTADDR'] = state['DPTADDR'].split(";") # don't resolve mapping
 
     get_op_time = command('t', expect(re="t_OP=(?P<time>-?\d*)", ret='time', to=float))
     reset = command('x', expect(eq='RESET'))
     
+
+a = HyCon("test")    
+print(f"Test this shit, a={a}")
+a.set_ic_time(234)
+
