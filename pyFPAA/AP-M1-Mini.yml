@@ -26,42 +26,42 @@ description: |
 configurable_parts:
    # naming follows the HyCon YML file, part "elements"
    INT0-0:
-     type: INT2pm
+     type: INTpinv
      address:
-       inv: 0x0160 # integrator INT8.1
-       out: 0x0123 # summer SUM8.4 as inverter
+       out: 0x0160 # integrator INT8.1
+       inv: 0x0123 # summer SUM8.4 as inverter
    INT0-1:
-     type: INT2pm
+     type: INTpinv
      address:
-       inv: 0x0161 # integrator INT8.2
-       out: 0x0126 # summer SUM8.7 as inverter
+       out: 0x0161 # integrator INT8.2
+       inv: 0x0126 # summer SUM8.7 as inverter
    INT0-2:
-     type: INT2m
+     type: INTp
      address:
-       inv: 0x0162 # integrator INT8.3
+       out: 0x0162 # integrator INT8.3
    MLT0-0: # HyCon calls it MLT8-0
-     type: MUL2pm
+     type: MULpinv
      address:
        out: 0x0100 # multiplier MUL4.1
        inv: 0x0127 # summer SUM8.8 as inverter
    MLT0-1: # HyCon calls it MLT8-1
-     type: MUL2p
+     type: MULpinv
      address:
        out: 0x0100 # multiplier MUL4.2
    SUM0-0:
-     type: SUM2pm
+     type: SUMpinv
      address:
-       inv: 0x0120 # summer SUM8.1
-       out: 0x0124 # summer SUM8.5 as inverter (is below 1)
+       out: 0x0120 # summer SUM8.1
+       inv: 0x0124 # summer SUM8.5 as inverter (is below 1)
    SUM0-1:
-     type: SUM2pm
+     type: SUMpinv
      address:
-       inv: 0x0121 # summer SUM8.2
-       out: 0x0125 # summer SUM8.6 as inverter (is below 2)
+       out: 0x0121 # summer SUM8.2
+       inv: 0x0125 # summer SUM8.6 as inverter (is below 2)
    SUM0-2:
-     type: SUM2m
+     type: SUMp
      address:
-       inv: 0x0122 # summer SUM8.3
+       out: 0x0122 # summer SUM8.3
    PlusOne:
      description: |
        Positive supply voltage/machine unit, also refered to as Vcc or Vdd,
@@ -93,26 +93,149 @@ logic:
    AGND_voltage: 0 # on the chip?
 
 entities:
-   SUM2m:
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#            Elementary building blocks of Model-1 Computer
+#
+## # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+   DPT:
+     type: elementary
      description: |
-        A single summer (SUM8 part) and a single digital potentiometer.
-        The summer is a negating summer with two inputs.
-        The summer uses weights a=10.
-        We dont make use of the summing junction (SJ).
-        The flow chart is just
+        A single digital potentiometer (part of a DPT24 or HC module).
+     computes:
+       vs: vs=v0*v
+     input:
+        - { name: v0, type: numeric, range: [0, 1] }
+        - { name: v, type: analog }
+     output:
+        - { name: vs, type: analog }
+
+   SUM:
+     type: elementary
+     description: |
+        A single summer (part of a SUM8 module).
+        The summer is a negating summer featuring
+          * three inputs of weight a=10 (input prefix "d" for "decade") and
+          * three inputs of weight a= 1 (input prefix "u" for "unit")
+        We are lazy so we only describe two input lines each.
+        We dont model the summing junction (SJ) yet.
+     computes:
+       out: out = -(10*d1 + 10*d2 + u1 + u2)
+     input:
+       - { name: d1, type: analog }
+       - { name: d2, type: analog }
+       - { name: u1, type: analog }
+       - { name: u2, type: analog }
+     output:
+       - name: out
+         type: analog
+         description: Output of negating summer
+     default_inputs: { d1: None, d2: None, u1: None, u2: None }
+
+   INT:
+     type: elementary
+     description: |
+        A single integrator (one of the INT4 module).
+
+        The integrator is an (implicite negating summing) intergrator
+        featuring
+          * three inputs of weight a=10 (input prefix "d" for "decade") and
+          * three inputs of weight a= 1 (input prefix "u" for "unit")
+        We are lazy so we only describe two input lines each.
+        For the moment, we dont model/make use of ModeIC and ModeOP.
+     computes:
+       out: out  =  integral(-10*d1(t) - 10*d2(t) - u1(t) - u2(t), t)
+     input:
+       - { name: d1, type: analog }
+       - { name: d2, type: analog }
+       - { name: u1, type: analog }
+       - { name: u2, type: analog }
+       - name: ic
+         type: analog
+         description: Initial condition
+     output:
+       - name: out
+         type: analog
+         description: Output of integral
+     default_inputs: { d1: None, d2: None, u1: None, u2: None, ic: None }
+
+
+   MUL:
+     type: elementary
+     description: |
+       A single multiplier (one of the MLT8 module).
+
+       Remember that multiplication is implemented normalized. For instance,
+       if machine voltage is level=+10V (actually +-10V), the multiplication
+       computes res = (a/level * b/level)*level in order to make sure
+       |res|<10V.
+
+       -> In order to decouple analog programming from the machine where
+          it runs, the normalization should be implemented in the
+          compilation step!
+     input:
+       - { name: a,   type: analog }
+       - { name: b,   type: analog }
+     output:
+       - { name: out, type: analog }
+     computes:
+       out: out = a*b/voltage_level
+     default_inputs: [ a: PlusOne, b: PlusOne ] # useful?
+     
+   CMPad:
+     description: |
+        The left part of a CMP4 comparator (analog2digital),
+        i.e. a treshold based binarization.
+     computes:
+       res: res = a+b>0
+     input:
+       - { name:   a, type: analog }
+       - { name:   b, type: analog }
+     output:
+       - { name: res, type: digital }
+
+   CMPda:
+     description: |
+        The right part of a CMP4 comparator (digital2analog),
+        i.e. a single electronic switch switching between two analog
+        signals.
+     computes:
+       u: u = if(i, a, b)
+     input:
+       - { name: i, type: digital } # boolean
+       - { name: a, type: analog  } 
+       - { name: b, type: analog  } 
+     output:
+       - { name: u, type: analog  }
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#         Macro computing elements plugged together by elementary ones
+#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+   SUMp:
+     type: macro
+     description: |
+        A single summer (SUM8 part) and two digital potentiometers.
+        We only use weights a=10 from the summer.
+        The flow chart is given by:
         
-          a0 ------+
-                   |  controls
-                   v
-          a ->[DPT24, pin x]------>[        ]
-                                   [ Summer ]-----> inv
-          b ->[DPT24, pin y]------>[        ]
-                   ^
-                   |  controls
-          b0 ------+
+          (a0)----+
+                  |
+                  v
+          (a)->[DPTa]--(as)-->[10|        ]
+                              [  | SUMo   ]---> out
+          (b)->[DPTb]--(bs)-->[10|        ]
+                  ^
+                  |
+          (b0)----+
 
      computes:
-       inv: inv = -(a0*a + b0*b)
+       out: out = -(a0*a + b0*b)
      input:
        - name: a0
          type: numeric
@@ -127,7 +250,7 @@ entities:
        - name: b
          type: analog
      output:
-       - name: inv
+       - name: out
          type: analog
          description: Output of negating summer
      default_inputs:
@@ -135,64 +258,136 @@ entities:
        b: None
        a0: 0
        b0: 0
+     internal_wires:
+       - name: as
+         type: analog
+         description: Scaled a (output of DPTa)
+       - name: bs
+         type: analog
+         description: Scaled b (output of DPTb)
+     partlist:
+       DPTa:
+         type: DPT
+         input: [ a0, a ]
+         output: as
+       DPTb:
+         type: DPT
+         input: [ b0, b ]
+         output: bs
+       SUMo:
+         type: SUM
+         input: { d1: as, d2: bs }
+         output: out
+     # These "is a"-relations should allow using elements instead of others
+     is_a:
+       SUM:
+         description: Can mimic a simple summer when having both DPTs = 1.
+         default_inputs: [a0: 1, b0: 1]
+       DPT:
+         description: Can mimic a simple potentiometer when not summing at all.
+         default_inputs: [a: None, b: None, b0: 0]
+         
 
-   SUM2pm:
+   MULp:
+     type: macro
      description: |
-        A macro component made of two summers (SUM8 module) and two digital
-        potentiometers (on DPT24).
-        Each summer is a (negating) summer with two inputs.
-        The main summer (Summer1) use weights a=10. The inverting summer
-        (Summer2) uses weight a=1.
-        We dont make use of the summing junctions (SJ).
+       A simple macro element made of a single multiplier (MLT8) and two
+       digital potentiometers (on DPT24).
+       
+       The flow chart is similar to SUMp:
+       
+          (a0)----+
+                  |
+                  v
+          (a)->[DPTa]--(as)-->[       ]
+                              [  MULo ]---> out
+          (b)->[DPTb]--(bs)-->[       ]
+                  ^
+                  |
+          (b0)----+
+
+     input:
+       - { name: a0,  type: digital }
+       - { name: a,   type: analog  }
+       - { name: b0,  type: digital }
+       - { name: b,   type: analog  }
+     output:
+       - { name: out, type: analog  }
+     computes:
+       out: out = a0*a*b0*b/voltage_level
+     default_inputs:
+       a: PlusOne
+       b: PlusOne
+       a0: 0
+       b0: 0
+     internal_wires:
+       - name: as
+         type: analog
+         description: Scaled a (output of DPTa)
+       - name: bs
+         type: analog
+         description: Scaled b (output of DPTb)
+     partlist:
+       DPTa:
+         type: DPT
+         input: [ a0, a ]
+         output: as
+       DPTb:
+         type: DPT
+         input: [ b0, b]
+         output: bs
+       MULo:
+         type: MUL
+         input: [as, bs]
+         output: out
+     is_a:
+       MUL:
+         description: Can mimic a simple multiplier when having both DPTs = 1.
+         default_inputs: [a0: 1, b0: 1]
+       # DPT: would be ironic since MLT also multiplies. Would rather compute MLT(DPT(x,PlusOne),PlusOne)
+
+         
+   INTp:
+     type: macro
+     description: |
+        A macro component made of an integrator (one in the INT4 module)
+        and three potentiometers (two shall be implemented on the DPT24,
+        one on the HC, but that doesn't matter at this stage).
+
+        The integrator is an (implicite negating summing) intergrator
+        with two inputs. For the moment, we dont make use of ModeIC and
+        ModeOP. All inputs use weight a=10.
+
+        In the moment, the ICs are realized by one potentiometer and
+        a comparator. The compiler creates the binary sign which steers
+        the comparator and is outputted by the Hybrid Controller (HC).
+
+        The summer is a (negating) summer with a single input.
+        The summer uses weight a=1.
+        Neither in integrator nor summer, we make use of the SJ.
+
         The flow chart looks like
 
-          a0 ------+
-                   |  controls
-                   v
-          a ->[DPT24, pin x]------>[         ]   +--[ Summer2 ]-> out
-                                   [ Summer1 ]->-+
-          b ->[DPT24, pin y]------>[         ]   +--------------> inv
+         ic ----------------------------+
+                                        |
+         HC digital output,             |
+         icSign -----+                  |
+                     | switches         | controls
+                     v                  v
+          +1 -(p1)->[ SignGen ]-(pm)->[DPTic]  (HC DPT)
+          -1 -(m1)->[ (CMPda) ]         |
+                                      (aic)
+          a0 ------+                    |
+                   | controls           | sets IC
+                   v                    v
+          a ->[DPTa]---(as)--->[10|            ]
+                               [    Integrator ]----> out
+          b ->[DPTb]---(bs)--->[10|            ]
                    ^
                    |  controls
           b0 ------+
-
-     computes:
-       out: out =   a0*a + b0*b
-       inv: inv = -(a0*a + b0*b)
-     input:
-       - name: a0
-         type: numeric
-         description: Potentiometer prefactor
-         range: [0, 1]
-       - name: a
-         type: analog
-       - name: b0
-         type: numeric
-         description: Potentiometer prefactor
-         range: [0, 1]
-       - name: b
-         type: analog
-     output:
-       - name: inv
-         type: analog
-         description: Output of minus operation (actual summer output)
-       - name: out
-         type: analog
-         description: Output of plus operation (negation of summer output)
-     default_inputs:
-       a: None
-       b: None
-       a0: 0
-       b0: 0
-
-   INT2m:
-     description: |
-        An integrator (one in the INT4 module) and two potentiometers
-        before it. For more information, see the description of the extended
-        version below, the INT2pm.
      computes:
        out: out = -integral( a0*a(t) + b0*b(t), t)
-       inv: inv = +integral( a0*a(t) + b0*b(t), t)
      input:
        - name: a0
          type: numeric
@@ -214,12 +409,9 @@ entities:
          description: Value for initial condition
          range: [0, 1]
      output:
-       - name: inv
-         type: analog
-         description: Output of minus operation (actual summer output)
        - name: out
          type: analog
-         description: Output of plus operation (negation of summer output)
+         description: Output of integral
      default_inputs:
        a: None
        b: None
@@ -228,49 +420,173 @@ entities:
        icSign: True
        ic: 0
      internal_wires:
-       # Internal wires are used by the modules defined at the end of this file
-       - name: analogIC
+       - name: as
          type: analog
-         description: output of Comparator and multiplied by HC DPT
+         description: Scaled a (output of DPTa)
+       - name: bs
+         type: analog
+         description: Scaled b (output of DPTb)
+       - name: aic
+         type: analog
+         description: Analog Initial conditions (output of Comparator and multiplied by HC DPT)
+       - name: pm
+         type: analog
+         description: Plus or Minus, depending on the sign bit
+     partlist:
+       DPTa:
+         type: DPT
+         input: [ a0, a ]
+         output: as
+       DPTb:
+         type: DPT
+         input: [ b0, b]
+         output: bs
+       SignGen:
+         type: CMPda0
+         input:
+           i: icSign
+           a: PlusOne
+           b: MinusOne
+         output: pm
+       DPTic:
+         type: DPT # but shall be implemented on HC for clarity
+         input: [ ic, pm ]
+         output: aic
+       INTo:
+         type: INT
+         input: { d1: as, d2: bs, ic: aic }
+         output: out
+         
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#         Macro elements with attached inverter (negation)
+#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-   INT2pm:
+   SUMpinv:
+     type: macro
+     is_a:
+       SUMp:
+         description: |
+           Can mimic a single potentiometered summer. Just ignore the inv output.
      description: |
-        A macro component made of an integrator (one in the INT4 module),
-        two potentiometers (on DPT24) and a summer (on SUM8, used for
-        negation).
+        A macro component made of two summers (SUM8 module) and two digital
+        potentiometers (on DPT24). It is an easy extension of the SUMp
+        module, the flow chart is just:
+        
+                 +-------+
+          a0  -->|       |        +--[ 1| SUMinv ]-> inv
+          a   -->| SUMp  |        |
+          b0  -->|       |--------+----------------> out
+          b   -->|       |
+                 +-------+
+        
+        Remember, the summer SUMo in SUMp uses weights a=10, while the
+        inverting summer SUMinv uses weight a=1.
 
-        The integrator is an (implicite negating summing) intergrator
-        with two inputs. For the moment, we dont make use of ModeIC and
-        ModeOP. All inputs use weight a=10.
+     computes:
+       out: out =   a0*a + b0*b
+       inv: inv = -(a0*a + b0*b)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+     output:
+       - name: out
+         type: analog
+         description: Output of minus operation (actual summer output)
+       - name: inv
+         type: analog
+         description: Output of plus operation (negation of summer output)
+     default_inputs:
+       a: None
+       b: None
+       a0: 0
+       b0: 0
+     partlist:
+       MainSummer:
+         type: SUMp
+         input: [ a0, a, b0, b ]
+         output: out
+       SUMinv:
+         type: SUM
+         input: { u1: out }
+         output: inv
 
-        In the moment, the ICs are realized by one potentiometer and
-        a comparator. The compiler creates the binary sign which steers
-        the comparator and is outputted by the Hybrid Controller (HC).
+   MULpinv:
+     type: macro
+     description: |
+       Extension of MUL2m with two outputs, where one is negated, thus
+       requiring an internal summer.
+       Flow chart is just:
+       
+        
+                 +-------+
+          a0  -->|       |        +--[ 1| SUMinv ]-> inv
+          a   -->| MULp  |        |
+          b0  -->|       |--------+----------------> out
+          b   -->|       |
+                 +-------+
+     input:
+       - name: a0
+         type: digital
+       - name: a
+         type: analog
+       - name: b0
+         type: digital
+       - name: b
+         type: analog
+     output:
+       - name: out
+         type: analog
+       - name: inv
+         type: analog
+     computes:
+       out: out =  a0*a*b0*b/voltage_level
+       inv: inv = -a0*a*b0*b/voltage_level
+     default_inputs:
+       a: PlusOne
+       b: PlusOne
+       a0: 0
+       b0: 0
+     partlist:
+       Multiplier:
+         type: MULp
+         input: [ a0, a, b0, b ]
+         output: out
+       SUMinv:
+         type: SUM
+         input: { u1: out }
+         output: inv
+         
+   INTpinv:
+     type: macro
+     is_a:
+       INTp:
+         description: |
+           Can mimic a single potentiometered integrator. Just ignore the inv output.
+     description: |
+        A macro component which can invert the output of INTp.
+        The flow chart is just:
+        
+                 +-------+
+          a0  -->|       |        +--[ 1| SUMinv ]-> inv
+          a   -->| INTp  |        |
+          b0  -->|       |--------+----------------> out
+          b   -->|       |
+          icSign>|       |
+          ic  -->|       |
+                 +-------+
 
-        The summer is a (negating) summer with a single input.
-        The summer uses weight a=1.
-        Neither in integrator nor summer, we make use of the SJ.
-
-        The flow chart looks like
-
-         ic ----------------------+
-                                  |
-         HC digital output,       |
-         icSign -----+            |
-                     | switches   | controls
-                     v            v
-          +1 ---->[ Compa- ]--->[HC DPT, pin x]
-          -1 ---->[ rator  ]      |
-                                  | Line "analogIC"
-          a0 ------+              |
-                   | controls     | sets IC
-                   v              v
-          a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> out
-                               [ Integrator ]->-+
-          b ->[DPT24, pin z]-->[            ]   +--------------> inv
-                   ^
-                   |  controls
-          b0 ------+
      computes:
        out: out  =  integral( a0*a(t) + b0*b(t), t)
        inv: inv  = -integral( a0*a(t) + b0*b(t), t)
@@ -297,10 +613,10 @@ entities:
      output:
        - name: inv
          type: analog
-         description: Output of minus operation (actual summer output)
+         description: Actual output of integrator
        - name: out
          type: analog
-         description: Output of plus operation (negation of summer output)
+         description: Output of summer (negation of integrator)
      default_inputs:
        a: None
        b: None
@@ -308,81 +624,21 @@ entities:
        b0: 0
        icSign: True
        ic: 0
-     internal_wires:
-       # Internal wires are used by the modules defined at the end of this file
-       - name: analogIC
-         type: analog
-         description: output of Comparator and multiplied by HC DPT
-     # The following lines are actually not needed but were a proposal
-     # to make the internal structure of a macrocell transparent. Would be
-     # needed by an actual HDL where one wants to simulate the system/the macrocell
-     internal_partlist:
-       IC_Comp:
-         type: ComparatorDA
-         input: [ parent: icSign, PlusOne, MinusOne ]
-       INT2p_Raw:
-         type:
-           input: [ a: analog, b: analog, realIc: analog ]
-           output: [ out: analog ]
-         input: [ parent: a, parent: b, IC_Comp ]
+     partlist:
+       MainINT:
+         type: INTp
+         input: [ a0, a, b0, b, icSign, ic ]
+         output: out
+       SUMinv:
+         type: SUM
+         input: { u1: out }
+         output: inv
 
-   MUL2p:
-     description: |
-       A simple macro element made of a single multiplier (MLT8) and two
-       digital potentiometers (on DPT24).
-       Note that multiplication is implemented normalized. For instance,
-       if machine voltage is level=+10V (actually +-10V), the multiplication
-       computes res = (a/level * b/level)*level in order to make sure
-       |res|<10V.
-       -> In order to decouple analog programming from the machine where
-          it runs, the normalization should be implemented in the
-          compilation step!
-     input:
-       - name: a0
-         type: digital
-       - name: a
-         type: analog
-       - name: b0
-         type: digital
-       - name: b
-         type: analog
-     output:
-       - name: out
-         type: analog
-     computes:
-       out: out = a0*a*b0*b/voltage_level
-     default_inputs:
-       a: PlusOne
-       b: PlusOne
-       a0: 0
-       b0: 0
-
-   MUL2pm:
-     description: |
-       Extension of MUL2m with two outputs, where one is negated, thus
-       requiring an internal summer.
-     input:
-       - name: a0
-         type: digital
-       - name: a
-         type: analog
-       - name: b0
-         type: digital
-       - name: b
-         type: analog
-     output:
-       - name: out
-         type: analog
-       - name: inv
-         type: analog
-     computes:
-       out: out = a0*a*b0*b/voltage_level
-       inv: inv = a0*a*b0*b/voltage_level
-     default_inputs:
-       a: PlusOne
-       b: PlusOne
-       a0: 0
-       b0: 0
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#         Pseudo elements (Helpers)
+#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
    ConstantVoltage:
      description: |
@@ -398,45 +654,8 @@ entities:
        SUMMER(a=x,a0=1,b=PlusOne,b0=0.7).
      computes:
        value: value = x
-     input:
-       - name: x
-         type: analog
-     output:
-       - name: value
-         type: analog
-
-   ComparatorAD:
-     description: |
-        The left part of a CMP4 comparator (analog2digital),
-        i.e. a treshold based binarization.
-     computes:
-       res: res = a+b>0
-     input:
-       - name: a
-         type: analog
-       - name: b
-         type: analog
-     output:
-       - name: res
-         type: digital
-
-   ComparatorDA:
-     description: |
-        The right part of a CMP4 comparator (digital2analog),
-        i.e. a single electronic switch switching between two analog
-        signals.
-     computes:
-       u: u = if(i, a, b)
-     input:
-       - name: i
-         type: digital
-       - name: a
-         type: analog
-       - name: b
-         type: analog
-     output:
-       - name: u
-         type: analog
+     input:  [{ name: x,     type: analog }]
+     output: [{ name: value, type: analog }]
 
    NoneType:
      description: |
@@ -452,7 +671,7 @@ entities:
      computes: nothing
      input:          [{ name: none, type: analog }]
      output:         [{ name: none, type: analog }]
-     default_inputs: { none: 0 }
+     default_inputs:  { none: 0 }
 
 
 # Each of the wired hardware needs configuration by the HC

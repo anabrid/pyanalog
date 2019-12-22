@@ -104,7 +104,7 @@ assigned_parts_by_entity = filter_dict({
 for part, spec in circuit['program'].items():
     t = spec['type']
     if not t in arch['entities']:
-        raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {arch['entities'].keys()}")
+        raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {', '.join(arch['entities'].keys())}")
     assigned_parts = assigned_parts_by_entity[t]
     none_allocated_parts = [k for k,v in assigned_parts.items() if not v ]
     #import ipdb; ipdb.set_trace() 

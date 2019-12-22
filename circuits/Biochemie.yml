@@ -23,29 +23,29 @@ coefficients:
 
 program:
   I1:
-    type: INT2m
+    type: INTp
     input:
       a0: kp1
       a: I1
       ic: n0
       icSign: False # -1
   I2:
-    type: INT2pm
+    type: INTpinv
     input: [1, S3: inv, 1, S2: inv]
   I3:
-    type: INT2pm
+    type: INTpinv
     input: [1, M1, km2, I3]
   M1:
-    type: MUL2pm
+    type: MULpinv
     input: [1, S1, kp2, I2]
   S1:
-    type: SUM2m
+    type: SUMp
     input: [1, I3: inv, d0, MinusOne]
   S2:
-    type: SUM2pm
+    type: SUMpinv
     input: [1, M1: inv, ku, I2]
   S3:
-    type: SUM2pm
+    type: SUMpinv
     input: [kp1, I1, km2, I3: inv]
 
 observables:
