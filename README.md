@@ -26,6 +26,9 @@ Contents in directories:
 * `circuits`: A number of example input for the
   pyFPAA compiler.
 
+See also [PyHyCon](https://lab.analogparadigm.com/ulmann/hybrid-controller/-/tree/master/PyHyCon)
+in the Hybrid Controller repository for a code developed
+at the same time.
 
 All contents in this directory are released under the
 GPL3 by SvenK, if not mentioned otherwise.
