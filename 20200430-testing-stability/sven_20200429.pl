@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-BEGIN {push @INC, '../HybridController/IO-HyCon/lib/'}
+BEGIN {push @INC, '../../HybridController/IO-HyCon/lib/'}
 
 use IO::HyCon;
 use POSIX;

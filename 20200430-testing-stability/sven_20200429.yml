@@ -1,12 +1,13 @@
 #  This is a complete configuration file for the Analog Paradigm Model-1
 # hybrid computer with experimental crossbar module XBAR16. 
 tcp:
-    addr: klapauzius
+    addr: corcoran
     port: 12345
     connection_timeout: 2
     timeout: 0.1
     poll_interval: 10
     poll_attempts: 2000
+    quick_start: True
 nope-serial:
     port: /dev/cu.usbserial-DN050L1O
     bits: 8
@@ -146,21 +147,21 @@ xbar:
 problem:
     IC:
 #y
-        INT0ic: 1
+        INT0ic: 0
 #x
-        INT1ic: .5
+        INT1ic: 1
 #z
         INT2ic: 0
     times:
         ic: 20
-        op: 100
+        op: 1000
     coefficients:
 ###
 #  ACHTUNG: Die Inputs a, b, c haben implizites Gewicht 10, die d-Inputs nur 1,
 # d.h. am, ap und bm muessen mit 1/10 skaliert werden!!!
 ###
 #lm
-        INT0a: 1
+        INT0a: 0.1
 #lp
         INT0b: 0
 #am1 und am2 (am1 = am2 - lieber zwei Potentiometer mit gleichem Wert als ein Multiplizierer!)
@@ -169,18 +170,18 @@ problem:
 #ap1 und ap2
         INT1b: 0
         INT2b: 0
-#bm1 und bm2
-        INT1c: 0.5
-        INT2c: 0.5
-#bp1 und bp2
+#bp1 und bm2
+        INT1c: 0.1
+        INT2c: 0
+#bm1 und bp2
         INT1d: 0
-        INT2d: 0
+        INT2d: 1
 #  SUM0 wird zum Invertieren von INT2- gebraucht, die ersten beiden Inputs
 # haben Gewicht 10!
         SUM0a: .1
     circuit:
-        INT0a: INT0-
-        INT0b: INT0+
+        INT0a: +1
+#        INT0b: 0
 
         INT1a: INT1-
         INT1b: INT1+
