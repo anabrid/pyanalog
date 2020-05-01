@@ -146,49 +146,33 @@ xbar:
 #  The 'problem' section describes the problem being run on the hybrid computer.
 problem:
     IC:
-# x
-        INT0ic: 1
+# y'
+        INT0ic: -1
 # y
-        INT1ic: 0
+        INT1ic: 1
 # t
         INT2ic: 0
     times:
         ic: 20
-        op: 1000   # milliseconds
+        op: 1500   # milliseconds
     coefficients:
 ###
 #  ACHTUNG: Die Inputs a, b, c haben implizites Gewicht 10, die d-Inputs nur 1,
 # d.h. am, ap und bm muessen mit 1/10 skaliert werden!!!
 ###
-# damp0
-        INT0a: 0.05
-# omega0
-        INT0b: 0.1
-        INT0c: 0.1
-# damp1
-        INT1a: 0.05
-# omega 1
-        INT1b: 0.1
-        INT1c: 0.1
-# integrierer fuer Konstante 1
+        INT0a: 0.1
+        INT1a: 0.1
+        
         INT2a: 0.1
-# Invertierer fuer INT2
-        SUM0a: 0.1
+
     circuit:
         INT2a: +1
 
-        INT0a: INT0-
-        INT0b: INT1-
-        INT1a: INT1-
-        INT1b: INT0+
-        
-# Verdopplung der Eingaenge (omega_effektiv = 2*omega)
-        INT0c: INT1-
-        INT1c: INT0+
-        
-        SUM0a: INT2-
-    
+        INT0a: INT1+
+        INT1a: INT0+
+
+       
     ro-group: 
         - INT0+
         - INT1+
-        - SUM0-  # INT2+ nicht definiert
+        - INT2-  # INT2+ nicht definiert

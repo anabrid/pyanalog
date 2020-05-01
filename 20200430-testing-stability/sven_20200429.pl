@@ -13,6 +13,6 @@ $ac->get_data();
 $ac->plot(terminal => "pdf", output => "output.pdf",
     title => strftime("%Y-%m-%d %H:%M:%S", localtime time),
     lines => [
-    	"set yrange [-1:1]"    
+    	"set yrange [-1.3:1.3]"    
     ]);
 $ac->store_data(filename => 'result.dat');
