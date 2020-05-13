@@ -165,13 +165,11 @@ problem:
         INT2a: 0.1
 
     circuit:
-        INT2a: +1
-
-        INT0a: INT1-
+        INT0a: INT2-
         INT1a: INT0-
+        INT2a: INT1-
 
-
-       
+      
     ro-group: 
         - INT1+
         - INT0-
