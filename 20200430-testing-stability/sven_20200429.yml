@@ -151,10 +151,10 @@ problem:
 # y'
         INT1ic: 1
 # y''
-        INT2ic: 1
+        INT2ic: 0
     times:
         ic: 20
-        op: 1500   # milliseconds
+        op: 3000   # milliseconds
     coefficients:
 ###
 #  ACHTUNG: Die Inputs a, b, c haben implizites Gewicht 10, die d-Inputs nur 1,
@@ -165,12 +165,12 @@ problem:
         INT2a: 0.1
 
     circuit:
-        INT0a: INT2-
-        INT1a: INT0-
-        INT2a: INT1-
+        INT0a: INT0-
+#        INT1a: INT0-
+        INT2a: +1
 
       
     ro-group: 
-        - INT1+
-        - INT0-
+#        - INT1+
+        - INT0+
         - INT2-  # INT2+ nicht definiert
