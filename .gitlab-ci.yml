@@ -1,0 +1,19 @@
+stages:
+  - build
+  - deploy
+
+pydda make sphinx docs:
+  stage: build
+  image: nickjer/docker-sphinx
+  script:
+    - cd PyDDA/doc && make -j html dirhtml text latexpdf PAPER=a4
+  artifacts:
+    paths:
+      - PyDDA/doc/_build/
+
+pydda deploy sphinx docs:
+  stage: deploy
+  image: svenk/latex
+  script:
+    - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
+    - cd PyDDA/doc/_build && echo -e "cd www\nput -R ." | sftp -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
