@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 
 """
-This module is the heart of the PyDDA code.
+The minimalistic pythonic standalone abstract syntax tree (**AST**)
+representation in this module is the heart of the PyDDA package.
+The code has no external dependencies, especially it does not rely
+on a Computer Algebra System or even on SymPy.
 
-It contains a minimalistic pythonic standalone abstract syntax tree
-implementation.
+The :class:Symbol object represents a node in a AST and the edges
+to it's children. In order to simplify mass symbol generation,
+:meth:symbols can be used.
+
+The :class:State object represents a list (set) of equations.
+It basically maps variables to their expressions. The :class:State
+represents a (traditional) DDA file. From a python perspective, a
+:class:State is not much more then a dictionary on stereoids.
 """
 
-# There are no dependencies. All Python included.
+# all "batteries included":
 import os, sys, textwrap, itertools, pprint, collections, types, builtins
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
@@ -16,19 +25,91 @@ unique = lambda l: list(set(l))
 class Symbol:
     """
     A symbol is similar to a LISP atom which has a Head and a tail,
-    where tail is a list. Common notations are
-    * head[tail] in Mathematica,
-    * (head, tail) in Lisp
-    * head(tail) in C-like languages like Python, Perl, Fortran, C
-    * Actually [head, *tail] in Python, but we don't use that.
-    A symbol also represents a vertex and it's childs in an ordered tree.
+    where tail is a list. Common notations for such a type are
+    
+    * ``head[tail]`` in Mathematica,
+    * ``(head, tail)`` in Lisp
+    * ``head(tail)`` in C-like languages like Python, Perl, Fortran, C
+    * Actually ``[head, *tail]`` in Python, but we don't use that.
+      
+    A symbol also represents a vertex (node) and it's childs in an ordered tree.
     Think of head being the vertex and tail the (edge) list of children.
     We use the Symbol class to represent the abstract syntax tree (AST)
     of the DDA language for describing ODEs and circuitery.
     
-    When you call str() or similar on this class, it will print its
-    representation in the C-like notation. This notation is identical
-    to the "classical" DDA language.
+    When you call ``str()`` or similar on instances of this class, it will
+    print its representation in the C-like notation. This notation is
+    identical to the "classical" DDA language.
+    
+    There are two types of Symbols: **Variables** have no tail, they just
+    consist of a head:
+    
+    >>> x = Symbol("x")
+    >>> print(x)
+    x
+    >>> x.head
+    "x"
+    >>> x.tail
+    ()
+    
+    In contrast, **Terms** have a tail:
+    
+    >>> f = Symbol("f", Symbol("x"), Symbol("y"))
+    >>> print(f)
+    f(x,y)
+    >>> f.head
+    "f"
+    >>> f.tail
+    (x,y)
+    
+    Symbols can be used to create even more Symbols:
+    
+    >>> f,x = Symbol("f"), Symbol("x")
+    >>> f(x)
+    f(x)
+    >>> x(x,f,x)
+    x(x,f,x)
+    
+    Symbols are equal to each other if their head and tail equals:
+    
+    >>> a1, a2 = Symbol("a"), Symbol("a")
+    >>> a1 == a2
+    True
+    >>> f(x) == f(x)
+    True
+    >>> f(x) == f(x,x)
+    False
+    
+    Symbols can be used as dictionary keys, since they hash trivially
+    due to their unique canonical (pythonic) string interpretation.
+    
+    .. note::
+    
+       In order to avoid confusion between Python Strings and Symbols,
+       you should
+       
+       - *always* use strings as Symbol heads but
+       - *never* use strings in Symbol tails. Instead, use there Symbols
+         only.
+       
+       Think of Symbol implementing the following type (hint):
+       ``Tuple[str, List[Symbol]]``.
+       
+       In the above example, you can write
+       
+       >>> f = Symbol("f", "x", "y")
+       >>> print(f)
+       f(x,y)
+       
+       which looks identical to the example given before. This is
+       *by intention* and breaks Python standard for ``repr()``
+       behaviour. It can be hard to find such errors. That could probably
+       be improved by providing the correct ``repr()``.
+       
+       It is a good convention to only have Symbols and floats/integers
+       being part of the AST.
+    
+    
     """
     def __init__(self, head, *tail):
         self.head = head
@@ -40,7 +121,7 @@ class Symbol:
         tailstr = "(" + ", ".join(map(str, self.tail)) + ")" if self.tail else ""
         return str(self.head) + tailstr
     def __eq__(self, other):
-        "Allow checks Symbol('foo') == Symbol('foo')"
+        "Allow to check Symbol('foo') == Symbol('foo')"
         if isinstance(other, str): raise TypeError(f"Convert the string '{other}' to Symbol before comparing with Symbol {self}.")
         if not isinstance(other, Symbol): raise TypeError(f"{other} is not a Symbol. Cannot compare with {self}.")
         return self.head == other.head and \
@@ -65,29 +146,34 @@ class Symbol:
         return not self.is_variable()
 
     def variables(self):
-        """Compute the dependencies of this symbol, i.e. other variables directly occuring
-        in the tail."""
+        """Compute the direct dependencies of this symbol, i.e. other variables
+        directly occuring in the tail."""
         return [ el for el in self.tail if el.is_variable() ]
 
     def all_variables(self):
-        "Also find variables in all child terms"
+        "Like :meth:variables, but also find variables in all children."
         return unique(flatten([ el.all_variables() if el.tail else [el] for el in self.tail if is_symbol(el)]))
 
     def all_terms(self):
-        "Find all terms in all child terms"
+        "Like :meth:all_variables, but for terms: Returns a list of all terms in all children of this node."
         return unique(flatten([ el.all_terms() for el in self.tail if is_symbol(el) and el.tail() ]))
 
     def map_heads(self, mapping):
         """
         Call a mapping function on all heads in all (nested) subexpressions.
-        This is suitable to rename variable names.
-        Example:
-        > map_heads( Symbol("x", Symbol("y"), 2), lambda x: x+"foo")
+        Returns a new mapped Symbol. This routine is suitable for renaming
+        variable names within the AST. Example usage:
+
+        >>> Symbol("x", Symbol("y"), 2).map_heads(lambda head: head+"foo")
         xfoo(yfoo, 2)
         """
         return Symbol(mapping(self.head), *[(el.map_heads(mapping) if is_symbol(el) else el) for el in self.tail])
 
     def map_tails(self, mapping):
+        """
+        Calls a mapping function on all tails in all (nested) subexpressions.
+        Returns a new mapped Symbol.
+        """
         return Symbol(self.head, *[(mapping(el.map_tails(mapping)) if is_symbol(el) else el) for el in self.tail])
         
 # Convenience functions:
@@ -104,16 +190,21 @@ def is_symbol(smbl):
 def symbols(*query):
     """
     Quickly make symbol objects. Usage similar to sympy's symbol function:
-    > a, b = symbol("a", "b")
-    > x, y, z = symbol("x, y, z")
+    
+    >>> a, b = symbols("a", "b")
+    >>> x, y, z = symbols("x, y, z")
     """
     symbols = [ Symbol(p.strip()) for q in query for p in q.split(",") ]
     return symbols if len(symbols)>1 else symbols[0]
 
 
 def topological_sort(dependency_pairs):
-    'Sort values subject to dependency constraints'
-    # stolen: https://stackoverflow.com/a/42359401
+    """Sort a graph (given as edge list) subject to dependency constraints.
+    The result are two lists: One for the sorted nodes, one for the
+    unsortable (cyclically dependent) nodes.
+    
+    Implementation shamelessly stolen from https://stackoverflow.com/a/42359401
+    """
     num_heads = collections.defaultdict(lambda: 0)   # num arrows pointing in
     tails = collections.defaultdict(list)      # list of arrows going out
     heads = []                     # unique list of heads in order first seen
@@ -139,29 +230,49 @@ def topological_sort(dependency_pairs):
 class State(collections.UserDict):
     """
     A state is a dictionary which is by convention a mapping from variable
-    names (as strings) to their symbolic meaning, i.e. a Symbol(). Since
-    Symbol() spawns an AST, a state is a list of variable definitions.
+    names (as *strings*) to their symbolic meaning, i.e. a ``Symbol()``.
+    We refer to the keys in the dictionary as the *Left Hand Side* (LHS) and
+    the values in the dictionary as the *Right Hand Side* (RHS), in analogy
+    to an Equation.
 
-    A state holds the content of a DDA file.
-    
+    .. note::
+
+       Since ``Symbol()`` spawns an AST, a state is a list of variable definitions.    
+       A DDA file is a collection of equations. Therefore, a state holds the
+       content of a DDA file.
+   
     This class collects a number of basic helper routines for dealing with
     states.
     
-    In order to simplify writing DDA files in python, this class extends
+    In order to simplify writing DDA files in Python, this class extends
     the dictionary idiom with the following optional features, which
     are turned on by default:
     
-    * Type peacemaking: Query a Symbol(), get translated to str().
-      Example: State(foo=Symbol("bar"))[Symbol("foo")] == Symbol("bar")
-    * Default Symbol: Automatically add an entry when unknown.
-      Example: State()["foo"] == Symbol("foo")
+    - **Type peacemaking**: Query a ``Symbol()``, get translated to
+      ``str()``:
+      
+      >>> State(foo=Symbol("bar"))[Symbol("foo")] == Symbol("bar")
+      
+    - **Default Symbol**: Automatically add an entry when unknown:
+      
+      >>> State()["foo"] == Symbol("foo")
     
-    By intention, the keys of the State are always strings, never Symbols.
-    This also should make sure you don't use complex ASTs for keys,
-    such as Symbol("foo", "bar").
+    .. note::
     
-    As this is a collections.UserDict, you can access the underlying
-    dict by accessing the attribute State().data
+       By intention, the keys of the State are always strings, never Symbols.
+       This also should make sure you don't use complex ASTs for keys,
+       such as ``Symbol("foo", "bar")``.
+    
+    As this is a ``collections.UserDict``, you can access the underlying dict:
+    
+    >>> x,y = symbols("x,y")
+    >>> add, integrate = symbols("add", "integrate")
+    >>> eqs = { x: add(y,y), y: int(x) }
+    >>> state = State(eqs); print(state)
+    State({'x': add(y, y), 'y': int(x)})
+    >>> state.data
+    {'x': add(y, y), 'y': int(x)}
+
     """    
     def __init__(self, initialdata=dict(), type_peacemaking=True, default_symbol=True):
         self.type_peacemaking = type_peacemaking
@@ -192,16 +303,17 @@ class State(collections.UserDict):
     
     def equation_adder(self):
         """
-        Syntactic sugar for adding new equations to the system.
-        Usage:
-        > eq = state.equation_adder
-        > eq(y=int(x))
-        > eq(x=add(y,z), z=int(x,0,0.1))
+        Syntactic sugar for adding new equations to the system. Usage:
+
+        >> eq = state.equation_adder
+        >> eq(y=int(x))
+        >> eq(x=add(y,z), z=int(x,0,0.1))
         
         Known limitations: This doesn't work because keywords must
-        not be variables:        
-        > x,y,z = State("x,y,z")
-        > eq(x=add(y,z))
+        not be variables:
+        
+        >> x,y,z = State("x,y,z")
+        >> eq(x=add(y,z))
         """
         def adder(**dct):
             for k,v in dct.items():
@@ -209,6 +321,7 @@ class State(collections.UserDict):
         return adder
         
     def map_tails(self, mapper):
+        "Apply :meth:`Symbol.map_tails` on all right hand sides."
         apply_mapper = lambda el: el.map_tails(mapper) if el.is_term() else mapper(el)
         return State({var: apply_mapper(self[var]) for var in self })
     
@@ -228,22 +341,30 @@ class State(collections.UserDict):
         Check validity of numeric constants in the state.
         Depending on context, values -1 < t < +1 are illegal.
         """
+        pass # TBD, probably not here
     
     def dependency_graph(self):
+        """Returns the edge list of the variable dependency graph of this state.
+        We can call ``topological_sort()`` on the result of this method.
+        """
         # Comptue adjacency list of dependencies. All is strings, no more symbols
         adjacency_list = { k: list(map(str, self[k].all_variables())) for k in self }
         # Edge list
         edge_list = [ (k,e) for k,dep in adjacency_list.items() for e in dep ]
         return edge_list
-    
-        # We can call topological_sort() on the result of this method.
         
     def draw_dependency_graph(self, export_dot=True, dot_filename="test.dot"):
         """
-        If you have networkx and pyGraphViz installed, you can use this method
-        to draw the dependency graph with Dot/GraphViz.
-        Your distribution package python-graphviz is probably not pygraphviz.
-        You are on the safe side if you run: pip install pygraphviz
+        If you have ``networkx`` and ``pyGraphViz`` installed, you can use this method
+        to draw the *variable dependency graph* (see method ``dependency_graph()``)
+        with ``Dot``/``GraphViz``. This method will return the ``nx.DiGraph()`` instance.
+        If ``export_dot`` is set, it will also write a dotfile, call ``dot`` to
+        render it to a bitmap and open that bitmap.
+        
+        .. note::
+        
+           Your distribution package ``python-graphviz`` is probably not ``pygraphviz``.
+           You are on the safe side if you run: ``pip install pygraphviz``
         """
         import networkx as nx
         from networkx.drawing.nx_agraph import graphviz_layout
@@ -258,9 +379,14 @@ class State(collections.UserDict):
 
     def name_computing_elements(self):
         """
-        Name all computing elements / intermediate expressions.
-        Limitations: expresions like foo(bar, baz(bla)) are not resolved.
-        This is good for const(1) but bad for neg(foo) or sqrt(bar).
+        Name all computing elements / intermediate expressions. Returns
+        a new State which is *linearized* in a way that the numbering proposes a computing
+        order.
+        
+        .. warning::
+           
+           Known limitations: expresions like ``foo(bar, baz(bla))`` are not resolved.
+           This is good for ``const(1)`` but bad for ``neg(foo)`` or ``sqrt(bar)``.
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
@@ -282,16 +408,27 @@ class State(collections.UserDict):
 
 class BreveState(State):
     """
-    This subclass of a state adds syntactic sugar by allowing attribute/member access
-    notation. Instead of state["foo"] you can write state.foo on instances of
-    this class.
+    This subclass of a state adds *syntactic sugar* by allowing attribute/member access
+    notation. Instead of ``state["foo"]`` you can write ``state.foo`` on instances of
+    this class. Example usage:
     
-    Known limitation:
-    * Breaks Python class introspection (for instance tab completion in iPython)
-    * Of course users cannot add any non-data related attribute (or method)
+    >>> x,y,z = symbols("x,y,z")
+    >>> state = BreveState()
+    >>> state.x = x(y,z)
+    >>> state.y = y(x,z)
+    >>> state.z = z(x,y)
+    >>> print(state)
+    BreveState({'x': x(y, z), 'y': y(x, z), 'z': z(x, y)})
     
-    If you find this class useful, you also might like types.SimpleNamespace or
-    collections.collections.namedtuple. Both are basically immutable, while this object type
+    .. warning::
+       
+       Known limitations:
+    
+       * Breaks Python class introspection (for instance tab completion in *iPython*)
+       * Of course users cannot add any non-data related attribute (or method)
+    
+    If you find this class useful, you also might like ``types.SimpleNamespace`` or
+    ``collections.namedtuple``. Both are basically immutable, while this object type
     is mutable by intention.
     """    
     wellknown = ("data", "type_peacemaking", "default_symbol")

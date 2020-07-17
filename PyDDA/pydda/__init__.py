@@ -24,14 +24,21 @@ The dda.py file can also be used as a command line utility. The
 behaviour is similar to the simulate.pl and dda2c.pl utilities but also
 covers a few more features.
 
-Known Bugs and limitations: (Amongst others)
+Known Bugs and limitations
+--------------------------
 
-(1) Aliasing
+(Amongst others)
 
-> state.foo = f(...)
-> state.bar = state.foo
+::
 
-doesn't resolve (state must point to terms, not variables)
+    (1) Aliasing
+
+    > state.foo = f(...)
+    > state.bar = state.foo
+
+    doesn't resolve (state must point to terms, not variables)
+    
+(See also the relevant Gitlab project and issues therein)
 
 Written in June 2020 by SvenK.
 Will be Open Sourced within the Analog R&D project.

@@ -1,3 +1,13 @@
+"""
+This module provides interplay with the SymPy package. SymPy is a lightweight
+pure-python computer algebra system which is bundled with SciPy.
+An adapter to/from SymPy allows to use powerful Computer Algebra basic
+functions such as expression simplification.
+
+We use this currently to provide a lean latex representation for the
+cumbersome DDA expressions.
+"""
+
 from . import exporter
 
 class to_sympy(exporter):

@@ -1,16 +1,67 @@
+"""
+The DDA language is built around the analog computing elements (or primitives).
+These are basically electrical block circuits implementing basic arithmetics
+such as summation and multiplication, but also integration. These are also
+special elements for clipping, exponentials, square roots, and many more.
+
+The DDA domain specific language is agnostic for function names. Host languages
+such as Python or C are not. Many of the function names are reserved words in
+these languages. Examples are:
+
+- ``const``: Reserved word in C/C++ for constant variables
+- ``int``: Type name in C, overwritable in python
+- ``sum``: Builtin in python
+- ``div``: Function in ``stdlib.h`` in C, which can cause clashes in slightly
+  more complex C codes.
+
+When it comes to exporting to languages such as C, we rewrite these keywords.
+In Python, we don't have to, because none of the well known DDA function names 
+is really *reserved*. The primitive builtins can always be recovered by
+``from builtins import int, sum``, etc.
+
+Different ways to access the well-known DDA computing elements in Python
+------------------------------------------------------------------------
+
+If you write
+
+>>> from pydda.computing_elements import *
+>>> int(int,sum)  # Make use of the imported Symbols
+int(int,sum)
+
+you will load a bunch of names such as ``int`` and ``sum`` in your local
+namespace.
+
+You can also just call
+
+>>> from pydda.computing_elements import dda_functions, dda_symbols
+>>> print(dda_symbols["floor"]) # will print a Symbol()
+floor
+
+You can use the symbols dictionary to populate your namespace at whish:
+
+>>> globals().update(dda_symbols)
+
+Note that Python globals are module-local, so we cannot provide this line
+as a function.
+
+Last but not least, you can also just use the namespaced version with
+prefixes, which leaves you on a safe footing:
+
+>>> dda.floor(dda.sum)
+floor(sum)
+
+Definition/Implementation of the primitives
+-------------------------------------------
+
+Once we have a pure-Python DDA evolution code (probably using scipy), we will
+have a python implementation of the DDA functions. Otherwise I could avoid that.
+This module also contains a C++ implementation of the primitives, which resides
+as a string (``cpp_impl``).
+
+"""
+
 from .ast import Symbol, State
 import types
-
-
-# Here come dragons: The following lines define a couple of handy variables
-# which can be used to write brever scripts. However, one probably does not
-# want to import them.
-#
-# Here is the big CAVEAT: The following will OVERWRITE python internals such
-# as int, sum, min, max. This can lead to very strange errors.
-# Note that you can always access the Python builtins by importing builtins
-# and using builtins.int, builtins.sum, etc.
-#
 
 # Here is the list of well-known DDA functions:
 dda_functions = "const neg div int sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor".split()
@@ -29,14 +80,6 @@ globals().update(dda_symbols)
 #const, neg, div, int, sum, mult, dead_upper, dead_lower, min, max, lt, le, gt, ge, sqrt, abs, exp, floor = symbols("\
 #const, neg, div, int, sum, mult, dead_upper, dead_lower, min, max, lt, le, gt, ge, sqrt, abs, exp, floor")
 
-# In order to access the dda functions in your global namespace, run this code:
-# > globals().update(dda_symbols)
-# Globals are module-local, so we cannot provide this as a function
-
-# -> thanks to this file, one can now just run
-# > from computing_elements import *
- 
- 
  
 # The implementation is given directly in the target language
 cpp_impl = """

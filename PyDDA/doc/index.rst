@@ -7,16 +7,7 @@ Analyzer*. PyDDA is open-source, *currently work in progress* and authored by
 `Anadigm Inc. <http://anadigm.com>`_. 
 You can read more about the goals of this software at the page
 :ref:`rationale`. Furthermore, this documentation covers the API exposed by
-PyDDA. The main objects are:
-
-.. autosummary::
-   :nosignatures:
-   :recursive:
-
-   pydda.Symbol
-   pydda.State
-
-
+PyDDA. 
 
 .. toctree::
    :maxdepth: 2
@@ -24,6 +15,10 @@ PyDDA. The main objects are:
    
    intro
    rationale
+   ast
+   dsl
+   computing_elements
+   cas
    
 
 About this documentation
