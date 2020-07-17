@@ -2,11 +2,14 @@ stages:
   - build
   - deploy
 
+# Todo: If docker image works, switch to sphinxdoc/sphinx-latexpdf
+# and add again make target latexpdf PAPER=a4
+  
 pydda make sphinx docs:
   stage: build
-  image: nickjer/docker-sphinx
+  image: sphinxdoc/sphinx
   script:
-    - cd PyDDA/doc && make -j html dirhtml text latexpdf PAPER=a4
+    - cd PyDDA/doc && make -j html dirhtml text
   artifacts:
     paths:
       - PyDDA/doc/_build/
