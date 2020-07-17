@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+_build/
+*.out
+*.tmp
+*.csv
+*.img
+*.pdf
