@@ -7,6 +7,7 @@ dependencies.
 
 If you are lazy, you can start using PyDDA right from here:
 
+```
 $ git clone git@lab.analogparadigm.com:koeppel/dda.git
 $ cd dda/PyDDA
 $ python3
@@ -15,6 +16,7 @@ $ python3
 >>> s.x = Symbol("int", "x", 0.02, 0)
 >>> print(s)
 State({'x': int(x, 0.02, 0)})
+```
 
 Please inspect the doc/ directory for instructions how to use the
 package. It contains also instructions how to install PyDDA properly.
