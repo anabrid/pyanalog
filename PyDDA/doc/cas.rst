@@ -16,7 +16,6 @@ So far, we had quick success with adopting SymPy:
 SymPy
 -----
 
-.. currentmodule:: pydda.sympy
 .. automodule:: pydda.sympy
    :members:
    

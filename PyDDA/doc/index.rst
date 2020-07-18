@@ -10,7 +10,7 @@ You can read more about the goals of this software at the page
 PyDDA. 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
    
    intro
@@ -19,6 +19,7 @@ PyDDA.
    dsl
    computing_elements
    cas
+   tips
    
 
 About this documentation
