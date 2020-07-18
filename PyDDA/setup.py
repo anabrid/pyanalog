@@ -3,13 +3,16 @@ from setuptools import setup
 # For good setup.py templates, see also
 # https://github.com/navdeep-G/setup.py/blob/master/setup.py
 
+package_name="pydda" # similar to same-named directory
+
 optional_packages = {
    "scipy": ["scipy"],
    "graphs": ["networkx", "pyGraphViz"],
+   "makedocs": ["sphinx"]
 }
 
 setup(
-   name='PyDDA',
+   name=package_name,
    version='0.10101',
    description='The digital differential analyzer python implementation',
    license="GPL et al",
@@ -17,7 +20,7 @@ setup(
    author='Anadigm',
    author_email='koeppel@analogparadigm.com',
    url="http://www.anadigm.com/",
-   packages=['PyDDA'],
+   packages=[package_name],
    extras_require=optional_packages,
    install_requires=[], # no external dependencies :-)
    scripts=[], # should collect some wannabe-$PATH scripts below scripts/
@@ -39,4 +42,9 @@ setup(
         'Topic :: Software Development :: Embedded Systems',
         'Topic :: Software Development :: Pre-processors'
     ],
+
+
+    # Can also add tests:
+#    setup_requires=['pytest-runner'],
+#    tests_require=['pytest'],
 )
