@@ -9,6 +9,7 @@ cumbersome DDA expressions.
 """
 
 from . import exporter
+import builtins
 
 class to_sympy(exporter):
     def run(self):

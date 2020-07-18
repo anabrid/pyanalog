@@ -29,7 +29,7 @@ which is basically a real number within a fixed interval.
    
 """
 
-from . import exporter
+from . import exporter, Symbol
 
 class traditional_dda_exporter(exporter):
     """

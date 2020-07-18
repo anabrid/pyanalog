@@ -17,7 +17,7 @@ represents a (traditional) DDA file. From a python perspective, a
 """
 
 # all "batteries included":
-import os, sys, textwrap, itertools, pprint, collections, types, builtins
+import os, sys, pprint, collections, types
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
 

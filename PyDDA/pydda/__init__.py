@@ -72,6 +72,9 @@ class exporter:
 
 def export(state, to, **kw):
     "Convenience function to export a state to something."
+    from .cpp_exporter import cpp_code_generator
+    from .dsl import traditional_dda_exporter
+    from .sympy import to_sympy
     exporters = { "c": cpp_code_generator, "dda": traditional_dda_exporter, "sympy": to_sympy }
     if not to.lower() in exporters:
         raise ValueError(f"Export format {to} not known. Valid are {exporters.keys()}.")
@@ -82,5 +85,5 @@ def export(state, to, **kw):
 # live in the package namespace.
 
 from .ast import Symbol, State, BreveState, symbols, is_symbol
-from .computing_elements import dda
+from .computing_elements import dda, dda_functions, dda_symbols
 from .sympy import to_sympy

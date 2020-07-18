@@ -3,7 +3,10 @@ C++ code generation
 """
 
 from . import exporter
+from .ast import State, Symbol, topological_sort
 from .computing_elements import cpp_impl
+
+import textwrap, itertools
 
 class cpp_code_generator(exporter):
     """
@@ -22,7 +25,7 @@ class cpp_code_generator(exporter):
 
     constexpr double %(nan_name)s = std::numeric_limits<double>::signaling_NaN();
 
-    %(c_impl)s
+    %(cpp_impl)s
 
     // Time-evolved variables, actual "state" (in general dq/dt!=0)
     struct %(state_type)s {
