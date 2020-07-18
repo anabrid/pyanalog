@@ -8,7 +8,7 @@ We use this currently to provide a lean latex representation for the
 cumbersome DDA expressions.
 """
 
-from . import exporter
+from . import exporter, Symbol
 import builtins
 
 class to_sympy(exporter):
