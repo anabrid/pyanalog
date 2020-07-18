@@ -1,12 +1,13 @@
 stages:
-  - build
-  - deploy
+  - build doc
+  - deploy doc
+  - test dda code
 
 # Todo: If docker image works, switch to sphinxdoc/sphinx-latexpdf
 # and add again make target latexpdf PAPER=a4
   
 pydda make sphinx docs:
-  stage: build
+  stage: build doc
   image: sphinxdoc/sphinx
   script:
     - cd PyDDA/doc && make -j html dirhtml text
@@ -15,9 +16,18 @@ pydda make sphinx docs:
       - PyDDA/doc/_build/
 
 pydda deploy sphinx docs:
-  stage: deploy
-  image: svenk/latex
+  stage: deploy doc
+  image: svenk/latex  # todo: join with upper job in a suitable docker image.
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
     - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
     - cd PyDDA/doc/_build && echo -e "cd www\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
+
+pydda test code:
+  stage: test dda code
+  image: python:3.8-slim-buster
+  script:
+    - pip install pytest  # whaaa! need better docker image.
+    - cd PyDDA
+    - pytest --doctest-modules --pyargs pydda  -v
+

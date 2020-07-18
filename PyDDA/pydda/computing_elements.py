@@ -26,7 +26,7 @@ If you write
 
 >>> from pydda.computing_elements import *
 >>> int(int,sum)  # Make use of the imported Symbols
-int(int,sum)
+int(int, sum)
 
 you will load a bunch of names such as ``int`` and ``sum`` in your local
 namespace.

@@ -67,8 +67,8 @@ def read_traditional_dda(content, return_ordered_dict=False):
        the output of ast.parse(content) on iPython. You can also run the Python
        debugger (pdb) on this function, for instance in iPython:
     
-       >>> %pdb
-       >>> read_traditional_dda(file("foo.dda").read())
+       >>> %pdb                                                  # doctest: +SKIP
+       >>> read_traditional_dda(file("foo.dda").read())          # doctest: +SKIP
     
     Returns a state instance or OrderedDict, on preference.
     """

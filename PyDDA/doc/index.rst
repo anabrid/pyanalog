@@ -14,15 +14,28 @@ Contents
 
 .. toctree::
    :maxdepth: 1
+   :caption: Introduction
 
    installation
    intro
    rationale
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API
+
    ast
    dsl
    computing_elements
    cas
+
+      
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+
    tips
+   code-testing
    
 
 About this documentation

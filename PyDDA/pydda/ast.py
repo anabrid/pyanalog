@@ -48,7 +48,7 @@ class Symbol:
     >>> print(x)
     x
     >>> x.head
-    "x"
+    'x'
     >>> x.tail
     ()
     
@@ -56,11 +56,11 @@ class Symbol:
     
     >>> f = Symbol("f", Symbol("x"), Symbol("y"))
     >>> print(f)
-    f(x,y)
+    f(x, y)
     >>> f.head
-    "f"
+    'f'
     >>> f.tail
-    (x,y)
+    (x, y)
     
     Symbols can be used to create even more Symbols:
     
@@ -68,7 +68,7 @@ class Symbol:
     >>> f(x)
     f(x)
     >>> x(x,f,x)
-    x(x,f,x)
+    x(x, f, x)
     
     Symbols are equal to each other if their head and tail equals:
     
@@ -99,7 +99,7 @@ class Symbol:
        
        >>> f = Symbol("f", "x", "y")
        >>> print(f)
-       f(x,y)
+       f(x, y)
        
        which looks identical to the example given before. This is
        *by intention* and breaks Python standard for ``repr()``
@@ -251,11 +251,13 @@ class State(collections.UserDict):
     - **Type peacemaking**: Query a ``Symbol()``, get translated to
       ``str()``:
       
-      >>> State(foo=Symbol("bar"))[Symbol("foo")] == Symbol("bar")
+      >>> State({ "foo": Symbol("bar")})[Symbol("foo")] == Symbol("bar")
+      True
       
     - **Default Symbol**: Automatically add an entry when unknown:
       
       >>> State()["foo"] == Symbol("foo")
+      True
     
     .. note::
     
@@ -267,11 +269,11 @@ class State(collections.UserDict):
     
     >>> x,y = symbols("x,y")
     >>> add, integrate = symbols("add", "integrate")
-    >>> eqs = { x: add(y,y), y: int(x) }
+    >>> eqs = { x: add(y,y), y: integrate(x) }
     >>> state = State(eqs); print(state)
-    State({'x': add(y, y), 'y': int(x)})
+    State({'x': add(y, y), 'y': integrate(x)})
     >>> state.data
-    {'x': add(y, y), 'y': int(x)}
+    {'x': add(y, y), 'y': integrate(x)}
 
     """    
     def __init__(self, initialdata=dict(), type_peacemaking=True, default_symbol=True):

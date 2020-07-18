@@ -1,6 +1,7 @@
 *.pyc
 __pycache__
 _build/
+.cache
 *.egg-info
 *.out
 *.tmp

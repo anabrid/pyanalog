@@ -8,7 +8,8 @@ package_name="pydda" # similar to same-named directory
 optional_packages = {
    "scipy": ["scipy"],
    "graphs": ["networkx", "pyGraphViz"],
-   "makedocs": ["sphinx"]
+   "makedocs": ["sphinx"],
+   "runtests": ["pytest"]
 }
 
 setup(
