@@ -49,36 +49,36 @@ import sys
 assert sys.version_info >= (3, 6), \
    "PyDDA uses f-strings all the ways, which require Python 3.6."
 
-# Define some administrative code which should go somewhere else
-# or be evventually deleted.
-
-class exporter:
-    "Base class for writing exporters. Should be removed."
-    def __init__(self, state, **kw):
-        self.__dict__.update(kw) # bit ugly parameter passing
-        self.state = state
-        self.run() # should be chainable (return self) and set self.output [str]
-        
-    def arg(self, name, default=None): # sugar
-        return self.__dict__.get(name, default)
-    
-    def print(self, to=sys.stdout):
-        if isinstance(to, str): to = open(to, "w") # a neat service
-        if not hasattr(self, "output"): self.run()
-        print(self.output, file=to)
-        self.output_filename = to.name
-        return self # chainable
-
 
 def export(state, to, **kw):
-    "Convenience function to export a state to something."
-    from .cpp_exporter import cpp_code_generator
+    """
+    Convenience function to export (transform) a state to some other
+    programming language.
+
+    Possible formats (allowed values for ``to``) supported so far are:
+    * C/C++
+    * DDA
+    * SymPy
+
+    This function shall be nice, so it accepts any spelling/notation
+    of these languages.
+
+    The return value are always named tuples or similar objects.
+    """
+    import re
+    from .cpp_exporter import to_cpp
     from .dsl import traditional_dda_exporter
-    from .sympy import to_sympy
-    exporters = { "c": cpp_code_generator, "dda": traditional_dda_exporter, "sympy": to_sympy }
-    if not to.lower() in exporters:
-        raise ValueError(f"Export format {to} not known. Valid are {exporters.keys()}.")
-    return exporters[to.lower()](state, **kw)
+    from .sympy import to_sympy, to_latex
+    exporters = {
+        "c(++|pp)?": to_cpp,
+        "dda": to_traditional_dda,
+        "sympy": to_sympy,
+        "latex": to_latex,
+    }
+    for k,v in exporters.items():
+        if re.match(k, to):
+            return v(state, **kw)
+    raise ValueError(f"Export format {to} not known. Valid (regexps) are {list(exporters.keys())}.")
 
 
 # populate namespace with some useful objects which should

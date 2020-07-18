@@ -406,7 +406,11 @@ class State(collections.UserDict):
         linearized_state = self.map_tails(register_computing_element)
         linearized_state.update(intermediates)
         return linearized_state
-    
+
+    def export(self, to, **passed_args):
+        "Syntactic sugar for pydda.export(), for convenience"
+        from . import export
+        return export(self, to, **passed_args)
 
 class BreveState(State):
     """
