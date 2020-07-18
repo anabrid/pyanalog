@@ -43,6 +43,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 autodoc_member_order = "bysource"
 
+# Solves "Sphinx Error contents.rst not found" on some systems, see
+# https://stackoverflow.com/a/56448499
+master_doc = "index"
 
 # -- Options for HTML output -------------------------------------------------
 

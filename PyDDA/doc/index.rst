@@ -9,9 +9,11 @@ You can read more about the goals of this software at the page
 :ref:`rationale`. Furthermore, this documentation covers the API exposed by
 PyDDA. 
 
+Contents
+--------
+
 .. toctree::
    :maxdepth: 1
-   :caption: Contents
 
    installation
    intro
@@ -46,7 +48,7 @@ You find these automatically built files at:
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -1,7 +1,7 @@
 .. _installation:
 
-Installation of PyDDA
-=====================
+Obtaining and installing PyDDA
+==============================
 
 PyDDA can be used without dependencies. Only make sure you use a *recent* Python 3
 installation. We use `f-strings`, so at least Python 3.6 is required.
