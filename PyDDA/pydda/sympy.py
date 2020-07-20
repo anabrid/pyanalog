@@ -8,10 +8,12 @@ We use this currently to provide a lean latex representation for the
 cumbersome DDA expressions.
 """
 
-from . import exporter, Symbol
+from . import Symbol
 import builtins
 
-def to_sympy(state):
+identity = lambda x:x
+
+def to_sympy(state, symbol_mapper=identity, round_n=15):
     """
     Export a state to a set of equations for SymPy.
     Returns a list of sympy.Eq objects.
@@ -24,11 +26,10 @@ def to_sympy(state):
     """
     import sympy
     
-    symbol_mapper = self.arg("symbol_mapper", lambda x:x)
     sympy_Symbol = lambda label: sympy.Symbol(symbol_mapper(label))
     
     # round large floats. Doesn't work yet.
-    rhs_rounder = lambda rhs: sympy.N(rhs, n=self.arg("round_n", 15))
+    rhs_rounder = lambda rhs: sympy.N(rhs, n=round_n)
     
     int = builtins.int # just to go sure
     t = sympy_Symbol("t")
@@ -64,7 +65,7 @@ def to_sympy(state):
     equation_list = [ sympy.Eq(sympy_Symbol(lhs), rhs_rounder(symbol2sympy(state[lhs])))  for lhs in sorted(state) ]
     return equation_list
 
-def to_latex(state):
+def to_latex(state, chunk_equations=None):
     "Export to latex using sympy"
     equation_list = to_sympy(state)
 
@@ -78,7 +79,6 @@ def to_latex(state):
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
     
-    chunk_n = self.arg("chunk_equations", None)
     latex = "\n".join(map(equation_list_to_align, chunks(s,chunk_n) if chunk_n else [s]))
     return latex
  

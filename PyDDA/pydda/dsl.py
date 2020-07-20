@@ -29,7 +29,7 @@ which is basically a real number within a fixed interval.
    
 """
 
-from . import exporter, Symbol
+from . import Symbol
 
 def to_traditional_dda(state):
     """
@@ -40,7 +40,7 @@ def to_traditional_dda(state):
     
     # Not sure about scattered consts, maybe just remove them for the time being.
     remove_const = lambda x: x.tail[0] if isinstance(x,Symbol) and x.head=="const" else x
-    state = self.state.map_tails(remove_const)
+    state = state.map_tails(remove_const)
     # TODO: Treat constants better. They have deserved it!
 
     dda_lines = []

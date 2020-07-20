@@ -17,8 +17,8 @@ Contents
    :caption: Introduction
 
    installation
-   intro
    rationale
+   intro
 
 .. toctree::
    :maxdepth: 1

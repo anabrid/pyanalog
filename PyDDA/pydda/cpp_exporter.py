@@ -2,7 +2,6 @@
 C++ code generation
 """
 
-from . import exporter
 from .ast import State, Symbol, topological_sort
 from .computing_elements import cpp_impl
 
@@ -126,7 +125,7 @@ def to_cpp(state, writer_fields="All",
     state_name, dqdt_name, aux_name, other_name = "_state", "_dqdt", "_aux", "_other"
     nan_name = "_nan_"
 
-    state = self.state.name_computing_elements()
+    state = state.name_computing_elements()
 
     # Thanks to named computing elements, can find all int(...) expressions
     # without searching, since they must come first.
@@ -180,7 +179,8 @@ def to_cpp(state, writer_fields="All",
     #all_vars = sorted_vars + cyclic_vars
     # aux_variables = set(all_vars) - set(evolved_variables) but preserving sorting.
 
-    self.unneeded_auxers = set(aux_variables) - (set(sorted_aux_vars) | set(cyclic_aux_vars))
+    # TODO: Make returnable or at least warn user!
+    unneeded_auxers = set(aux_variables) - (set(sorted_aux_vars) | set(cyclic_aux_vars))
 
     # do the renaming *after* variable dependency analysis
     state = state.map_tails(remove_const)
@@ -213,10 +213,11 @@ def to_cpp(state, writer_fields="All",
     equations.append("// 3. State variable changes (dqdt), finally")
     equations += state_assignments(dqdt_name, evolved_variables)
     equations.append("// 4. Unneeded auxilliary variables (maybe postprocessing, etc.)")
-    equations += state_assignments(aux_name, self.unneeded_auxers)
+    equations += state_assignments(aux_name, unneeded_auxers)
     equations = C(equations)
 
-    writer_fields = self.arg("writer_fields", default=all_vars)
+    if writer_fields == "All":
+        writer_fields = all_vars
     writer_header = '"'+" ".join(writer_fields)+'"'
     writer_format_arguments = J(f"{struct_for(v)}.{v}" for v in writer_fields)
     writer_formatstring = '"'+" ".join('%f' for v in writer_fields)+"\\n\""
@@ -231,12 +232,7 @@ def to_cpp(state, writer_fields="All",
     dqdt_operators = C(C(make_operator(s,o,a)) for s,(o,a) in
         itertools.product("*+", zip((state_type, "double"), (True,False))))
 
-    # TODO: make user-definable
-    modulo_write = self.arg("modulo_write", default=20)
-    max_iterations = self.arg("max_iterations", default=30000)
-    rk_order = self.arg("rk_order", default=1)
-
-    output = self.cpp_template % {**locals(), **globals()}
+    output = cpp_template % {**locals(), **globals()}
     return output
 
 # What follows are a few helper functions to make the usage nicer
