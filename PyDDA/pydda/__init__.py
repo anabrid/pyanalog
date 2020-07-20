@@ -67,16 +67,16 @@ def export(state, to, **kw):
     """
     import re
     from .cpp_exporter import to_cpp
-    from .dsl import traditional_dda_exporter
+    from .dsl import to_traditional_dda
     from .sympy import to_sympy, to_latex
     exporters = {
-        "c(++|pp)?": to_cpp,
+        r"c(\+\+|pp)?": to_cpp,
         "dda": to_traditional_dda,
         "sympy": to_sympy,
         "latex": to_latex,
     }
     for k,v in exporters.items():
-        if re.match(k, to):
+        if re.match(k, to, re.IGNORECASE):
             return v(state, **kw)
     raise ValueError(f"Export format {to} not known. Valid (regexps) are {list(exporters.keys())}.")
 

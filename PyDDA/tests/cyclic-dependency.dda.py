@@ -2,6 +2,8 @@
 #
 # N-body with an inverse square law force (Coulumb/Newton like)
 #
+# -> TODO: PyDDA doesn't generate correct C++ code yet for this problem.
+#
 # for dt in 1 0.1 0.01 0.001 0.0001; do sed -i "s/^dt =.*$/dt = const($dt)/" 1d_exp.dda ; T=$(bc -l <<< "5* 1./$dt"); echo "dt=$dt T=$T"; ./simulate.pl 1d_exp.dda $T 1 minus_dy y; cp gnuplot.pdf 1d_exp-dt$dt.pdf; done;
 
 from pydda.computing_elements import *
