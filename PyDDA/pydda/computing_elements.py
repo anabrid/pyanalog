@@ -60,7 +60,7 @@ as a string (``cpp_impl``).
 
 """
 
-from .ast import Symbol, State
+from .ast import Symbol, State, symbols
 import types
 
 # Here is the list of well-known DDA functions:

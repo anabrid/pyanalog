@@ -190,7 +190,7 @@ def to_cpp(state, writer_fields="All",
     J = lambda whatever: ", ".join(whatever)
     C = lambda whatever: textwrap.indent(whatever if isinstance(whatever, str) else  "\n".join(whatever), indent)
     CC = lambda whatevr: C(C(whatevr)) # two indentations ;-)
-    varlist = lambda ctype, lst: C(textwrap.wrap(f"{ctype} {', '.join(lst)};", width=50))
+    varlist = lambda ctype, lst: C(textwrap.wrap(f"{ctype} {', '.join(lst)};", width=50)) if lst else ""
 
     state_var_definition = varlist("double", evolved_variables)
     aux_var_definition = varlist("double", aux_variables)
@@ -237,11 +237,40 @@ def to_cpp(state, writer_fields="All",
 
 # What follows are a few helper functions to make the usage nicer
 
-def compile(code, basename, compiler="g++", compiler_output="a.out", options="-Wall"):
-    "Simple helper function to nicely invoke a compiler"
-    if system(f"{compiler} -o{compiler_output} {options} {basename}"): raise ValueError("Could not compile C source!")
+def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.out", options="-Wall"):
+    """
+    Write code to c_filename and run the compiler on that, afterwards.
+    Will raise an error if compilation fails.
+    """
+    from os import system
+    with open(c_filename, "w") as fh:
+        print(code, file=fh)
+    if system(f"{compiler} -o{compiler_output} {options} {c_filename}"):
+        raise ValueError("Could not compile C source!")
 
-def run(compiled_binary, scratch_file="test.csv"):
-    if system(f"./{compiler_output} > {scratch_file}"): raise ValueError("Could not execute simulation!");
-    # TODO: Could think about slurping STDOUt directly without scratch file.
-
+def run(command="./a.out"):
+    """
+    Run an executable and pipe the stdout to a string, which is returned.
+    Stderr will just be passed.
+    The function will return once the binary finished or raise in case of error.
+    """
+    import subprocess, io, sys
+    #stdout, stderr = io.StringIO(), io.StringIO()
+    proc = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    #proc.wait()
+    
+    # instead of proc.wait(), which could deadlock when the stdout buffer
+    # is full, do this:
+    stdout, stderr = "", ""
+    while proc.poll() == None:
+        stdout += proc.stdout.read()
+        stderr += proc.stderr.read()
+    stdout += proc.stdout.read()
+    stderr += proc.stderr.read()
+    #stdout, stderr = stdout.getvalue(), stderr.getvalue()
+    if proc.returncode:
+        print(stdout)
+        print("STDERR:", stderr)
+        raise ValueError(f"Could not execute '{command}'. Please run on the command line for inspection. Probably use gdb.")
+    else:
+        return stdout
