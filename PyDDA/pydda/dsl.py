@@ -29,7 +29,8 @@ which is basically a real number within a fixed interval.
    
 """
 
-from . import Symbol
+from . import ast as dda # in order to explicitely write dda.Symbol, dda.State
+import collections
 
 def to_traditional_dda(state):
     """
@@ -39,7 +40,7 @@ def to_traditional_dda(state):
     """
     
     # Not sure about scattered consts, maybe just remove them for the time being.
-    remove_const = lambda x: x.tail[0] if isinstance(x,Symbol) and x.head=="const" else x
+    remove_const = lambda x: x.tail[0] if isinstance(x,dda.Symbol) and x.head=="const" else x
     state = state.map_tails(remove_const)
     # TODO: Treat constants better. They have deserved it!
 
@@ -87,9 +88,12 @@ def read_traditional_dda(content, return_ordered_dict=False):
         if isinstance(argument, ast.Constant):
             return argument.value
         elif isinstance(argument, ast.Name):
-            return argument.id
+            return dda.Symbol(argument.id)
         elif isinstance(argument, ast.Call):
             return call2symbol(argument)
+        elif isinstance(argument, ast.UnaryOp):
+            # something like -1 is represented as ~ ast.USub(-1)
+            return ast.literal_eval(argument)
         else:
             raise TypeError(f"Don't understand argument '{expr_as_str}'")
     
@@ -101,7 +105,7 @@ def read_traditional_dda(content, return_ordered_dict=False):
         assert type(statement.func) == ast.Name, f"Dunno, what is {statement.func}?"
         head = statement.func.id
         tail = map(arg2symbol, statement.args)
-        return Symbol(head, *tail)
+        return dda.Symbol(head, *tail)
     
     def ast_assignment_to_tuple(assign):
         line = ast.get_source_segment(content, assign) # for debugging, can also print ast.dump(assign)
@@ -113,6 +117,6 @@ def read_traditional_dda(content, return_ordered_dict=False):
     
     result = map(ast_assignment_to_tuple, tree.body)
     mapping = collections.OrderedDict(result)
-    return mapping if return_dict else State(mapping)
+    return mapping if return_ordered_dict else dda.State(mapping)
 
 

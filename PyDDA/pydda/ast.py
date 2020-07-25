@@ -337,7 +337,7 @@ class State(collections.UserDict):
     def symbols(self, *query):
         "Same as symbols() above, but register at self (state)"
         return [ self[x.head] for x in symbols(*query) ]
-    
+        
     def constant_validity(self):
         """
         Check validity of numeric constants in the state.
@@ -385,10 +385,21 @@ class State(collections.UserDict):
         a new State which is *linearized* in a way that the numbering proposes a computing
         order.
         
+        Linearization is a fix point operation, i.e. for any
+        ``lin = state.name_computing_elements()`` it is ``lin == lin.name_computing_elements()``.
+        
         .. warning::
            
            Known limitations: expresions like ``foo(bar, baz(bla))`` are not resolved.
-           This is good for ``const(1)`` but bad for ``neg(foo)`` or ``sqrt(bar)``.
+           This is good for ``const(1)`` but bad for ``neg(foo)`` or ``sqrt(bar)``:
+           
+           >>> x,y = symbols("x,y")
+           >> ns = State({ x: x(x, x(y)) })
+           >> ns.name_computing_elements() == ns
+           True
+           
+           But this is clearly wrong, the correct linearization would give ``x(y)`` a name.
+           FIXME
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
@@ -406,6 +417,80 @@ class State(collections.UserDict):
         linearized_state = self.map_tails(register_computing_element)
         linearized_state.update(intermediates)
         return linearized_state
+        
+    def variable_ordering(self):
+        """
+        Will perform an analysis of all variables occuring in this state (especially in the RHS).
+        This is based on the linarized variant of this state (see ``name_computing_elements()``).
+        
+        The return value is an object (actually a types.SimpleNamespace instance) which contains
+        lists of variable names (as strings). The properties (categories) are primarly
+        
+          * explicit constants: Any entry ``state["foo"] = const(1.234)``
+          * State variables/evolved variables: Any outcome of a time integration, i.e. ``int(...)``,
+            i.e. ``Symbol("int")``. This can be as simple as ``state["foo"] = int(Symbol("foo"),...)``.
+            Complex terms such as ``state["foo"] = mult(int(foo), int(bar))`` will result in
+            intermediate variables called like ``int_0``, ``int_1``(see ``name_computing_elements()``
+            for the code which invents these names), which are the actual evolved variables.
+          * Auxilliary variables: Any other variables which are required to compute evolved
+            variables.
+            
+        By intention, we **sort only the aux. variables**. One should check that they DO NOT have any
+        cyclic dependency, because feedback loops are only useful on integrators at this level
+        of circuit modeling.
+
+        We differntiate the auxilliaries further into:
+        
+          * ``sorted_aux_vars``: Auxilliaries required to compute the state variable changes
+          * ``cyclic_aux_vars``: Auxilliaries which have a cyclic dependency on each other
+            (this should not happen as it won't lead to a stable circuit)
+          * ``unneeded_auxers``: Auxilliaries which are not required to compute the state.
+            These are probably used in postprocessing. If they depend on the state variables,
+            further work is neccessary.
+            
+        An imperative code for evolving this state in time should then compute all aux.
+        variables in the respective order before computing ``dqdt``. The dependency is
+        basically, in pseudo code:
+        
+        >>> aux  = function_of(aux, state)                    # doctest: +SKIP
+        >>> dqdt = function_of(aux, state)                    # doctest: +SKIP
+        
+        and in the numerical integration schema step
+        
+        >>> state = function_of(dqdt)                         # doctest: +SKIP
+        
+        TODO: Write more documentation :-)
+        """
+        
+        lin = self.name_computing_elements()
+        vars = types.SimpleNamespace()
+        vars.aux = types.SimpleNamespace()
+        
+        # Thanks to named computing elements, can find all int(...) expressions
+        # without searching, since they must come first.
+        vars.evolved  = sorted(filter(lambda var: lin[var].head == "int",   lin))
+        vars.explicit_constants = sorted(filter(lambda var: lin[var].head == "const", lin))
+
+        # Then compute ALL aux variables BEFORE computing dqdt.
+        # The order of dqdt should not be touched, as there CAN NOT be any
+        # dependency, since dqdt.foo = int(lin).
+
+        vars.all = sorted(set.union(*[set(map(str, lin[k].all_variables())) for k in self], set(self)))
+        vars.aux.all = [ v for v in vars.all if not v in vars.evolved and not v in vars.explicit_constants  ]
+
+        # Linearize aux expressions by dependency sorting.
+        dep_edge_list = lin.dependency_graph()
+        # Edge direction: (a,b) = [dependent variable a]--[depends on]-->[dependency b]
+        aux_dep_edges = [ (a,b) for a,b in dep_edge_list if a in vars.aux.all and b in vars.aux.all ]
+        #sorted_vars, cyclic_vars = topological_sort(dep_edge_list)
+        vars.aux.sorted, vars.aux.cyclic = topological_sort(aux_dep_edges)
+
+        vars.aux.unneeded = set(vars.aux.all) - (set(vars.aux.sorted) | set(vars.aux.cyclic) | set(vars.explicit_constants))
+        
+        ordering = ["vars.explicit_constants", "vars.aux.sorted", "vars.aux.cyclic", "vars.evolved", "vars.aux.unneeded"]
+        vars.ordering = collections.OrderedDict([ (name, eval(name, {"vars":vars})) for name in ordering ])
+        
+        return vars
 
     def export(self, to, **passed_args):
         "Syntactic sugar for pydda.export(), for convenience"
