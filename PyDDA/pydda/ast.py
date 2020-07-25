@@ -394,8 +394,8 @@ class State(collections.UserDict):
            This is good for ``const(1)`` but bad for ``neg(foo)`` or ``sqrt(bar)``:
            
            >>> x,y = symbols("x,y")
-           >> ns = State({ x: x(x, x(y)) })
-           >> ns.name_computing_elements() == ns
+           >>> ns = State({ x: x(x, x(y)) })
+           >>> ns.name_computing_elements() == ns
            True
            
            But this is clearly wrong, the correct linearization would give ``x(y)`` a name.
