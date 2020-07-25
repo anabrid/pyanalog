@@ -1,0 +1,54 @@
+# This is a YAML description file for a machine.
+# A poor man's Analog HDL (should use Verilog HDLs instead)
+
+title: XBAR-Only
+
+description: |
+   Test machine which only programs an XBAR with dummy inputs/outputs.
+   
+configurable_parts:
+   D1:  { type: DummyType }
+   D2:  { type: DummyType }
+   D3:  { type: DummyType }
+   D4:  { type: DummyType }
+   D5:  { type: DummyType }
+   D6:  { type: DummyType }
+   D7:  { type: DummyType }
+   D8:  { type: DummyType }
+   D9:  { type: DummyType }
+   D10: { type: DummyType }
+   D11: { type: DummyType }
+   D12: { type: DummyType }
+   D13: { type: DummyType }
+   D14: { type: DummyType }
+   D15: { type: DummyType }
+   D16: { type: DummyType }
+   None:
+     cannot_be_allocated: True
+     type: NoneType
+
+entities:
+   DummyType:
+     input:
+       - name: v
+         type: analog
+     output:
+       - name: v
+         type: analog
+     default_inputs: { v: 0 } 
+
+   NoneType:
+     input:          [{ name: none, type: analog }]
+     output:         [{ name: none, type: analog }]
+     default_inputs: { none: 0 }
+
+wired_parts:
+  X1:
+    type: XBAR
+    address: 0x0020  # FIXME
+    # Datasheet of chip AD8113:
+    # https://www.analog.com/media/en/technical-documentation/data-sheets/AD8113.pdf
+    topology: Single AD8113
+    size: [ 16, 16 ]
+    input_columns: [ D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, D16 ]
+    output_rows:   [ D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, D16 ]

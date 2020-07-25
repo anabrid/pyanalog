@@ -1,0 +1,55 @@
+title: Biochemie-Beispiel (n1.pdf)
+
+#### OLD AND CERTAINLY WRONG
+
+description: |
+  This system implements the equations
+    n'      = -k_{+1} n
+    n'_R    =  k_{+1} n - k_u n_R - k_{+2} n_R d + k_{-2} n_{RD}
+    n'_{RD} =  k_{+2} n_R d - k_{-2} n_{RD}
+    d'      = -n'_{RD} + d(0)
+  In this notation, x' means the time derivative of x.
+  The time scale factors of all integrators are expected as k_0 = 10^3.
+  All integrators have intput weights 10.
+
+coefficients:
+  kp1: 0.5
+  kp2: 0.8
+  km2: 0.7
+  ku:  0.3
+  
+  d0:  0.5
+  n0:  0.5
+
+program:
+  I1:
+    type: INTp
+    input:
+      a0: kp1
+      a: I1
+      ic: n0
+      icSign: False # -1
+  I2:
+    type: INTpinv
+    input: [1, S3: inv, 1, S2: inv]
+  I3:
+    type: INTpinv
+    input: [1, M1, km2, I3]
+  M1:
+    type: MULpinv
+    input: [1, S1, kp2, I2]
+  S1:
+    type: SUMp
+    input: [1, I3: inv, d0, MinusOne]
+  S2:
+    type: SUMpinv
+    input: [1, M1: inv, ku, I2]
+  S3:
+    type: SUMpinv
+    input: [kp1, I1, km2, I3: inv]
+
+observables:
+  n: I1
+  nR: {I2: inv}
+  nRD: {I3: inv}
+  d: S1

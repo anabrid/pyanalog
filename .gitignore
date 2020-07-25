@@ -8,3 +8,11 @@ _build/
 *.csv
 *.img
 *.pdf
+
+# from pyFPAA
+*.pdf
+*.png
+.directory
+*.err
+*.out
+*.dat

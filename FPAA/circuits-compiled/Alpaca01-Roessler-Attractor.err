@@ -1,0 +1,54 @@
+Welcome to the HyConAVR.ino Program Compiler.
+Input program: Rössler-attractor (Alpaca1)
+Target machine: AP/M-1 Mini
+Allocating Type INT2m: Mapping circuit part I1 onto architecture part INT0-2
+Allocating Type INT2pm: Mapping circuit part I2 onto architecture part INT0-0
+Allocating Type INT2pm: Mapping circuit part I3 onto architecture part INT0-1
+Allocating Type MUL2p: Mapping circuit part M1 onto architecture part MLT0-1
+Allocating Type SUM2pm: Mapping circuit part S1 onto architecture part SUM0-0
+Allocating Type SUM2pm: Mapping circuit part S2 onto architecture part SUM0-1
+Observable x (user defined part {'I1': 'neg'}) can be measured at architecture part output INT0-2:neg, adress 0x0162
+Observable y (user defined part {'I2': 'pos'}) can be measured at architecture part output INT0-0:pos, adress 0x0123
+Observable z (user defined part {'I3': 'pos'}) can be measured at architecture part output INT0-1:pos, adress 0x0126
+XBAR@40: Computing XBAR of size NxM=16x16
+XBAR@40: Writing bitmatrix[row  0]: 0000000000100000=10=0xa -> INT0-0:a       [sending 11010]
+XBAR@40: Writing bitmatrix[row  1]: 0000000000000100=13=0xd -> INT0-0:b       [sending 11101]
+XBAR@40: Writing bitmatrix[row  2]: 1000000000000000= 0=0x0 -> INT0-1:a       [sending 10000]
+XBAR@40: Writing bitmatrix[row  3]: 0000010000000000= 5=0x5 -> INT0-1:b       [sending 10101]
+XBAR@40: Writing bitmatrix[row  4]: 0000000000010000=11=0xb -> INT0-2:a       [sending 11011]
+XBAR@40: Writing bitmatrix[row  5]: 0000000000000100=13=0xd -> INT0-2:b       [sending 11101]
+XBAR@40: Writing bitmatrix[row  6]: 1000000000000000= 0=0x0 -> MLT0-0:a       [sending 10000]
+XBAR@40: Writing bitmatrix[row  7]: 1000000000000000= 0=0x0 -> MLT0-0:b       [sending 10000]
+XBAR@40: Writing bitmatrix[row  8]: 0001000000000000= 3=0x3 -> MLT0-1:a       [sending 10011]
+XBAR@40: Writing bitmatrix[row  9]: 0000000000010000=11=0xb -> MLT0-1:b       [sending 11011]
+XBAR@40: Writing bitmatrix[row 10]: 0000000100000000= 7=0x7 -> SUM0-0:a       [sending 10111]
+XBAR@40: Writing bitmatrix[row 11]: 0000000100000000= 7=0x7 -> SUM0-0:b       [sending 10111]
+XBAR@40: Writing bitmatrix[row 12]: 0100000000000000= 1=0x1 -> SUM0-1:a       [sending 10001]
+XBAR@40: Writing bitmatrix[row 13]: 0000000000100000=10=0xa -> SUM0-1:b       [sending 11010]
+XBAR@40: Writing bitmatrix[row 14]: 0000000000000000 [output not enabled] [sending 00000]
+XBAR@40: Writing bitmatrix[row 15]: 0000000000000000 [output not enabled] [sending 00000]
+Bitstream to send (80 characters): 00000000001101010001101111011111011100111000010000111011101110101100001110111010
+Hextream  to send (20 characters): 00351BDF73843BBAC3BA
+DPT24@60: Storing value  128 at DPT port  0 (corresponding to INT0-0:a0)
+DPT24@60: Storing value   20 at DPT port  1 (corresponding to INT0-0:b0)
+DPT24@60: Storing value    5 at DPT port  2 (corresponding to INT0-1:a0)
+DPT24@60: Storing value  102 at DPT port  3 (corresponding to INT0-1:b0)
+DPT24@60: Storing value   82 at DPT port  4 (corresponding to INT0-2:a0)
+DPT24@60: Storing value  235 at DPT port  5 (corresponding to INT0-2:b0)
+DPT24@60: Storing value    0 at DPT port  6 (corresponding to MLT0-0:a0)
+DPT24@60: Storing value    0 at DPT port  7 (corresponding to MLT0-0:b0)
+DPT24@60: Storing value 1023 at DPT port  8 (corresponding to MLT0-1:a0)
+DPT24@60: Storing value 1023 at DPT port  9 (corresponding to MLT0-1:b0)
+DPT24@60: Storing value  102 at DPT port 10 (corresponding to SUM0-0:a0)
+DPT24@60: Storing value   51 at DPT port 11 (corresponding to SUM0-0:b0)
+DPT24@60: Storing value   39 at DPT port 12 (corresponding to SUM0-1:a0)
+DPT24@60: Storing value  102 at DPT port 13 (corresponding to SUM0-1:b0)
+DPT24@60: Storing value    0 at DPT port 14 (corresponding to SUM0-2:a0)
+DPT24@60: Storing value    0 at DPT port 15 (corresponding to SUM0-2:b0)
+HC@80: Storing value    0 at DPT port  0 (corresponding to INT0-0:ic)
+HC@80: Storing value    0 at DPT port  1 (corresponding to INT0-1:ic)
+HC@80: Storing value   68 at DPT port  2 (corresponding to INT0-2:ic)
+HC@80: Storing True at digital output port 0 (corresponding to INT0-0:icSign)
+HC@80: Storing True at digital output port 1 (corresponding to INT0-1:icSign)
+HC@80: Storing True at digital output port 2 (corresponding to INT0-2:icSign)
+Drawing the XBAR to ../circuits-compiled/Alpaca01-Roessler-Attractor.png...

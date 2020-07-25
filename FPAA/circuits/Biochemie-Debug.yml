@@ -1,0 +1,61 @@
+title: Biochemie-Beispiel (n1.pdf)
+
+description: |
+  This system implements the equations
+    n'      = -k_{+1} n
+    n'_R    =  k_{+1} n - k_u n_R - k_{+2} n_R d + k_{-2} n_{RD}
+    n'_{RD} =  k_{+2} n_R d - k_{-2} n_{RD}
+    d'      = -n'_{RD} + d(0)
+  In this notation, x' means the time derivative of x.
+  The time scale factors of all integrators are expected as k_0 = 10^3.
+  All integrators have intput weights 10.
+
+coefficients:
+  kp1: 0.5
+  kp1overTen: 0.05
+  kp2: 0.8
+  kp2overTen: 0.08
+  km2: 0.7
+  km2overTen: 0.07
+  ku:  0.3
+  kuOverTen: 0.03
+  
+  d0:  0.5
+  d0overTen: 0.05
+  n0:  0.5
+
+program:
+  I0:
+    type: INT2m
+    input:
+      a0: kp1overTen
+      a: I0
+      ic: n0
+      icSign: True # Soll plus sein!
+  I1:
+    type: INT2pm
+    input: [0.1, S3, 0.1, S2]
+  I2:
+    type: INT2pm
+    input: [0.1, M: neg, km2overTen, I2: neg]
+  M:
+    type: MUL2pm
+    input: [0.1, S1, kp2overTen, I1 ]
+  S1:
+    type: SUM2m
+    input: [0.1, I2: pos, d0overTen, MinusOne ]
+  S2:
+    type: SUM2pm
+    input: [0.1, None, kuOverTen, I1 ] # M->None zum Testen
+  S3:
+    type: SUM2pm
+    input: [kp1overTen, I0, kuOverTen, None ] # I2->None zum Testen
+
+observables:
+  n: I0
+  d: S1
+  nRD: {I2: pos}
+  nR: {I1: pos}
+    
+    
+    

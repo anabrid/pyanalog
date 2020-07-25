@@ -1,0 +1,21 @@
+title: CrossTest1
+
+description: "Asked for by Bernd"
+
+program:
+  D1:  { type: DummyType, input: [  D1 ] }
+  D2:  { type: DummyType, input: [  D2 ] }
+  D3:  { type: DummyType, input: [  D3 ] }
+  D4:  { type: DummyType, input: [  D4 ] }
+  D5:  { type: DummyType, input: [  D5 ] }
+  D6:  { type: DummyType, input: [  D6 ] }
+  D7:  { type: DummyType, input: [  D7 ] }
+  D8:  { type: DummyType, input: [  D8 ] }
+  D9:  { type: DummyType, input: [  D9 ] }
+  D10: { type: DummyType, input: [ D10 ] }
+  D11: { type: DummyType, input: [ D11 ] }
+  D12: { type: DummyType, input: [ D12 ] }
+  D13: { type: DummyType, input: [ D13 ] }
+  D14: { type: DummyType, input: [ D14 ] }
+  D15: { type: DummyType, input: [ D15 ] }
+  D16: { type: DummyType, input: [ D16 ] }

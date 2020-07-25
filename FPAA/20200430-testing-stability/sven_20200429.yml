@@ -1,0 +1,176 @@
+#  This is a complete configuration file for the Analog Paradigm Model-1
+# hybrid computer with experimental crossbar module XBAR16. 
+tcp:
+    addr: corcoran.technocratia.ufopixel.de
+    port: 12345
+    connection_timeout: 2
+    timeout: 0.1
+    poll_interval: 10
+    poll_attempts: 2000
+    quick_start: True
+nope-serial:
+    port: /dev/cu.usbserial-DN050L1O
+    bits: 8
+    baud: 250000
+    parity: none
+    stopbits: 1
+    poll_interval: 10
+    poll_attempts: 20000
+types:
+    0: PS
+    1: SUM8
+    2: INT4
+    3: PT8
+    4: CU
+    5: MLT8
+    6: MDS2
+    7: CMP4
+    8: HC
+elements: 
+    HC:     0080
+    DPT24:  0060
+    XBAR16: 0040
+#  General: Summers and integrators have four active inputs each. The first
+# three inputs (a, b, c) of an integrator have weight 10, while the fourth 
+# input (d) has # weight 1. The first two (!) inputs of every summer have 
+# weight 10 while the second two have weight 1. Every input is connected to a 
+# digital potentiometer.
+    SUM0-: 0120
+    SUM0+: 0124
+    SUM0a: 0060/0
+    SUM0b: 0060/1
+    SUM0c: 0060/2
+    SUM0d: 0060/3
+
+    SUM1-: 0121
+    SUM1+: 0125
+    SUM1a: 0060/4
+    SUM1b: 0060/5
+    SUM1c: 0060/6
+    SUM1d: 0060/7
+
+    SUM2-: 0122
+    SUM2a: 0060/8
+    SUM2b: 0060/9
+    SUM2c: 0060/a
+    SUM2d: 0060/b
+# Integrators:
+#  The digital output controlling polarity for each initial condition must 
+# correspond to the number of the digital potentiometer on the hybrid controller
+# when setting up the hybrid computer's patch panel, i.e. DOUT 0 controls
+# the electronic switch 0 of a CMP4 module connected to 0080/0 (the first DPT
+# of the HC).
+    INT0-: 0160
+    INT0+: 0123
+    INT0a: 0060/c
+    INT0b: 0060/d
+    INT0c: 0060/e
+    INT0d: 0060/f
+    INT0ic: 0080/0
+
+    INT1-: 0161
+    INT1+: 0126
+    INT1a: 0060/10
+    INT1b: 0060/11
+    INT1c: 0060/12
+    INT1d: 0060/13
+    INT1ic: 0080/1
+
+    INT2-: 0162
+    INT2a: 0060/14
+    INT2b: 0060/15
+    INT2c: 0060/16
+    INT2d: 0060/17
+    INT2ic: 0080/2
+
+    MLT0+: 0100
+    MLT0-: 0127
+    MLT0a: 0080/4
+    MLT0b: 0080/5
+
+    MLT1+: 0101
+    MLT1-: 0102
+    MLT1a: 0080/6
+    MLT1b: 0080/7
+#  The following section defines the configuration of the crossbar module.
+# 'input' and 'output' describe the inputs and output of the XBAR module, so
+# the inputs are actually the outputs of computing elements, while the outputs
+# are connected to inputs of the computing elements.
+xbar:
+    input:
+        - +1
+        - -1
+        - SUM0-
+        - SUM0+
+        - SUM1-
+        - SUM1+
+        - SUM2-
+        - INT0-
+        - INT0+
+        - INT1-
+        - INT1+
+        - INT2-
+        - MLT0+
+        - MLT0-
+        - MLT1+
+        - MLT1-
+    output:
+        - SUM0a
+        - SUM0b
+        - SUM0c
+        - SUM0d
+        - SUM1a
+        - SUM1b
+        - SUM1c
+        - SUM1d
+        - SUM2a
+        - SUM2b
+        - SUM2c
+        - SUM2d
+        - INT0a
+        - INT0b
+        - INT0c
+        - INT0d
+        - INT1a
+        - INT1b
+        - INT1c
+        - INT1d
+        - INT2a
+        - INT2b
+        - INT2c
+        - INT2d
+        - MLT0a
+        - MLT0b
+        - MLT1a
+        - MLT1b
+#  The 'problem' section describes the problem being run on the hybrid computer.
+problem:
+    IC:
+# y
+        INT0ic: 1
+# y'
+        INT1ic: 1
+# y''
+        INT2ic: 0
+    times:
+        ic: 20
+        op: 3000   # milliseconds
+    coefficients:
+###
+#  ACHTUNG: Die Inputs a, b, c haben implizites Gewicht 10, die d-Inputs nur 1,
+# d.h. am, ap und bm muessen mit 1/10 skaliert werden!!!
+###
+        INT0a: 0.1
+        INT1a: 0.1
+        INT2a: 0.1
+
+    circuit:
+        INT0a: INT0-
+#        INT1a: INT0-
+        INT2a: +1
+
+      
+    ro-group: 
+#        - INT1+
+        - INT0+
+        - INT2-  # INT2+ nicht definiert
