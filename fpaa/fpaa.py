@@ -3,7 +3,7 @@
 # TODO: Refactoring Work in Progress
 
 # Python-included
-import sys, os, argparse, glob, pathlib
+import sys, os, argparse, glob, pathlib, logging
 from math import ceil
 from copy import deepcopy
 from collections import OrderedDict, namedtuple, defaultdict
@@ -29,12 +29,13 @@ def chunks(lst, n):
     for i in range(0, len(lst),n):
         yield lst[i:i+n]
 
-# TODO: Use python logging
-info  = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.verbose or args.debug else 1
-debug = lambda *w,**kw: print(*w,**kw,file=sys.stderr) if args.debug else 1
+module = sys.modules['__main__'].__file__
+log = logging.getLogger(module)
+
+info = log.info
+debug = log.debug
 
 machines_from_list = True # choose Machines from current directory instead of providing YAML file
-
 
 def yaml_load(fname):
     # external dependencies, install with "pip install pyyaml"
@@ -44,19 +45,16 @@ def yaml_load(fname):
     with open(fname, "r") as cfh:
         return yaml.load(cfh, Loader=yaml.SafeLoader) # may rise ScannerError
 
-def available_architectures():
-    """
-    Allows for looking up architectures based on a registration directory.
-    Will return lists of strings.
-    """
-    pass
+
+architectures_basedir = os.path.dirname(os.path.realpath(__file__))
+available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(architectures_basedir+"/*.yml")}
 
 def load_from_yaml(circuit, arch):
     """
     Expects arch and circuit to be strings.
     """
 
-    arch = yaml_load(arch)# if not machines_from_list else available_architectures[arch])
+    arch = yaml_load(arch if not machines_from_list else available_architectures[arch])
     circuit = yaml_load(circuit)
     return (circuit, arch)
 
@@ -65,11 +63,10 @@ def synthesize(circuit, arch):
     Expects arch and circuit to be nested data structures (dicts and lists holding
     strings and numbers), similar to their YAML representation.
     """
-    # TODO: args.circuit, args.arch are human-readable names, should give or get somewhere
 
     info("Welcome to the HyConAVR.ino Program Compiler.")
-    info("Input program:", circuit['title'])
-    info("Target machine:", arch['title'])
+    info("Input program: "  + circuit['title'])
+    info("Target machine: " + arch['title'])
 
     debug("arch:")
     debug(pformat(arch))
@@ -87,12 +84,12 @@ def synthesize(circuit, arch):
     for part, spec in circuit['program'].items():
         t = spec['type']
         if not t in arch['entities']:
-            raise ValueError(f"Invalid type {t} for Part {part} in Netlist {args.circuit}. Available types for given architecture {args.arch} are: {', '.join(arch['entities'].keys())}")
+            raise ValueError(f"Invalid type {t} for Part {part} in Netlist {circuit['title']}. Available types for given architecture {arch['title']} are: {', '.join(arch['entities'].keys())}")
         assigned_parts = assigned_parts_by_entity[t]
         none_allocated_parts = [k for k,v in assigned_parts.items() if not v ]
         #import ipdb; ipdb.set_trace() 
         if len(none_allocated_parts) == 0:
-            raise ValueError(f"Have used up all {len(assigned_parts)} parts of type {t} in architecture {args.arch}! Cannot allocate another one.")
+            raise ValueError(f"Have used up all {len(assigned_parts)} parts of type {t} in architecture {arch['title']}! Cannot allocate another one.")
         target = none_allocated_parts[0]
         info(f"Allocating Type {t}: Mapping circuit part {part} onto architecture part {target}")
         assigned_parts[target] = part
@@ -114,7 +111,7 @@ def synthesize(circuit, arch):
     for part in filter_dict(assigned_parts).keys():
         wired_circuit[part].update(circuit['program'][assigned_parts[part]])
 
-    def resolve_user_pin(item):
+    def resolve_user_pin(item): # closure over arch
         """
         Excepts a user-named part and always returns an architecture part name.
         Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
@@ -127,19 +124,6 @@ def synthesize(circuit, arch):
         elif (isinstance(item, dict) and len(item)==1):
             return { user2arch[k]: v for k,v in item.items() } # could also convert to Target() at this place
         elif isinstance(item, Number):
-            return item
-        else: raise ValueError(f"Malformed target notation: {item}")
-        
-    def resolve_machine_pin(item):
-        """
-        Expects an architecture part name. Never comes in touch with user names.
-        Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
-        where the default signal is the first output signal.
-        (Note: This is a closoure over wired_circuit in a pseudo-OOP fashion.)
-        """
-        if isinstance(item, str):
-            return {item: arch['entities'][wired_circuit[item]['type']]['output'][0]['name'] }
-        elif (isinstance(item, dict) and len(item)==1) or isinstance(item, Number):
             return item
         else: raise ValueError(f"Malformed target notation: {item}")
 
@@ -239,36 +223,35 @@ def synthesize(circuit, arch):
     #sys.exit(-1)
     return wired_circuit
 
-"""
-chipout = open(args.output, "w") if args.output != "-" else sys.stdout
 
-def write(command_letter, address, *data):
-    if not isinstance(address,int):
-        raise ValueError("Need address as integer (may specify as 0x123)")
-    command = f"{command_letter}{address:04X}" + "".join(data)
-    debug(f"Writing out: {command}")
-    print(command, file=chipout)
-"""
-
-def normalize_potentiometer(value):
+def normalize_potentiometer(value, resolution_bits=10):
     "Map a real value [0..1] to Potentiometer value [0..1023]"
+    maxval = 2**resolution_bits - 1 # 2**10-1 = 1023
     value = float(value)
     if value < 0 or value > 1:
         raise ValueError(f"Digital potentiometer value {value} out of bounds")
-    return int(round(value * 1023))
+    return int(round(value * maxval))
+
+last_seen_xbars = [] # an ugly global, filled by compile_instructions; for later plotting
 
 def compile_instructions(wired_circuit, arch):
-    # TODO Dependencies on Closures:
-    #   pin2tuples
-    #   resolve_machine_pin
-    #   pin2tuple
-    
-    
     instructions = []
 
     # should actually call write(tpl) or directly PyHyCon
     instruct = lambda *tpl: instructions.append(tpl)
-    
+
+    def resolve_machine_pin(item): # closure over arch
+        """
+        Expects an architecture part name. Never comes in touch with user names.
+        Expands something like 'M2' to {'M2':'o'}, i.e. part -> {part:signal},
+        where the default signal is the first output signal.
+        (Note: This is a closoure over wired_circuit in a pseudo-OOP fashion.)
+        """
+        if isinstance(item, str):
+            return {item: arch['entities'][wired_circuit[item]['type']]['output'][0]['name'] }
+        elif (isinstance(item, dict) and len(item)==1) or isinstance(item, Number):
+            return item
+        else: raise ValueError(f"Malformed target notation: {item}")
 
     # Go over hardwired parts
     for hwname, hw in arch['wired_parts'].items():
@@ -327,6 +310,8 @@ def compile_instructions(wired_circuit, arch):
 
             if not all([sum(row) in (0,1) for row in boolean_matrix ]):
                 raise ValueError("XBAR matrix is unsuitable. See info output for it's values. Only a maximum of one `True` bit per row allowed.")
+            
+            last_seen_xbars.append( (cols,rows,boolean_matrix) ) # for later plotting...
 
             # Caveat 1: Chip expects rows in order row15...row0
             # Caveat 2: Don't try to convert a bitstring of length 80 to a single int, it will overflow.
@@ -342,13 +327,20 @@ def compile_instructions(wired_circuit, arch):
         
     return instructions
 
-def plot_xbar(target_file, cols, rows, boolean_matrix, circuit_title):
-    info(f"Drawing the XBAR to {args.plot}...")
+def plot_xbar(target_file, circuit_title, xbar_config=None, interactive_plotting=False):
+    """
+    Draw an the allocation of a crossbar switch array (xbar) matrix.
+    
+    xbar_config is a tuple with (cols,rows,boolean_matrix), and by default the last one
+    from a global registry (last_seen_xbars) is taken, which is what you want.
+    """
+    info(f"Drawing the XBAR to {target_file}...")
+    (cols,rows,boolean_matrix) = xbar_config if xbar_config else last_seen_xbars[-1]
 
     import numpy as np
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    if args.debug: plt.ion() # interactive plotting
+    if interactive_plotting: plt.ion()
 
     mpl.rcParams['font.family'] = ['monospace'] # default is sans-serif
     fig = plt.figure(figsize=[7.,7.5])
@@ -376,29 +368,50 @@ def plot_xbar(target_file, cols, rows, boolean_matrix, circuit_title):
     plt.savefig(target_file)
     
 def cli():
-    parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("-v", "--verbose", action="store_true", help="Be more verbose")
-    parser.add_argument("-d", "--debug", action="store_true", help="Be even more verbose (debug mode)")
+    parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter
+    parser.add_argument("-v", "--verbose", dest="verbose_count",
+                        action="count", default=0,
+                        help="increases log verbosity for each occurence.")
     parser.add_argument("-o", "--output", default="-", metavar="OUTPUT.txt", help="Put output string into file (default is '-' and means stdout)")
     parser.add_argument("-p", "--plot", metavar="OUTPUT.pdf", help="Plot crossbar switch")
     if machines_from_list:
-        curdir = os.path.dirname(os.path.realpath(__file__))
-        available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(curdir+"/*.yml")}
-        parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default="AP-M1-Mini", help=f"Target machine architecture description (any YAML file in directory {curdir} is available as machine)") 
+        parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default="AP-M1-Mini", help=f"Target machine architecture description (any YAML file in directory {architectures_basedir} is available as machine)") 
     else:
         parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description")
     parser.add_argument("circuit", metavar="CIRCUIT.yml", help="The YAML file holding the circuit description")
     args = parser.parse_args()
     
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
+                        format='%(name)s (%(levelname)s): %(message)s')
+    # Sets log level to WARN going more verbose for each new -v.
+    log.setLevel(max(3 - args.verbose_count, 0) * 10)
+    
+    chipout = open(args.output, "w") if args.output != "-" else sys.stdout
+    
     circuit, arch = load_from_yaml(args.circuit, args.arch)
     wired_circuit = synthesize(circuit, arch)
     instructions = compile_instructions(wire_circuit, arch)
+    
+    # That was used for raw writing once. Could just write map(write, instructions).
+    # However, we want to use the HyCon interface anyway in the future, so this code
+    # will be superseded.
+    def write(command_letter, address, *data):
+        if not isinstance(address,int):
+            raise ValueError("Need address as integer (may specify as 0x123)")
+        command = f"{command_letter}{address:04X}" + "".join(data)
+        debug(f"Writing out: {command}")
+        print(command, file=chipout)
+    
+    
     print(instructions)
 
     if args.plot:
-        plot_xbar(args.plot, circuit_title=circuit['title']) #.... target_file, cols, rows, boolean_matrix):
+        plot_xbar(args.plot, circuit_title=circuit['title'], interactive_plotting=args.debug)
     
-
 if __name__ == "__main__":
-    cli()
+    try:
+        cli()
+    except Exception as e:
+        log.error(e)  # will show stack trace only
+        sys.exit(-1)  # when at least one -v is given.
     
