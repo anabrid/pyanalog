@@ -1,19 +1,20 @@
+#!/usr/bin/env python3
+
 from setuptools import setup
 
 # For good setup.py templates, see also
 # https://github.com/navdeep-G/setup.py/blob/master/setup.py
 
-package_name="pydda" # similar to same-named directory
-
 optional_packages = {
-   "scipy": ["scipy"],
+   "fpaa": ["pyYAML"], # actually required for fpaa
+   "scipy": ["scipy"], # in general strongly recommended
    "graphs": ["networkx", "pyGraphViz"],
    "makedocs": ["sphinx"],
-   "runtests": ["pytest"]
+   "runtests": ["pytest"],
 }
 
 setup(
-   name=package_name,
+   name="pyanalog", # TODO choose some generic name
    version='0.10101',
    description='The digital differential analyzer python implementation',
    license="GPL et al",
@@ -21,7 +22,7 @@ setup(
    author='Anadigm',
    author_email='koeppel@analogparadigm.com',
    url="http://www.anadigm.com/",
-   packages=[package_name],
+   packages=["dda", "fpaa", "hycon"],
    extras_require=optional_packages,
    install_requires=[], # no external dependencies :-)
    scripts=[], # should collect some wannabe-$PATH scripts below scripts/
