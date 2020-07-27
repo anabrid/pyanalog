@@ -1,0 +1,20 @@
+# This is a requirement list for pip.
+# It contains a lot of dependencies just to make installation
+# and usage easy.
+# See also setup.py for a minimal list of dependencies.
+#
+# The requirements can be installed with
+#
+#   $ pip install -r requirements.txt
+
+pyYAML
+
+scipy
+sympy
+numpy
+matplotlib
+
+networkx
+pyGraphViz
+sphinx
+pytest
