@@ -17,6 +17,35 @@ It is up to the user to ensure proper communication. A few examples
 are given at the end of this file.
 
 (c) Sven Köppel 2019, Dual licensed with GPLv2, BSD
+
+Examples
+--------
+
+Run these examples with an interactive python REPL to play with them:
+    
+* Example how to use PyHyCon with a microcontroller "simulator":
+
+>>> ac = HyCon(serialdummy())                                                                                            
+>>> ac.set_ic_time(1234)                                                                                                 
+<< Sending [C001234] to uC
+[type reply of uC]>> T_IC=1234
+HyConRequest(C001234, expect(eq: T_IC=1234), self.executed=True, response=T_IC=1234, reply=T_IC=1234)
+
+* Example how to use PyHyCon only for writing firmware command:
+    
+>>> ac = HyCon(sys.stdout, unidirectional=True)
+>>> ac.set_ic_time(234)
+C000234HyConRequest(C000234, expect(eq: T_IC=234), self.executed=True, response=n.a., reply=n.a.)
+
+* Example how to use PyHyCon over TCP/IP:
+
+>>> sock = tcpsocket("localhost", 12345)                 # doctest: +SKIP
+>>> ac = HyCon(sock)                                     # doctest: +SKIP
+>>> ac.reset()                                           # doctest: +SKIP
+>>> ac.digital_output(3, True)                           # doctest: +SKIP
+>>> ac.set_op_time(123)                                  # doctest: +SKIP
+>>> ac.set_xbar(0x0040, "0000000210840000781B")          # doctest: +SKIP
+
 """
 
 # All these modules are Python internals
@@ -67,6 +96,8 @@ class HyConRequest:
         return f"HyConRequest({self.command}, {self.expected_response}, {self.executed=}, "+\
             f"response={self.response if hasattr(self, 'response') else 'n.a.'}, "+\
             f"reply={self.reply if hasattr(self, 'reply') else 'n.a.'})"
+    
+    __repr__ = __str__
         
     def write(self, hycon):
         if self.executed:
@@ -233,24 +264,3 @@ class tcpsocket:
         # instead also: self.s.recv(123)
         return self.fh.readline()
         
-if __name__ == "__main__":
-    # Run these examples with an interactive python REPL to play with them:
-    
-    if 0:
-        # example how to use PyHyCon with a microcontroller "simulator"
-        ac = HyCon(serialdummy())    
-        ac.set_ic_time(234)
-        
-    if 0:
-        # example how to use PyHyCon only for writing firmware command
-        ac = HyCon(sys.stdout, unidirectional=True)
-        ac.set_ic_time(234)
-    
-    if 0:
-        # example how to use PyHyCon over TCP/IP
-        sock = tcpsocket("localhost", 12345)
-        ac = HyCon(sock)
-        ac.reset()
-        ac.digital_output(3, True)
-        ac.set_op_time(123)
-        ac.set_xbar(0x0040, "0000000210840000781B")
