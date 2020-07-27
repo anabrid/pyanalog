@@ -57,7 +57,33 @@ The overall plan is to open source these codes or parts of them end of 2020.
 
 ## PyFPAA: An approach to programmable analog computers
 
-See the readme below ``PyFPAA``.
+PyFPAA is a work bench for small
+"pioneering" scripts to gain experience and
+create examples for digital extensions to the
+Analog Paradigm Model-1 analog computer.
+
+`pyFPAA` is a small Python3 code for compiling
+instructions for the AP/M-1 Hybrid Controller (HC),
+especially for the DPT (digital potentiometers),
+XBAR (crossbar switch) and the HC itself. The input
+is a quite extensive machine description together
+with a program (basically an analog circuit), both
+in a minimalistic HDL written in YAML. See the
+`README` file there as well as the `doc` directory 
+for more details.
+
+See also `examples/fpaa-circuits` for a number of example
+input for the pyFPAA compiler. There also exist basic
+test scripts within `tests`.
+
+Within `misc` , there are old files:
+
+ * `Mathematica`: Notebooks for Wolfram
+   Mathematica which demonstrate the pipeline from
+   symbolic expressions (or simple ordinary differential
+   equations) to analog computing circuits.
+   This was the first thing I did beginning of
+   Dec 2019.
 
 ## PyHyCon: A Python Hybrid Controller interface
 
