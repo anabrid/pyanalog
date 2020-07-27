@@ -20,5 +20,3 @@ computers (FPAAs). As machines, we have so far the minimal setup for the
 * We don't yet model the internals of high-level computing parts yet,
   so the wiring instructions/descriptions lack a full modeling of the
   target machine.
-* We don't implement a serial client to the HyCon chip yet (Use some
-  Perl scripting with `HyCon.pm`)
