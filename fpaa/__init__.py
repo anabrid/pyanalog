@@ -25,4 +25,4 @@ to draw circuit plots, you need matplotlib.
 
 # Populate namespace
 
-from compile import load_from_yaml, synthesize, compile_instructions
+from .fpaa import load_from_yaml, synthesize, compile_instructions

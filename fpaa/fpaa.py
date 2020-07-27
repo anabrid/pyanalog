@@ -239,7 +239,7 @@ def synthesize(circuit, arch):
     #sys.exit(-1)
     return wired_circuit
 
-
+"""
 chipout = open(args.output, "w") if args.output != "-" else sys.stdout
 
 def write(command_letter, address, *data):
@@ -248,6 +248,7 @@ def write(command_letter, address, *data):
     command = f"{command_letter}{address:04X}" + "".join(data)
     debug(f"Writing out: {command}")
     print(command, file=chipout)
+"""
 
 def normalize_potentiometer(value):
     "Map a real value [0..1] to Potentiometer value [0..1023]"
@@ -279,7 +280,7 @@ def compile_instructions(wired_circuit, arch):
                 normalized_value = normalize_potentiometer(numeric_value)
                 info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%normalized_value} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
                 #print(f'$ac->set_pt("DPT24-{port}", {numeric_value});')
-                instruct("P", hw['address'], "%02X"%port, "%04d"%value))
+                instruct("P", hw['address'], "%02X"%port, "%04d"%value)
         elif hw['type'] == 'HC':
             # Hybrid controller: DPTs (same code as DPT24)
             assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"

@@ -1,10 +1,19 @@
 .. _installation:
 
-Obtaining and installing PyDDA
-==============================
+Obtaining and installing PyAnalog
+=================================
 
-PyDDA can be used without dependencies. Only make sure you use a *recent* Python 3
+PyAnalog can be used without dependencies. Only make sure you use a *recent* Python 3
 installation. We use `f-strings`, so at least Python 3.6 is required.
+
+For more advanced usages, we recommend at least the following dependencies:
+
+* [PyYAML](https://pyyaml.org/), for a good experience of PyFPAA
+* [SymPy](https://www.sympy.org/), for more features of PyDDA
+
+.. note::
+   In the following, the overall code is stil called `dda`. It's subject to
+   be renamed to `pyanalog` or similar in near future.
 
 Obtaining the code
 ------------------
@@ -24,7 +33,7 @@ softlink user-wide by using
 .. code-block:: bash
 
     $ git clone git@lab.analogparadigm.com:koeppel/dda.git
-    $ cd dda/PyDDA
+    $ cd dda/
     $ python3 setup.py develop --user
 
 
@@ -40,6 +49,7 @@ Requirements and dependencies: The long story
 
 - **Python >=3.6** is required.
 - Some packages are recommended. See ``setup.py`` for the list of packages.
+- If you use pip, you might enjoy `requirements.txt`
 
 To be done: Write more about virtualenv and how to use pip to install the
 (optional) dependencies.

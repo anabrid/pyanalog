@@ -3,8 +3,8 @@
 MODULES := dda fpaa hycon
 .PHONY: all doc
 
-doc: html dirhtml text # default targets
-	cd doc && $(MAKE) -j $^
+doc: 
+	cd doc && $(MAKE) -j html dirhtml text
 
 doctest:
 	pytest --doctest-modules --pyargs dda  -v
