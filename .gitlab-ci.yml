@@ -10,7 +10,7 @@ make sphinx docs:
   stage: build doc
   image: sphinxdoc/sphinx
   script:
-    - cd PyDDA/doc && make -j html dirhtml text
+    - make doc
   artifacts:
     paths:
       - doc/_build/
