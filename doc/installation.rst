@@ -15,7 +15,7 @@ repository at https://lab.analogparadigm.com/koeppel/dda
 Using the code: Short story
 ---------------------------
 
-If you are lazy, just softlink the ``pydda`` directory wherever you need it.
+If you are lazy, just softlink the ``dda`` directory wherever you need it.
 
 However, we use setuptools and there is a super simple way of installing this
 softlink user-wide by using
@@ -28,7 +28,7 @@ softlink user-wide by using
     $ python3 setup.py develop --user
 
 
-After these steps you are ready to use import the ``pydda`` from any Python3 script
+After these steps you are ready to use import the ``dda`` from any Python3 script
 anywhere on your system, but only *as your current user*.
 
 If you want to install the package, just call ``pip install`` or ``python3 setup.py install``

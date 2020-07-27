@@ -3,7 +3,7 @@
 The DDA Domain Specific Language
 ================================
 
-.. automodule:: pydda.dsl
+.. automodule:: dda.dsl
    :members:
    
   

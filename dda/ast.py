@@ -493,7 +493,7 @@ class State(collections.UserDict):
         return vars
 
     def export(self, to, **passed_args):
-        "Syntactic sugar for pydda.export(), for convenience"
+        "Syntactic sugar for dda.export(), for convenience"
         from . import export
         return export(self, to, **passed_args)
 

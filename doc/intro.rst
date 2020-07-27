@@ -3,7 +3,7 @@
 The PyDDA package
 =================
 
-.. automodule:: pydda
+.. automodule:: dda
    :members:
    
    

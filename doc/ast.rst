@@ -3,7 +3,7 @@
 Abstract Syntax tree
 ====================
 
-.. automodule:: pydda.ast
+.. automodule:: dda.ast
    :members:
    
  

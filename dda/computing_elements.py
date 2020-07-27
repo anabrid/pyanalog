@@ -24,7 +24,7 @@ Different ways to access the well-known DDA computing elements in Python
 
 If you write
 
->>> from pydda.computing_elements import *
+>>> from dda.computing_elements import *
 >>> int(int,sum)  # Make use of the imported Symbols
 int(int, sum)
 
@@ -33,7 +33,7 @@ namespace.
 
 You can also just call
 
->>> from pydda.computing_elements import dda_functions, dda_symbols
+>>> from dda.computing_elements import dda_functions, dda_symbols
 >>> print(dda_symbols["floor"]) # will print a Symbol()
 floor
 

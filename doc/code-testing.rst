@@ -22,6 +22,6 @@ doctest builtin:
 
 ::
 
-    $ pytest-3 --doctest-modules --pyargs pydda  -v
+    $ pytest-3 --doctest-modules --pyargs dda  -v
 
 

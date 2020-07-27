@@ -3,7 +3,7 @@
 DDA Computing elements
 ======================
 
-.. automodule:: pydda.computing_elements
+.. automodule:: dda.computing_elements
    :members:
    
  
