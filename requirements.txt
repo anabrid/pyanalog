@@ -18,3 +18,8 @@ networkx
 pyGraphViz
 sphinx
 pytest
+
+# nice-to-haves for sphinx:
+sphinx-rtd-theme
+sphinxcontrib-programoutput
+recommonmark

@@ -5,7 +5,7 @@ stages:
 
 make sphinx docs:
   stage: build doc
-  image: sphinxdoc/sphinx-latexpdf
+  image: svek/pydda
   script:
     - make doc
     - cd doc && make latexpdf PAPER=a4
@@ -15,7 +15,7 @@ make sphinx docs:
 
 deploy sphinx docs:
   stage: deploy doc
-  image: svenk/latex  # todo: join with upper job in a suitable docker image.
+  image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
     - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
@@ -23,8 +23,7 @@ deploy sphinx docs:
 
 test code:
   stage: test dda code
-  image: python:3.8-slim-buster
+  image: svek/pydda
   script:
-    - pip install pytest  # whaaa! need better docker image.
     - make test
 
