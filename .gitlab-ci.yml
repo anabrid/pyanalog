@@ -3,14 +3,12 @@ stages:
   - deploy doc
   - test dda code
 
-# Todo: If docker image works, switch to sphinxdoc/sphinx-latexpdf
-# and add again make target latexpdf PAPER=a4
-  
 make sphinx docs:
   stage: build doc
-  image: sphinxdoc/sphinx
+  image: sphinxdoc/sphinx-latexpdf
   script:
     - make doc
+    - cd doc && make latexpdf PAPER=a4
   artifacts:
     paths:
       - doc/_build/
