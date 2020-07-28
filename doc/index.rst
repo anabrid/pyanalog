@@ -102,7 +102,7 @@ You find these automatically built files at:
 - http://ai.svenk.org/html/ for HTML pages
 - http://ai.svenk.org/dirhtml/ for HTML pages with nicer links
 - http://ai.svenk.org/text/ for text files ;-)
-- PDF: todo
+- http://ai.svenk.org/latex/pydda.pdf for a PDF version
 
 
 Indices and tables
