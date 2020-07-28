@@ -1,0 +1,529 @@
+# This is a YAML description file for a machine.
+# A poor man's Analog HDL (should use Verilog HDLs instead)
+
+title: AP/M-1 Mini
+
+description: |
+   This file describes the hardware layout of a particular Analog Paradigm
+   Model-1 machine with software-definable XBAR in the smallest setup,
+   containing SUM8, INT4, MUL4, DPT32 (and of course XBAR, HC).
+   
+   The number of Summers limits the number of negating-macro elements
+   which can be built. The configurable parts show what can be done
+   
+      SUM8.1 => 1 x SUM2m
+      SUM8.2 => 0.5 SUM2pm
+      SUM8.3 => 0.5 SUM2pm
+      SUM8.4 => 0.5 SUM2pm
+      SUM8.5 => 0.5 SUM2pm
+      SUM8.6 => 1 x INT2pm
+      SUM8.7 => 1 x INT2pm, leaving 1 x INT2m
+      SUM8.8 => 1 x MUL2pm, leaving 1 x MUL2m
+
+   In total 8 computing elements. See configurable_parts for the formal
+   definition.
+
+configurable_parts:
+   I1:
+     type: INT2pm
+     address: 0x0021
+     inverting_summer: 0x0016 # SUM8.6
+   I2:
+     type: INT2pm
+     address: 0x0022
+     inverting_summer: 0x0017 # SUM8.7
+   I3:
+     type: INT2m
+     address: 0x0023
+   M1:
+     type: MUL2pm
+     address: 0x0051
+     inverting_summer: 0x0018 # SUM8.8
+   M2:
+     type: MUL2p
+     address: 0x0052
+   S1:
+     type: SUM2pm
+     address: 0x0011 # SUM8.1
+     inverting_summer: 0x0012
+   S2:
+     type: SUM2pm
+     address: 0x0013 # SUM8.3
+     inverting_summer: 0x0014 # SUM8.4
+   S3:
+     type: SUM2m
+     address: 0x0015 # SUM8.5
+   PlusOne:
+     description: |
+       Positive supply voltage/machine unit, also refered to as Vcc or Vdd,
+       i.e. +10V in this machine.
+     cannot_be_allocated: True
+     type: ConstantVoltage
+     input: [ +1 ]
+   MinusOne:
+     description: |
+       Negative supply voltage/machine unit, also refered to as Vss,
+       i.e. -10V in this machine.
+     cannot_be_allocated: True
+     type: ConstantVoltage
+     input: [ -1 ]
+   None:
+     description: See description of NoneType
+     cannot_be_allocated: True
+     type: NoneType
+   
+   
+# We currently not make (yet) use of these levels anywhere, but they
+# are later required for evaluating MUL's, for instance.
+logic:
+   boolean: [ True, False ]
+   machine_units: [ +1, -1 ]
+   voltage_range: [ +10, -10 ]
+   voltage_unit: V
+   DGND_voltage: 0 # won't this be different
+   AGND_voltage: 0 # on the chip?
+
+entities:
+   SUM2m:
+     description: |
+        A single summer (SUM8 part) and a single digital potentiometer.
+        The summer is a negating summer with two inputs.
+        The summer uses weights a=10.
+        We dont make use of the summing junction (SJ).
+        The flow chart is just
+        
+          a0 ------+
+                   |  controls
+                   v
+          a ->[DPT24, pin x]------>[        ]
+                                   [ Summer ]-----> neg
+          b ->[DPT24, pin y]------>[        ]
+                   ^
+                   |  controls
+          b0 ------+
+
+     computes:
+       neg: neg = -(a0*a + b0*b)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+     output:
+       - name: neg
+         type: analog
+         description: Output of negating summer
+     default_inputs:
+       a: None
+       b: None
+       a0: 0
+       b0: 0
+
+   SUM2pm:
+     description: |
+        A macro component made of two summers (SUM8 module) and two digital
+        potentiometers (on DPT24).
+        Each summer is a (negating) summer with two inputs.
+        The main summer (Summer1) use weights a=10. The inverting summer
+        (Summer2) uses weight a=1.
+        We dont make use of the summing junctions (SJ).
+        The flow chart looks like
+
+          a0 ------+
+                   |  controls
+                   v
+          a ->[DPT24, pin x]------>[         ]   +--[ Summer2 ]-> pos
+                                   [ Summer1 ]->-+
+          b ->[DPT24, pin y]------>[         ]   +--------------> neg
+                   ^
+                   |  controls
+          b0 ------+
+
+     computes:
+       pos: pos  =   a0*a + b0*b
+       neg: neg = -(a0*a + b0*b)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+     output:
+       - name: neg
+         type: analog
+         description: Output of minus operation (actual summer output)
+       - name: pos
+         type: analog
+         description: Output of plus operation (negation of summer output)
+     default_inputs:
+       a: None
+       b: None
+       a0: 0
+       b0: 0
+
+   INT2m:
+     description: |
+        An integrator (one in the INT4 module) and two potentiometers
+        before it. For more information, see the description of the extended
+        version below, the INT2pm.
+     computes:
+       neg: neg = -integral( a0*a(t) + b0*b(t), t)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+       - name: icSign
+         type: boolean
+         description: Sign of initial condition value
+       - name: ic
+         type: numeric
+         description: Value for initial condition
+         range: [0, 1]
+     output:
+       - name: neg
+         type: analog
+         description: Output of minus operation (actual summer output)
+       - name: pos
+         type: analog
+         description: Output of plus operation (negation of summer output)
+     default_inputs:
+       a: None
+       b: None
+       a0: 0
+       b0: 0
+       icSign: True
+       ic: 0
+     internal_wires:
+       # Internal wires are used by the modules defined at the end of this file
+       - name: analogIC
+         type: analog
+         description: output of Comparator and multiplied by HC DPT
+
+   INT2pm:
+     description: |
+        A macro component made of an integrator (one in the INT4 module),
+        two potentiometers (on DPT24) and a summer (on SUM8, used for
+        negation).
+
+        The integrator is an (implicite negative summing) intergrator
+        with two inputs. For the moment, we dont make use of ModeIC and
+        ModeOP. All inputs use weight a=10.
+
+        In the moment, the ICs are realized by one potentiometer and
+        a comparator. The compiler creates the binary sign which steers
+        the comparator and is outputted by the Hybrid Controller (HC).
+
+        The summer is a (negating) summer with a single input.
+        The summer uses weight a=1.
+        Neither in integrator nor summer, we make use of the SJ.
+
+        The flow chart looks like
+
+         ic ----------------------+
+                                  |
+         HC digital output,       |
+         icSign -----+            |
+                     | switches   | controls
+                     v            v
+          +1 ---->[ Compa- ]--->[HC DPT, pin x]
+          -1 ---->[ rator  ]      |
+                                  | Line "analogIC"
+          a0 ------+              |
+                   | controls     | sets IC
+                   v              v
+          a ->[DPT24, pin y]-->[            ]   +--[ Summer  ]-> pos
+                               [ Integrator ]->-+
+          b ->[DPT24, pin z]-->[            ]   +--------------> neg
+                   ^
+                   |  controls
+          b0 ------+
+     computes:
+       pos: pos  =  integral( a0*a(t) + b0*b(t), t)
+       neg: neg  = -integral( a0*a(t) + b0*b(t), t)
+     input:
+       - name: a0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: a
+         type: analog
+       - name: b0
+         type: numeric
+         description: Potentiometer prefactor
+         range: [0, 1]
+       - name: b
+         type: analog
+       - name: icSign
+         type: boolean
+         description: Sign of initial condition value
+       - name: ic
+         type: numeric
+         description: Value for initial condition
+         range: [0, 1]
+     output:
+       - name: neg
+         type: analog
+         description: Output of minus operation (actual summer output)
+       - name: pos
+         type: analog
+         description: Output of plus operation (negation of summer output)
+     default_inputs:
+       a: None
+       b: None
+       a0: 0
+       b0: 0
+       icSign: True
+       ic: 0
+     internal_wires:
+       # Internal wires are used by the modules defined at the end of this file
+       - name: analogIC
+         type: analog
+         description: output of Comparator and multiplied by HC DPT
+     # The following lines are actually not needed but were a proposal
+     # to make the internal structure of a macrocell transparent. Would be
+     # needed by an actual HDL where one wants to simulate the system/the macrocell
+     internal_partlist:
+       IC_Comp:
+         type: ComparatorDA
+         input: [ parent: icSign, PlusOne, MinusOne ]
+       INT2p_Raw:
+         type:
+           input: [ a: analog, b: analog, realIc: analog ]
+           output: [ out: analog ]
+         input: [ parent: a, parent: b, IC_Comp ]
+
+   MUL2p:
+     description: |
+       A simple macro element made of a single multiplier (MLT8) and two
+       digital potentiometers (on DPT24).
+       Note that multiplication is implemented normalized. For instance,
+       if machine voltage is level=+10V (actually +-10V), the multiplication
+       computes res = (a/level * b/level)*level in order to make sure
+       |res|<10V.
+       -> In order to decouple analog programming from the machine where
+          it runs, the normalization should be implemented in the
+          compilation step!
+     input:
+       - name: a0
+         type: digital
+       - name: a
+         type: analog
+       - name: b0
+         type: digital
+       - name: b
+         type: analog
+     output:
+       - name: pos
+         type: analog
+     computes:
+       pos: pos = a0*a*b0*b/voltage_level
+     default_inputs:
+       a: PlusOne
+       b: PlusOne
+       a0: 0
+       b0: 0
+
+   MUL2pm:
+     description: |
+       Extension of MUL2m with two outputs, where one is negated, thus
+       requiring an internal summer.
+     input:
+       - name: a0
+         type: digital
+       - name: a
+         type: analog
+       - name: b0
+         type: digital
+       - name: b
+         type: analog
+     output:
+       - name: pos
+         type: analog
+       - name: neg
+         type: analog
+     computes:
+       pos: pos = a0*a*b0*b/voltage_level
+       neg: neg = a0*a*b0*b/voltage_level
+     default_inputs:
+       a: PlusOne
+       b: PlusOne
+       a0: 0
+       b0: 0
+
+   ConstantVoltage:
+     description: |
+       This is a pseudo-element only used for allocate a logic +1 and
+       logic -1 on the XBAR.
+       Usage examples are given in the partlist with the instances
+       PlusOne and MinusOne. These parts are subject to be used
+       also in the actual programs (for the time being), in order to
+       realize constant inputs for computatational parts. We need
+       +1 and -1 because the potentiometers only implement range [0,1].
+       The operation x-0.5 is then realized by the pseudo-code
+       SUMMER(a=x,a0=1,b=MinusOne,b0=0.5), while x+0.7 is realized by
+       SUMMER(a=x,a0=1,b=PlusOne,b0=0.7).
+     computes:
+       value: value = x
+     input:
+       - name: x
+         type: analog
+     output:
+       - name: value
+         type: analog
+
+   ComparatorAD:
+     description: |
+        The left part of a CMP4 comparator (analog2digital),
+        i.e. a treshold based binarization.
+     computes:
+       res: res = a+b>0
+     input:
+       - name: a
+         type: analog
+       - name: b
+         type: analog
+     output:
+       - name: res
+         type: digital
+
+   ComparatorDA:
+     description: |
+        The right part of a CMP4 comparator (digital2analog),
+        i.e. a single electronic switch switching between two analog
+        signals.
+     computes:
+       u: u = if(i, a, b)
+     input:
+       - name: i
+         type: digital
+       - name: a
+         type: analog
+       - name: b
+         type: analog
+     output:
+       - name: u
+         type: analog
+
+   NoneType:
+     description: |
+       This pseudo-element is only used to implement computational
+       elements with unconnected inputs. For instance, the pseudo-code
+       SUMMER(x)=-x is actually implemented as
+       SUMMER(a=x,a0=1,b=None,b0=0)  (the value of b0 is not relevant!).
+       The compiler will throw out None elements in favour of disabling
+       the corresponding output line of the XBAR.
+
+       The None is also used for slurping input from the DPTs, therefore
+       they have an input.
+     computes: nothing
+     input:          [{ name: none, type: analog }]
+     output:         [{ name: none, type: analog }]
+     default_inputs: { none: 0 }
+
+
+# Each of the wired hardware needs configuration by the HC
+# (which also needs to be configured itself)
+wired_parts:
+  X1:
+    type: XBAR
+    address: 0x0020  # FIXME
+    # Datasheet of chip AD8113:
+    # https://www.analog.com/media/en/technical-documentation/data-sheets/AD8113.pdf
+    topology: Single AD8113
+    size: [ 16, 16 ]
+    input_columns:
+       - PlusOne      #  1
+       - MinusOne     #  2
+       - S3           #  3
+       - S2: pos      #  4
+       - S2: neg      #  5
+       - S1: pos      #  6
+       - S1: neg      #  7
+       - M2           #  8
+       - M1: pos      #  9
+       - M1: neg      # 10
+       - I3           # 11
+       - I2: pos      # 12
+       - I2: neg      # 13
+       - I1: pos      # 14
+       - I1: neg      # 15
+       - None         # 16, empty!
+    output_rows:
+       - I1: a        #  1
+       - I1: b        #  2
+       - I2: a        #  3
+       - I2: b        #  4
+       - I3: a        #  5
+       - I3: b        #  6
+       - M1: a        #  7
+       - M1: b        #  8
+       - M2: a        #  9
+       - M2: b        # 10
+       - S1: a        # 11
+       - S1: b        # 12
+       - S2: a        # 13
+       - S2: b        # 14
+       - S3: a        # 15
+       - S3: b        # 16
+
+  D1:
+    type: DPT24
+    address: 0x0060 # FIXME: address of DPT24
+    size: 24
+    enumeration:
+       - I1: a0    #  1
+       - I1: b0    #  2
+       - I2: a0    #  3
+       - I2: b0    #  4
+       - I3: a0    #  5
+       - I3: b0    #  6
+       - M1: a0    #  7
+       - M1: b0    #  8
+       - M2: a0    #  9
+       - M2: b0    # 10
+       - S1: a0    # 11
+       - S1: b0    # 12
+       - S2: a0    # 13
+       - S2: b0    # 14
+       - S3: a0    # 15
+       - S3: b0    # 16
+
+  Main:
+    # A Hybrid Controller has 8 DPTs, 8 digital inputs and
+    # 8 digital outputs. There can actually be only one HC per
+    # machine.
+    type: HC
+    address: 0x0080
+    dpt_enumeration:
+      - I1: ic
+      - I2: ic
+      - I3: ic
+    digital_input: []
+    digital_output:
+      - I1: icSign
+      - I2: icSign
+      - I3: icSign

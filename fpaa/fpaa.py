@@ -3,12 +3,13 @@
 # TODO: Refactoring Work in Progress
 
 # Python-included
-import sys, os, argparse, glob, pathlib, logging
+import sys, os, argparse, glob, logging
 from math import ceil
 from copy import deepcopy
 from collections import OrderedDict, namedtuple, defaultdict
 from pprint import pprint, pformat
 from collections.abc import Iterable
+from pathlib import Path
 from functools import reduce
 from numbers import Number
 
@@ -29,7 +30,7 @@ def chunks(lst, n):
     for i in range(0, len(lst),n):
         yield lst[i:i+n]
 
-module = sys.modules['__main__'].__file__
+module = __file__
 log = logging.getLogger(module)
 
 info = log.info
@@ -47,14 +48,18 @@ def yaml_load(fname):
 
 
 architectures_basedir = os.path.dirname(os.path.realpath(__file__))
-available_architectures = {pathlib.Path(fn).stem: fn for fn in glob.glob(architectures_basedir+"/*.yml")}
+available_architectures = {Path(fn).stem: fn for fn in glob.glob(architectures_basedir+"/*.yml")}
 
 def load_from_yaml(circuit, arch):
     """
     Expects arch and circuit to be strings.
     """
-
-    arch = yaml_load(arch if not machines_from_list else available_architectures[arch])
+    if not Path(arch).is_file():
+        if arch in available_architectures:
+            arch = available_architectures[arch]
+        else:
+            raise ValueError(f"{arch} is neither a file nor a registered architecture.")
+    arch = yaml_load(arch)
     circuit = yaml_load(circuit)
     return (circuit, arch)
 
@@ -263,7 +268,7 @@ def compile_instructions(wired_circuit, arch):
                 normalized_value = normalize_potentiometer(numeric_value)
                 info(f"DPT24@{hw['address']:x}: Storing value {'%4d'%normalized_value} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
                 #print(f'$ac->set_pt("DPT24-{port}", {numeric_value});')
-                instruct("P", hw['address'], "%02X"%port, "%04d"%value)
+                instruct("P", hw['address'], "%02X"%port, "%04d"%normalized_value)
         elif hw['type'] == 'HC':
             # Hybrid controller: DPTs (same code as DPT24)
             assert len(hw['dpt_enumeration']) <= 8, "HC has only eight digital potentiometers"
@@ -271,7 +276,7 @@ def compile_instructions(wired_circuit, arch):
                 numeric_value = wired_circuit[t.part]['input'][t.pin]
                 normalized_value = normalize_potentiometer(numeric_value)
                 info(f"HC@{hw['address']:x}: Storing value {normalized_value:4} at DPT port {port:2} (corresponding to {t.part}:{t.pin})")
-                instruct("P", hw['address'], "%02X"%port, "%04d"%value)
+                instruct("P", hw['address'], "%02X"%port, "%04d"%normalized_value)
                 #print(f'$ac->set_pt("HCDPT-{port}", {numeric_value});')
             # Hybrid controller: Digital output
             assert len(hw['digital_output']) <= 8, "HC has only eight digital outputs"
@@ -336,6 +341,7 @@ def plot_xbar(target_file, circuit_title, xbar_config=None, interactive_plotting
     """
     info(f"Drawing the XBAR to {target_file}...")
     (cols,rows,boolean_matrix) = xbar_config if xbar_config else last_seen_xbars[-1]
+    M,N = 16,16
 
     import numpy as np
     import matplotlib as mpl
@@ -374,10 +380,11 @@ def cli():
                         help="increases log verbosity for each occurence.")
     parser.add_argument("-o", "--output", default="-", metavar="OUTPUT.txt", help="Put output string into file (default is '-' and means stdout)")
     parser.add_argument("-p", "--plot", metavar="OUTPUT.pdf", help="Plot crossbar switch")
-    if machines_from_list:
-        parser.add_argument("-a", "--arch", choices=available_architectures.keys(), default="AP-M1-Mini", help=f"Target machine architecture description (any YAML file in directory {architectures_basedir} is available as machine)") 
-    else:
-        parser.add_argument("-a", "--arch", metavar="MACHINE.yml", help="Target machine architecture description")
+    
+    arch_group = parser.add_mutually_exclusive_group(required=True)
+    arch_group.add_argument("-A", "--registered-arch", choices=available_architectures.keys(), default="AP-M1-Mini", help=f"Target machine architecture description: Any YAML file in directory {architectures_basedir} is available as machine") 
+    arch_group.add_argument("-a", "--arch", metavar="path/to/my/MACHINE.yml", help="Target machine architecture description (any valid filename)")
+    
     parser.add_argument("circuit", metavar="CIRCUIT.yml", help="The YAML file holding the circuit description")
     args = parser.parse_args()
     
@@ -388,9 +395,9 @@ def cli():
     
     chipout = open(args.output, "w") if args.output != "-" else sys.stdout
     
-    circuit, arch = load_from_yaml(args.circuit, args.arch)
+    circuit, arch = load_from_yaml(args.circuit, args.arch or args.registered_arch)
     wired_circuit = synthesize(circuit, arch)
-    instructions = compile_instructions(wire_circuit, arch)
+    instructions = compile_instructions(wired_circuit, arch)
     
     # That was used for raw writing once. Could just write map(write, instructions).
     # However, we want to use the HyCon interface anyway in the future, so this code
@@ -406,7 +413,7 @@ def cli():
     print(instructions)
 
     if args.plot:
-        plot_xbar(args.plot, circuit_title=circuit['title'], interactive_plotting=args.debug)
+        plot_xbar(args.plot, circuit_title=circuit['title'])#, interactive_plotting=args.debug)
     
 if __name__ == "__main__":
     try:
