@@ -8,6 +8,7 @@ doc:
 
 doctest:
 	pytest --doctest-modules --pyargs dda  -v
+	pytest --doctest-modules --pyargs hycon  -v
 	# all other modules don't have useful tests anyway
 
 test: 

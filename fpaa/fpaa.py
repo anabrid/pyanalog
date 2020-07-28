@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO: Refactoring Work in Progress
-
 # Python-included
 import sys, os, argparse, glob, logging
 from math import ceil
@@ -65,8 +63,26 @@ def load_from_yaml(circuit, arch):
 
 def synthesize(circuit, arch):
     """
-    Expects arch and circuit to be nested data structures (dicts and lists holding
-    strings and numbers), similar to their YAML representation.
+    Translate a circuit to a netlist for a given target architecture.
+    
+    This routine is the heart of the FPAA compiler. It mainly
+    
+    * Allocates available hardware to the requested ones by the user circuits
+      and allows for book keeping between the user named and architecture named computing
+      components.
+    * Ensures consistency of the resulting circuit (there are no dangling wires,
+      no over-allocation, etc.)
+      
+    There is a lot of *info* and *debug* output available if turned on via Python
+    logging.
+    
+    Expects ``arch`` and ``circuit`` to be nested data structures (dicts and lists holding
+    strings and numbers), similar to their YAML representation. The documentation does
+    not yet cover an in-depth description of these data structures, but there are tons
+    of example YAML files which are straightforward to understand.
+    
+    Returns ``wired_circuit``, a list of computing components (which itself are again
+    "PODs", i.e. dicts with nested data structures).
     """
 
     info("Welcome to the HyConAVR.ino Program Compiler.")
@@ -240,6 +256,26 @@ def normalize_potentiometer(value, resolution_bits=10):
 last_seen_xbars = [] # an ugly global, filled by compile_instructions; for later plotting
 
 def compile_instructions(wired_circuit, arch):
+    """
+    Compile a netlist (``wired_circuit``) to configuration *instructions* for setting
+    up the analog computer hybrid controller.
+    
+    This routine basically loops over the *hardwired parts* of the given architecture,
+    i.e. built-in
+    
+    * potentiometers (DPT-24 and HC)
+    * cross bar arrays (XBAR)
+    
+    and configures them according to the given wired_circuit. This means that relevant
+    allocated potentiometers will be set and the XBAR configuration bitmask will be
+    computed from the hardware description provided by the circuit and the architecture.
+    
+    Currently returns a list of instructions (tuples) which could be directly be written
+    out to serial or passed to PyHyCon.
+    
+    .. note::
+       This method will change in near time and talk directly to a PyHyCon instance.
+    """
     instructions = []
 
     # should actually call write(tpl) or directly PyHyCon
@@ -374,6 +410,13 @@ def plot_xbar(target_file, circuit_title, xbar_config=None, interactive_plotting
     plt.savefig(target_file)
     
 def cli():
+    """
+    This module is callable via ``python -m fpaa`` or ``./fpaa.py``. It exposes the main
+    functions on the command line which is especially helpful for debugging or
+    interactively programming an analog computer from the command line.
+
+    Call ``--help`` for all possible command line options.
+    """
     parser = argparse.ArgumentParser(description="A circuit synthesizer for the HyConAVR.", epilog=__doc__)#, formatter_class=argparse.RawTextHelpFormatter
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0,

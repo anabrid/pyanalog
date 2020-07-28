@@ -26,7 +26,7 @@ Run these examples with an interactive python REPL to play with them:
 * Example how to use PyHyCon with a microcontroller "simulator":
 
 >>> ac = HyCon(serialdummy())                                                                                            
->>> ac.set_ic_time(1234)                                                                                                 
+>>> ac.set_ic_time(1234)                                  # doctest: +SKIP                                                                                  
 << Sending [C001234] to uC
 [type reply of uC]>> T_IC=1234
 HyConRequest(C001234, expect(eq: T_IC=1234), self.executed=True, response=T_IC=1234, reply=T_IC=1234)
@@ -57,7 +57,26 @@ from copy import deepcopy
 log = logging.getLogger('HyCon') # or __name__
 
 def ensure(var, **q):
-    "Our Assert function. Should probably use inspect.stack() or traceback.extract_stack() to get original varname"
+    """
+    This is our assert function which is used widely over the code for dynamic
+    parameter checking. ``q`` stands for *query*. The function will return
+    silently if the query is fullfilled and raise a ``ValueError`` otherwise.
+    Examples for success:
+    
+    >>> ensure(42, eq=42)
+    >>> ensure("foo bar", re="fo+.*")
+    >>> ensure(17, inrange=(0,20))
+    >>> ensure("x", within="xyz")
+    >>> ensure("bla", length=3)
+    >>> ensure("blub", isa=str, length=4, re="b.*")
+    
+    And in case of failure:
+    >>> ensure(3, within=[1,2,9])
+    Traceback (most recent call last):
+    ...
+    ValueError: Got var=3, but it is none of [1, 2, 9].
+    """
+    # Should probably use inspect.stack() or traceback.extract_stack() to get original varname
     basemsg=f"Got {var=}" if not 'basemsg' in q else q['basemsg']
     if 'eq' in q and not var == q['eq']: raise ValueError(f"{basemsg}, but should be '{q['eq']}'")
     if 're' in q and not re.match(q['re'], var): raise ValueError(f"{basemsg}, but that doesn't match regexp '{q['re']}'")
@@ -67,26 +86,45 @@ def ensure(var, **q):
     if 'isa' in q and not isinstance(var, q['isa']): raise ValueError(f"{basemsg}, which is of {type(var)=} but expected  type {q['isa']}.")
 
 class expect:
+    """
+    ``ensure`` delayed and on stereoids: Can be initialized with a ``query`` (but with
+    further options) and then called with a ``HyConRequest``. Will check the *response*
+    and also allows *return value mapping*, for instance with regexpes or by splitting.
+    Example:
+    
+    >>> R = HyConRequest("dummy")
+    >>> R.response = "1,2,3"
+    >>> E = expect(split=",", type=int)
+    >>> print(list(E(R)))
+    [1, 2, 3]
+    """
     def __init__(self, **q): self.q=q
     def __call__(self, r): # r: HyConRequest
         q = deepcopy(self.q);
         q['basemsg'] = f"Unexpected response: Command {r.command} yielded '{r.response}'"
         ensure(r.response, **q)
-        mapper = q['as'] if 'as' in q else lambda x:x # id
+        mapper = q['type'] if 'type' in q else lambda x:x # id
         try:
             if 'ret' in q: return mapper(re.match(q['re'], r.response).groupdict()[ q['ret'] ])
             if 'split' in q: return map(mapper, re.split(q['split'], r.response))
-            if 're' in q and not 'as' in q: return re.match(q['re'], r.response)
+            if 're' in q and not 'type' in q: return re.match(q['re'], r.response)
             return mapper(r.response)
         except ValueError:  raise ValueError(f"{basemsg} but cannot be casted/mapped to {mapper}")
     def __str__(self): return "expect(%s)"%str(self.q)[1:-1].replace("'",'')
 
 def wont_implement(reason):
+    "Will not implement: Returns a function which raises ``NotImplementedError(reason)`` when called."
     def not_implemented(*v,**kw): raise NotImplementedError(reason)
-    not_implemented.__doc__ = f"Not implemented because {reason}"
+    not_implemented.__doc__ = f"*Not implemented* because {reason}"
     return not_implemented
 
 class HyConRequest:
+    """
+    A HyConRequest models a single *request* and *response* cycle. It stores the ASCII ``command``
+    emitted by the HyCon and can save a *expected response* future/promise (see ``expect`` class).
+    A HyConRequest can only be made once. If you want to do it several times, you have to (deep)
+    copy the instance.
+    """
     def __init__(self, command, expected_response=None):
         self.executed = False
         self.command = command
@@ -100,6 +138,7 @@ class HyConRequest:
     __repr__ = __str__
         
     def write(self, hycon):
+        "Run this request. Can only be executed once. Can be chained."
         if self.executed:
             raise ValueError("Shall not execute same command twice.")
         self.executed = True
@@ -108,7 +147,7 @@ class HyConRequest:
         return self # chainable
     
     def read(self, hycon, expected_response=None, read_again=False):
-        "Reads from hycon.fh, "
+        "Read response from HyCon. If *read_again* is given, will read several times. Can be chained."
         if not expected_response: expected_response = self.expected_response
         if hycon.unidirectional:
             log.debug("Unidirectional channel, skipping reading from HyCon...")
@@ -126,7 +165,15 @@ class HyConRequest:
 
 
 class HyCon:
-    "Low-Level Hybrid Controller OOP interface, similar to the Perl Hybrid controller."
+    """
+    Low-Level Hybrid Controller OOP interface, similar to the Perl Hybrid controller.
+    
+    This is a minimalistic implementation which tries to implement all neccessary checking
+    of input/output request/reply structure correctness, but won't do any *high level*
+    support for applications. Users are assumed to write such code on themselves. The PyFPAA
+    library is an example for a high level "frontend" against HyCon, which includes a
+    circuit understanding, etc.
+    """
     
     DIGITAL_OUTPUT_PORTS = 8
     DIGITAL_INPUT_PORTS = 8
@@ -185,35 +232,39 @@ class HyCon:
         return was_terminated_by_ext_halt_condition
     
     def set_ic_time(self, ictime):
+        "Sets IC (initial condition) time in microseconds"
         ensure(ictime, within=range(0,999999)); self.ictime = ictime
         return self.query('C%06d' % ictime, expect(eq=f"T_IC={ictime}"))
     
     def set_op_time(self, optime):
+        "Sets OP (operation mode) time in microseconds"
         ensure(optime, inrange=(0,999999)); self.optime = optime
         return self.query('c%06d' % optime, expect(eq=f"T_OP={optime}"))
     
     def get_data(self):
+        "Supposed to be called when a read out group is defined and the machine is in (synchronous) OP mode. "
         q = self.query('l', "^No data!|.*$")
         if q.response == "No data!": return None
         data = []
         while True:
-            resp = q.read(self, expect(re="^([-\d\.\s]*|EOD)*$"), read_again=True).response.split()
+            resp = q.read(self, expect(re=r"^([-\d\.\s]*|EOD)*$"), read_again=True).response.split()
             if "EOD" in resp: break
             data.append(list(map(float, resp)))
         return data
     
     def read_element_by_address(self, address):
-        "Expecting 16-bit address as integer"
+        "Read any machine element voltage. Expecting 16-bit element address as integer."
         ensure(address, isa=int)
         response_match = self.query("g%04X" % address, r"(?P<value>.+)\s+(?P<id>.+)").reply
         return response_match.groupdict() # return the dictionary value-> ..., id-> ..., caveat, should be all numeric!?
     
     def set_ro_group(self, addresses):
+        "Defines a read out group, expects addresses to be an integer list of 16-bit element addresses."
         for a in addresses: ensure(a, isa=int)
         return self.query("G" + ";".join([f"{a:04X}" for a in addresses]) + ".")
     
-    read_ro_group = command('f', expect(split=";", type=float))
-    read_digital = command("R", expect(re="^"+"\d\s"*(DIGITAL_INPUT_PORTS-1), split='', type=bool), help="Read digital inputs")
+    read_ro_group = command('f', expect(split=";", type=float), help="Query for currently set read out group")
+    read_digital = command("R", expect(re="^"+r"\d\s"*(DIGITAL_INPUT_PORTS-1), split='', type=bool), help="Read digital inputs")
     
     def digital_output(self, port, state):
         "Set digital output pins of the Hybrid Controller"
@@ -236,22 +287,23 @@ class HyCon:
     read_dpts = wont_implement("because it doesn't actually self.query the hardware but just ask the HC about its internal storage.")
     
     def get_status(self):
+        "Queries the HybridController about it's current status. Will return a dictionary."
         response = self.query('s', '.*=.*,.*').reply.string # expecting something with commas :-)
         state = dict(items.split("=") for items in response.split(","))
         state['RO-GROUP'] = state['RO-GROUP'].split(";")
         state['DPTADDR'] = state['DPTADDR'].split(";") # don't resolve mapping
         return state
 
-    get_op_time = command('t', expect(re="t_OP=(?P<time>-?\d*)", ret='time', to=float))
-    reset = command('x', expect(eq='RESET'))
+    get_op_time = command('t', expect(re=r"t_OP=(?P<time>-?\d*)", ret='time', type=float), help="Asks about current OP time")
+    reset = command('x', expect(eq='RESET'), help="Resets the HybridController (has no effect on python instance itself)")
 
 class serialdummy:
     "Dummy IOWrapper for testing HyCon.py without the actual hardware"
-    def write(self, sth):     print(f"<< Sending [{sth}] to uC")
+    def write(self, sth):      print(f"<< Sending [{sth}] to uC")
     def readline(self): return input("[type reply of uC]>> ")
 
 class tcpsocket:
-    "Wrapper for communicating with HyCon over TCP/IP"
+    "Wrapper for communicating with HyCon over TCP/IP. See also HyCon-over-TCP.README for further instructions"
     def __init__(self, host, port):
         from socket import socket # builtin
         self.s = socket()
