@@ -65,8 +65,10 @@ def to_sympy(state, symbol_mapper=identity, round_n=15):
     equation_list = [ sympy.Eq(sympy_Symbol(lhs), rhs_rounder(symbol2sympy(state[lhs])))  for lhs in sorted(state) ]
     return equation_list
 
-def to_latex(state, chunk_equations=None):
+def to_latex(state, chunk_n=None):
     "Export to latex using sympy"
+    import sympy
+    
     equation_list = to_sympy(state)
 
     # Pretty-print set of equations. That's nicer then just

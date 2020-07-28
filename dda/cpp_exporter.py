@@ -79,40 +79,38 @@ void f(%(state_type)s const &%(state_name)s, %(state_type)s &%(dqdt_name)s, %(au
     initial_data{ %(initial_data)s },
     dt{ %(timestep_data)s };
 
-void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int num_iterations, int rk_order) {
+void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int rk_order) {
     %(state_type)s k1, k2, k3, k4;
 
-    for(int iter = 0; iter < num_iterations; iter++) {
-        switch(rk_order) {
-            case 1:
-                // Explicit Euler scheme
-                f(%(state_name)s, k1, %(aux_name)s);
-                %(state_name)s = %(state_name)s + k1*dt;
-                break;
-            case 2:
-                // RK2 scheme
-                f(%(state_name)s, k1, %(aux_name)s);
-                f(%(state_name)s + k1*dt, k2, %(aux_name)s);
-                %(state_name)s = %(state_name)s + (k1+k2)*dt*0.5;
-                break;
-            case 3:
-                // Kutta's third order scheme 
-                f(%(state_name)s, k1, %(aux_name)s);
-                f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
-                f(%(state_name)s + dt*k1*(-1.0) + dt*k2*2.0, k3, %(aux_name)s);
-                %(state_name)s = %(state_name)s + (k1 + k2*4.0 + k3*1.0)*dt*(1./6.);
-                break;
-            case 4:
-                // Classical RK4 scheme 
-                f(%(state_name)s, k1, %(aux_name)s);
-                f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
-                f(%(state_name)s + dt*k2*0.5, k3, %(aux_name)s);
-                f(%(state_name)s + dt*k3*1.0, k4, %(aux_name)s);
-                %(state_name)s = %(state_name)s + (k1 + k2*2.0 + k3*2.0 + k4)*dt*(1./6.);
-                break;
-            default:
-                exit(-42);
-        }
+    switch(rk_order) {
+        case 1:
+            // Explicit Euler scheme
+            f(%(state_name)s, k1, %(aux_name)s);
+            %(state_name)s = %(state_name)s + k1*dt;
+            break;
+        case 2:
+            // RK2 scheme
+            f(%(state_name)s, k1, %(aux_name)s);
+            f(%(state_name)s + k1*dt, k2, %(aux_name)s);
+            %(state_name)s = %(state_name)s + (k1+k2)*dt*0.5;
+            break;
+        case 3:
+            // Kutta's third order scheme 
+            f(%(state_name)s, k1, %(aux_name)s);
+            f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
+            f(%(state_name)s + dt*k1*(-1.0) + dt*k2*2.0, k3, %(aux_name)s);
+            %(state_name)s = %(state_name)s + (k1 + k2*4.0 + k3*1.0)*dt*(1./6.);
+            break;
+        case 4:
+            // Classical RK4 scheme 
+            f(%(state_name)s, k1, %(aux_name)s);
+            f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
+            f(%(state_name)s + dt*k2*0.5, k3, %(aux_name)s);
+            f(%(state_name)s + dt*k3*1.0, k4, %(aux_name)s);
+            %(state_name)s = %(state_name)s + (k1 + k2*2.0 + k3*2.0 + k4)*dt*(1./6.);
+            break;
+        default:
+            exit(-42);
     }
 }
 
@@ -126,14 +124,10 @@ std::vector<std::string> query_variables;
         feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     for(int iter = 0; iter < max_iterations; iter++) {
-        int num_iterations = modulo_writer;
-        
-        if(iter + num_iterations > max_iterations)
-            num_iterations = max_iterations - iter;
-    
-        integrate(%(state_name)s, %(aux_name)s, num_iterations, rk_order);
-        
-        for(int i=0; i<query_variables.size();) {
+        integrate(%(state_name)s, %(aux_name)s, rk_order);
+
+        if(iter %% modulo_writer == 0)
+        for(size_t i=0; i<query_variables.size();) {
             const double* lookup=nullptr; std::string var = query_variables[i];
             if(!lookup) lookup = %(state_name)s.byName(var);
             if(!lookup) lookup = %(aux_name)s.byName(var);
@@ -142,6 +136,8 @@ std::vector<std::string> query_variables;
             std::cout << *lookup << (++i != query_variables.size() ? "\\t" : "\\n");
         }
     }
+    
+    return %(state_name)s;
 }
 
 using namespace std;
@@ -182,6 +178,7 @@ int main(int argc, char** argv) {
     numbers["modulo_write"] = 1;
     numbers["max_iterations"] = 100;
     numbers["rk_order"] = 1;
+    numbers["number_precision"] = 5;
     
     map<string, bool> flags;
     flags["debug"] = false;
@@ -199,8 +196,8 @@ int main(int argc, char** argv) {
             cerr << "* Numeric arguments: (Usage --foo=123)" << endl;
             for(auto const& [key, val] : numbers) cerr << ind << key << " (default value: " << val << ")" << endl;
             cerr << "* Query fields: (if none given, all are dumped)";
-            for(int i=0; i<all_variables.size();) { cerr << endl << ind;
-                for(int j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
+            for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
+                for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
             cerr << endl << "Exemplaric usage:" << endl;
             cerr << ind << argv[0] << "--foo=True --bar=7 var1 var2 var3" << endl;
             exit(-1);
@@ -239,22 +236,22 @@ int main(int argc, char** argv) {
         exit(0);
     }
     
+    // cout.set_precision(numbers["number_precision"]); // TODO, move above correctly, before every number
+    
     if(query_variables.empty())
         query_variables = all_variables;
 
     debug = flags["debug"];
     
     // Write CSV header:
-    for(int i=0; i<query_variables.size();) cout << query_variables[i++] << (i!=query_variables.size() ? "\\t" : "\\n");
+    for(size_t i=0; i<query_variables.size();) cout << query_variables[i++] << (i!=query_variables.size() ? "\\t" : "\\n");
     
     simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"]);
 }
 
 """
 
-def to_cpp(state, writer_fields="All",
-    modulo_write=20, max_iterations=30000, rk_order=1,
-    number_precision=math.inf):
+def to_cpp(state, number_precision=math.inf):
     """
     Allows for compiling DDA to a standalone C++ code.
     
@@ -385,12 +382,6 @@ def to_cpp(state, writer_fields="All",
     equations += state_assignments(aux_name, vars.aux.unneeded)
     equations = C(equations)
 
-    if writer_fields == "All":
-        writer_fields = vars.all
-    writer_header = '"'+" ".join(writer_fields)+'"'
-    writer_format_arguments = J(csymbol(var) for var in writer_fields)
-    writer_formatstring = '"'+" ".join('%f' for var in writer_fields)+"\\n\""
-
     make_operator = lambda operator_symbol, other_type, a=True: [ \
         f"{state_type} operator{operator_symbol}(const {other_type} &{other_name}) const "+'{', \
         C(f"{state_type} {state_name};"), \
@@ -406,7 +397,7 @@ def to_cpp(state, writer_fields="All",
 
 # What follows are a few helper functions to make the usage nicer
 
-def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.out", options="-Wall"):
+def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.out", options="--std=c++20 -Wall"):
     """
     Write code to c_filename and run the compiler on that, afterwards.
     Will raise an error if compilation fails.
@@ -417,7 +408,7 @@ def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.
     if system(f"{compiler} -o{compiler_output} {options} {c_filename}"):
         raise ValueError("Could not compile C source!")
 
-def run(command="./a.out"):
+def run(command="./a.out", return_ndarray=True, arguments={}, fields_to_export=[]):
     """
     Run an executable and pipe the stdout to a string, which is returned.
     Stderr will just be passed.
@@ -425,7 +416,9 @@ def run(command="./a.out"):
     """
     import subprocess, io, sys
     #stdout, stderr = io.StringIO(), io.StringIO()
-    proc = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    command = [command] + [ f"--{k}={v}" for k,v in arguments.items() ] + fields_to_export
+    print(f"Running: {' '.join(command)}")
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     #proc.wait()
     
     # instead of proc.wait(), which could deadlock when the stdout buffer
@@ -442,4 +435,10 @@ def run(command="./a.out"):
         print("STDERR:", stderr)
         raise ValueError(f"Could not execute '{command}'. Please run on the command line for inspection. Probably use gdb.")
     else:
+        if return_ndarray:
+            import io # builtin
+            import numpy as np # external
+            datafh = io.StringIO(stdout)
+            data = np.genfromtxt(datafh, names=True)
+            return data
         return stdout
