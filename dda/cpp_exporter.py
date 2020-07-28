@@ -376,10 +376,42 @@ def to_cpp(state, number_precision=math.inf):
     equations += state_assignments(aux_name, vars.aux.sorted)
     equations.append("// 2. Cyclic aux variables")
     equations += state_assignments(aux_name, vars.aux.cyclic)
-    equations.append("// 3. State variable changes (dqdt), finally")
-    equations += state_assignments(dqdt_name, vars.evolved)
-    equations.append("// 4. Unneeded auxilliary variables (maybe postprocessing, etc.)")
+    # FIXME:
+    # There is a special case like the following where unneeded auxers are wrongly
+    # detected as unneeded, depsite urgently needed:
+    """
+    # CONTEXT: dipole_water.py
+     // 3. State variable changes (dqdt), finally
+     _dqdt.mdm0_0 = Int(_aux.Fm0_01, _aux.Fn0_00, _aux.Fn0_01);
+     _dqdt.mdm0_1 = Int(_aux.Fm0_01, _aux.Fn0_10, _aux.Fn0_11);
+     _dqdt.mdm1_0 = Int(_aux.Fm1_01, _aux.Fn1_00, _aux.Fn1_01);
+     _dqdt.mdm1_1 = Int(_aux.Fm1_01, _aux.Fn1_10, _aux.Fn1_11);
+     _dqdt.mdr0_0 = Int(_aux.Fr0_01, _aux.Fn0_00, _aux.Fn0_01);
+     _dqdt.mdr0_1 = Int(_aux.Fr0_01, _aux.Fn0_10, _aux.Fn0_11);
+     _dqdt.mdr1_0 = Int(_aux.Fr1_01, _aux.Fn1_00, _aux.Fn1_01);
+     _dqdt.mdr1_1 = Int(_aux.Fr1_01, _aux.Fn1_10, _aux.Fn1_11);
+     _dqdt.mu0_0 = Int(_aux.mult_19);
+     _dqdt.mu0_1 = Int(_aux.mult_37);
+     _dqdt.mu1_0 = Int(_aux.mult_45);
+     _dqdt.mu1_1 = Int(_aux.mult_51);
+     _dqdt.r0_0 = Int(_aux.mult_20);
+     _dqdt.r0_1 = Int(_aux.mult_38);
+     _dqdt.r1_0 = Int(_aux.mult_46);
+     _dqdt.r1_1 = Int(_aux.mult_52);
+     // 4. Unneeded auxilliary variables (maybe postprocessing, etc.)
+     _aux.mult_19 = mult(0.5, _state.mdm0_0);
+     _aux.mult_46 = mult(0.0625, _state.mdr1_0);
+     _aux.mult_52 = mult(0.0625, _state.mdr1_1);
+     _aux.mult_51 = mult(0.5, _state.mdm1_1);
+     _aux.mult_37 = mult(0.5, _state.mdm0_1);
+     _aux.mult_45 = mult(0.5, _state.mdm1_0);
+     _aux.mult_20 = mult(0.0625, _state.mdr0_0);
+     _aux.mult_38 = mult(0.0625, _state.mdr0_1);
+     """
+    equations.append("// 3. Unneeded auxilliary variables (maybe postprocessing, etc.)")
     equations += state_assignments(aux_name, vars.aux.unneeded)
+    equations.append("// 4. State variable changes (dqdt), finally")
+    equations += state_assignments(dqdt_name, vars.evolved)
     equations = C(equations)
 
     make_operator = lambda operator_symbol, other_type, a=True: [ \
