@@ -32,6 +32,10 @@ constexpr double %(nan_name)s = std::numeric_limits<double>::signaling_NaN();
 struct %(state_type)s {
     %(state_var_definition)s
     %(dqdt_operators)s
+    const double* byName(std::string %(lookup_name)s) const {
+        %(state_vars_by_name)s
+        return nullptr;
+    }
 };
 
 // Auxiliary variables, derived from %(state_type)s, not evolved in time (dqdt=0)
@@ -40,11 +44,19 @@ struct %(aux_type)s  {
     void set_to_nan() {
         %(aux_var_set_to_nan)s
     }
+    const double* byName(std::string %(lookup_name)s) const {
+        %(aux_vars_by_name)s
+        return nullptr;
+    }
 };
 
 // Explicit constants
 static const struct %(const_type)s {
     %(explicit_constant_definitions)s
+    const double* byName(std::string %(lookup_name)s) const {
+        %(explicit_constants_by_name)s
+        return nullptr;
+    }
 } %(const_name)s;
 
 // All variables as well-ordered string:
@@ -58,7 +70,7 @@ static const std::vector<std::string> all_variables = {
 /// %(aux_name)s is only returned for debugging and controlling purposes of intermediate results
 
 void f(%(state_type)s const &%(state_name)s, %(state_type)s &%(dqdt_name)s, %(aux_type)s &%(aux_name)s) {
-    %(aux_name)s.set_to_nan(); // only for debugging: ensure no use of uninitialized variables
+    if(debug) %(aux_name)s.set_to_nan(); // only for debugging: ensure no use of uninitialized variables
 
     %(equations)s
 }
@@ -104,10 +116,15 @@ void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int n
     }
 }
 
+std::vector<std::string> query_variables;
+
 %(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order) {
     %(state_type)s %(state_name)s = initial;
     %(aux_type)s %(aux_name)s;
     
+    if(debug)
+        feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+
     for(int iter = 0; iter < max_iterations; iter++) {
         int num_iterations = modulo_writer;
         
@@ -116,7 +133,14 @@ void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int n
     
         integrate(%(state_name)s, %(aux_name)s, num_iterations, rk_order);
         
-        // Write!
+        for(int i=0; i<query_variables.size();) {
+            const double* lookup=nullptr; std::string var = query_variables[i];
+            if(!lookup) lookup = %(state_name)s.byName(var);
+            if(!lookup) lookup = %(aux_name)s.byName(var);
+            if(!lookup) lookup = %(const_name)s.byName(var);
+            if(!lookup) { std::cerr << "Lookup failed" << std::endl; exit(-123); }
+            std::cout << *lookup << (++i != query_variables.size() ? "\\t" : "\\n");
+        }
     }
 }
 
@@ -141,13 +165,17 @@ template<typename T>  T extract(const string& input) {
     return target;
 }
 
-string unprefix(const string& input, const string prefix) {
-    return (!input.compare(0, prefix.size(), prefix)) ? input.substr(prefix.size()) : input;
+bool unprefix(string& str, const string prefix) {
+    bool is_prefixed = !str.compare(0, prefix.size(), prefix);
+    if(is_prefixed) str = str.substr(prefix.size());
+    return is_prefixed;
+}
+
+bool contains(const std::vector<std::string>& haystack, const std::string& needle) {
+    return std::find(haystack.begin(), haystack.end(), needle) != haystack.end();
 }
 
 int main(int argc, char** argv) {
-    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
-
     // runtime-definable arguments and their values:
     
     map<string, int> numbers;
@@ -157,16 +185,10 @@ int main(int argc, char** argv) {
     
     map<string, bool> flags;
     flags["debug"] = false;
-    flags["list_all_variables"] = true;
-    
-    map<string, bool> query_variable;
-    for(auto var : all_variables) query_variable[var] = false;
-    
-    vector<string> query_fields;
+    flags["list_all_variables"] = false;
 
     // Our primitive argument processing:
     vector<string> args(argv + 1, argv + argc);
-    bool err = false;
     for(auto arg : args) {
         if(arg == "--help") {
             string ind = "  ";
@@ -176,7 +198,7 @@ int main(int argc, char** argv) {
             for(auto const& [key, val] : flags) cerr << ind << key << " (default value: " << val << ")" << endl;
             cerr << "* Numeric arguments: (Usage --foo=123)" << endl;
             for(auto const& [key, val] : numbers) cerr << ind << key << " (default value: " << val << ")" << endl;
-            cerr << "* Query fields: (by default all turned off)";
+            cerr << "* Query fields: (if none given, all are dumped)";
             for(int i=0; i<all_variables.size();) { cerr << endl << ind;
                 for(int j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
             cerr << endl << "Exemplaric usage:" << endl;
@@ -184,43 +206,47 @@ int main(int argc, char** argv) {
             exit(-1);
         }
     
-        vector<string> splitted = split(arg);
-        switch(splitted.size()) {
-            case 1: // interpret arg as boolean flag:
-                if(query_variable.count(arg)) query_variable[arg] = true;
-                else if(flags.count(unprefix(arg, "--")))  flags[unprefix(arg, "--")] = true;
-                else {
-                    cerr << "ERR: Illegal argument: " << arg << endl;
-                    cerr << "ERR: It is not a member of the variables. Try --help." << endl;
-                    exit(-2);
-                }
-                break;
-            case 2: { // key=value argument
-                string key=unprefix(splitted[0], "--"), value=splitted[1];
-                if(numbers.count(key))    numbers[key] = extract<int>(value);
-                else if(flags.count(key)) flags[key] = extract<bool>(value);
-                else {
-                    cerr << "ERR: Illegal key-value argument " << key << " -> " << value << endl;
-                    cerr << "ERR: Try --help" << endl;
-                    exit(-3);
-                }
-                break;
-                }
-            default:
+        if(unprefix(arg, "--")) {
+            vector<string> splitted = split(arg);
+            string key, value;
+            if(splitted.size() == 1) splitted.push_back("1"); // for the booleans
+            if(splitted.size() != 2) {
+                cerr << "ERR: Illegal key-value argument " << arg << endl;
+                cerr << "ERR: Try --help" << endl;
+                exit(-3);
+            }
+            key=splitted[0]; value=splitted[1];
+            if(numbers.count(key))    numbers[key] = extract<int>(value);
+            else if(flags.count(key)) flags[key] = extract<bool>(value);
+            else {
                 cerr << "ERR: Illegal argument: " << arg << endl;
                 cerr << "ERR: Try --help" << endl;
                 exit(-3);
+            }
+        } else {
+            if(contains(all_variables, arg)) {
+                query_variables.push_back(arg);
+            } else {
+                cerr << "ERR: Illegal argument: " << arg << endl;
+                cerr << "ERR: It is not a member of the variables. Try --help." << endl;
+                exit(-2);
+            }
         }
-    }
+    } // for args
     
     if(flags["list_all_variables"]) {
         for(auto var : all_variables) puts(var.c_str());
         exit(0);
     }
+    
+    if(query_variables.empty())
+        query_variables = all_variables;
 
     debug = flags["debug"];
     
-    puts(%(writer_header)s); // Write CSV header
+    // Write CSV header:
+    for(int i=0; i<query_variables.size();) cout << query_variables[i++] << (i!=query_variables.size() ? "\\t" : "\\n");
+    
     simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"]);
 }
 
@@ -244,7 +270,7 @@ def to_cpp(state, writer_fields="All",
     # chosen carefully.
     state_type, aux_type, const_type = "state_variables", "auxillaries", "constants"
     state_name, dqdt_name, aux_name, other_name, const_name = "_state", "_dqdt", "_aux", "_other", "_constants"
-    nan_name = "_nan_"
+    lookup_name, nan_name = "_name_", "_nan_"
 
     state = state.name_computing_elements()
     vars = state.variable_ordering()
@@ -319,6 +345,12 @@ def to_cpp(state, writer_fields="All",
     state_var_definition = varlist("double", vars.evolved)
     aux_var_definition = varlist("double", vars.aux.all)
     all_variables_as_string = C(f'"{var}",' for var in vars.all)
+    
+    # For runtime introspection capabilities
+    lookup = lambda struct: CC(f'if({lookup_name} == "{var}") return &{var};' for var in struct)
+    state_vars_by_name = lookup(vars.evolved)
+    aux_vars_by_name = lookup(vars.aux.all)
+    explicit_constants_by_name = lookup(vars.explicit_constants)
 
     # For debugging:
     aux_var_set_to_nan = C(f"{var} = {nan_name};" for var in vars.aux.all)
