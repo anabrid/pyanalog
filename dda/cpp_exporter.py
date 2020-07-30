@@ -75,6 +75,12 @@ void f(%(state_type)s const &%(state_name)s, %(state_type)s &%(dqdt_name)s, %(au
     %(equations)s
 }
 
+/// Helper routine: Compute aux variables from a state. Helpful for consistent printing.
+void compute_aux(%(state_type)s const& %(state_name)s, %(aux_type)s &%(aux_name)s) {
+    %(state_type)s dummy_%(dqdt_name)s;
+    f(%(state_name)s, dummy_%(dqdt_name)s, %(aux_name)s);
+}
+
 %(state_type)s
     initial_data{ %(initial_data)s },
     dt{ %(timestep_data)s };
@@ -114,7 +120,34 @@ void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int r
     }
 }
 
-std::vector<std::string> query_variables;
+struct csv_writer {
+    std::vector<std::string> query_variables;
+    bool write_initial_conditions, always_compute_aux_before_printing;
+
+    const char* sep(size_t i) const { return (i!=query_variables.size() ? "\\t" : "\\n"); }
+
+    void write_header() const {
+        for(size_t i=0; i<query_variables.size();)
+            std::cout << query_variables[i++] << sep(i);
+    }
+    
+    void write_line(const %(state_type)s& %(state_name)s, const %(aux_type)s& %(aux_name)s, const %(const_type)s& %(const_name)s) const {
+        %(aux_type)s recomputed__%(aux_name)s;
+        const %(aux_type)s *actual__%(aux_name)s = &%(aux_name)s;
+        if(always_compute_aux_before_printing) {
+            compute_aux(%(state_name)s, recomputed__%(aux_name)s);
+            actual__%(aux_name)s = &recomputed__%(aux_name)s;
+        }
+        for(size_t i=0; i<query_variables.size();) {
+            const double* lookup=nullptr; std::string var = query_variables[i];
+            if(!lookup) lookup = %(state_name)s.byName(var);
+            if(!lookup) lookup = actual__%(aux_name)s->byName(var);
+            if(!lookup) lookup = %(const_name)s.byName(var);
+            if(!lookup) { std::cerr << "Lookup failed" << std::endl; exit(-123); }
+            std::cout << *lookup << sep(++i);
+        }
+    }
+} writer;
 
 %(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order) {
     %(state_type)s %(state_name)s = initial;
@@ -123,18 +156,18 @@ std::vector<std::string> query_variables;
     if(debug)
         feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
+    writer.write_header();
+
+    if(writer.write_initial_conditions) {
+        %(aux_name)s.set_to_nan(); // definite state for auxers at printing: not yet computed.
+        writer.write_line(%(state_name)s, %(aux_name)s, %(const_name)s);
+    }
+    
     for(int iter = 0; iter < max_iterations; iter++) {
         integrate(%(state_name)s, %(aux_name)s, rk_order);
 
         if(iter %% modulo_writer == 0)
-        for(size_t i=0; i<query_variables.size();) {
-            const double* lookup=nullptr; std::string var = query_variables[i];
-            if(!lookup) lookup = %(state_name)s.byName(var);
-            if(!lookup) lookup = %(aux_name)s.byName(var);
-            if(!lookup) lookup = %(const_name)s.byName(var);
-            if(!lookup) { std::cerr << "Lookup failed" << std::endl; exit(-123); }
-            std::cout << *lookup << (++i != query_variables.size() ? "\\t" : "\\n");
-        }
+            writer.write_line(%(state_name)s, %(aux_name)s, %(const_name)s);
     }
     
     return %(state_name)s;
@@ -183,6 +216,8 @@ int main(int argc, char** argv) {
     map<string, bool> flags;
     flags["debug"] = false;
     flags["list_all_variables"] = false;
+    flags["write_initial_conditions"] = false;
+    flags["always_compute_aux_before_printing"] = true;
 
     // Our primitive argument processing:
     vector<string> args(argv + 1, argv + argc);
@@ -222,7 +257,7 @@ int main(int argc, char** argv) {
             }
         } else {
             if(contains(all_variables, arg)) {
-                query_variables.push_back(arg);
+                writer.query_variables.push_back(arg);
             } else {
                 cerr << "ERR: Illegal argument: " << arg << endl;
                 cerr << "ERR: It is not a member of the variables. Try --help." << endl;
@@ -238,13 +273,12 @@ int main(int argc, char** argv) {
     
     // cout.set_precision(numbers["number_precision"]); // TODO, move above correctly, before every number
     
-    if(query_variables.empty())
-        query_variables = all_variables;
+    if(writer.query_variables.empty())
+        writer.query_variables = all_variables;
 
     debug = flags["debug"];
-    
-    // Write CSV header:
-    for(size_t i=0; i<query_variables.size();) cout << query_variables[i++] << (i!=query_variables.size() ? "\\t" : "\\n");
+    writer.write_initial_conditions = flags["write_initial_conditions"];
+    writer.always_compute_aux_before_printing = flags["always_compute_aux_before_printing"];
     
     simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"]);
 }

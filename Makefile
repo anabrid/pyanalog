@@ -10,9 +10,12 @@ doctest:
 	pytest --doctest-modules --pyargs dda  -v
 	pytest --doctest-modules --pyargs hycon  -v
 	# all other modules don't have useful tests anyway
+	
+unittests: # actually acceptance tests...
+	pytest tests
 
 test: 
-	$(MAKE) doctest
+	$(MAKE) doctest unittests
 	
 clean:
 	@find -type d -iname __pycache__ | xargs rm -r
