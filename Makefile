@@ -7,7 +7,7 @@ doc:
 	cd doc && $(MAKE) -j html dirhtml text
 
 doctest:
-	pytest --doctest-modules --pyargs dda  -v
+	pytest --doctest-modules --pyargs dda --ignore=dda/__main__.py  -v
 	pytest --doctest-modules --pyargs hycon  -v
 	# all other modules don't have useful tests anyway
 	
