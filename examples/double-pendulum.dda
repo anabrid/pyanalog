@@ -1,0 +1,33 @@
+# Double pendulum example, see section 6.25 in Bernds new book (ap2.pdf).
+#
+# The two degrees of freedom, phi_1 and phi_2 (abbreveated to p1 and p2 here)
+# are measured in radians (0 to 2*pi).
+
+g = const(1.)
+
+# initial values for dot{phi_i}
+initial_dp1 = const(0.01)
+initial_dp2 = const(0.01)
+
+# initial values for phi_i
+initial_p1 = const(0)
+initial_p2 = const(3.14159)
+
+# dt timestep: kind of worthless information in a DDA file...
+dt = const(0.003)
+
+diff = sum(p1, neg(p2))
+cosd = cos(diff)
+sind = sin(diff)
+
+dp1_squared = mult(mdp1, mdp1)
+dp2_squared = mult(mdp2, mdp2)
+
+ddp1 = mult(0.5, sum(mult(ddp2, cosd), mult(dp2_squared,      sind), mult(sum(g,g),  sin(p1))))
+ddp2 =           sum(mult(ddp1, cosd), mult(neg(dp1_squared), sind), mult(g,         sin(p2)))
+
+mdp1 = int(ddp1, dt, initial_dp1)
+mdp2 = int(ddp2, dt, initial_dp2)
+
+p1 = int(mdp1, dt, initial_p1)
+p2 = int(mdp2, dt, initial_p2)

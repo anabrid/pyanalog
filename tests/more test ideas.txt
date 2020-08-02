@@ -1,0 +1,7 @@
+We have to ensure that such (traditional) DDA codes fail:
+
+foo = const(3)
+y = int(faa, 0.1, 0)
+
+
+because typos happen.
