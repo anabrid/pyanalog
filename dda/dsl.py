@@ -30,7 +30,7 @@ which is basically a real number within a fixed interval.
 """
 
 from . import ast as dda # in order to explicitely write dda.Symbol, dda.State
-import collections
+import collections, sys, argparse, builtins, os, inspect # python included
 
 def to_traditional_dda(state):
     """
@@ -119,4 +119,44 @@ def read_traditional_dda(content, return_ordered_dict=False):
     mapping = collections.OrderedDict(result)
     return mapping if return_ordered_dict else dda.State(mapping)
 
+def cli_exporter():
+    """
+    A Command Line Interface (CLI) for PyDDA.
 
+    This CLI API does mainly what the old dda2c.pl script did, i.e.
+    translating a (traditional) DDA file to C code. There are fewer
+    options, because --iterations, --modulus and --variables are
+    now runtime options for the generated C program.
+    
+    However, we can generate much more then C. Output is always text.
+    
+    Invocation is either ``python -m dda --help`` or ``python -m dda.dsl --help``
+    anywhere from the system. ``setup.py`` probably also installed a
+    ``pydda`` binary somewhere calling the same. You can also just
+    call ``./dsl.py --help``.
+    """
+    int = builtins.int # just to go sure
+    
+    parser = argparse.ArgumentParser(description="PyDDA, the AST-based DDA compiler", epilog=inspect.getdoc(cli_exporter))
+
+    parser.add_argument("circuit_file", nargs='?', type=argparse.FileType('r'), default=sys.stdin, help="DDA setup (traditional file). Default is stdin.")
+    parser.add_argument("-o", "--output", nargs='?', type=argparse.FileType('w'), default=sys.stdout, help="Where to write exported code to. Default is stdout.")
+    
+    # case insensitive choices. Will be parsed by export() anyway
+    parser.add_argument("format", choices=["c", "dda", "dot", "latex"], type=str.lower, help="File formats which can be generated")
+    
+    # The following is deprecated because it is now runtime information for the C++ code.
+    #C = parser.add_argument_group(title="Arguments for C++ code generation (Only apply if --export=C)")
+    #C.add_argument("-N", "--iterations", type=int, help="Number of integration steps to be performed")
+    #C.add_argument("-m", "--modulus", type=int, help="Output a value every <modulus> iteration steps")
+    #C.add_argument("-v", "--variables", nargs="*", help="List of variables to be plotted (comma seperated)")
+    
+    arg = parser.parse_args()
+    
+    dda_text = arg.circuit_file.read()
+    state = read_traditional_dda(dda_text)
+    exported_code = state.export(to=arg.format)
+    print(exported_code, file=arg.output)
+    
+if __name__ == "__main__":
+    cli_exporter()

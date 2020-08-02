@@ -534,33 +534,3 @@ class BreveState(State):
             self.__setitem__(name, value) # or self.data[name] = value
 
 
-# The following code has to be cleaned/finished in order to provide a proper CLI.
-# That should move to a dedicated package.
-
-def run_cli(argv=sys.argv):
-    import argparse # python included
-    int = builtins.int # just to go sure
-    
-    default_compiler = os.getenv("CC", "cc")
-    
-    parser = argparse.ArgumentParser(description="PyDDA, the AST-based DDA compiler", epilog=__doc__)
-
-    parser.add_argument("circuit_file", help="Contains the DDA setup (traditional file)")
-    parser.add_argument("-e", "--export", choices=["C", "DDA", "Dot"], help="File formats which can be generated")
-    
-    C = parser.add_argument_group(title="Arguments for C++ code generation (Only apply if --export=C)")
-    C.add_argument("-N", "--iterations", type=int, help="Number of integration steps to be performed")
-    C.add_argument("-m", "--modulus", type=int, help="Output a value every <modulus> iteration steps")
-    C.add_argument("-v", "--variables", nargs="*", help="List of variables to be plotted (comma seperated)")
-    
-    C.add_argument("-c", "--compile", action="store_true", help="Compile generated code (using CC environment variable as compiler or defaults to cc)")
-    C.add_argument("-r", "--run", action="store_true", help="Run generated code ...")
-    
-    res = parser.parse_args(argv)
-    print(res)
-    
-    ### TODO: Continue here with actions
-    
-    
-if __name__ == "__main__":
-    run_cli()
