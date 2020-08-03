@@ -19,6 +19,7 @@ cpp_template = """\
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include <map>
 #include <cstdio>
 #include <iostream>
@@ -471,7 +472,7 @@ def to_cpp(state, number_precision=math.inf):
 
 # What follows are a few helper functions to make the usage nicer
 
-def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.out", options="--std=c++20 -Wall"):
+def compile(code, c_filename="generated.cc", compiler="g++", compiler_output="a.out", options="--std=c++17 -Wall"):
     """
     Write code to c_filename and run the compiler on that, afterwards.
     Will raise an error if compilation fails.

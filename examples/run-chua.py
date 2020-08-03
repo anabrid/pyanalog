@@ -17,7 +17,7 @@ variables = ["x", "y", "z"]
 needs_recompile = False
 if needs_recompile:
     sh(f"python -m dda  {base}.dda C > {base}.cpp")
-    sh(f"g++ --std=c++20 -O3 -o {base}.out {base}.cpp")
+    sh(f"g++ --std=c++17 -O3 -o {base}.out {base}.cpp")
 sh(f"./{base}.out --max_iterations={iterations} --modulo_write={modulo_write} --binary_output=1 {' '.join(variables)} > data.out")
 
 from numpy import *
