@@ -1,0 +1,26 @@
+# Chua attractor, chapter 6.15 from Bernds book ap2.pdf
+# Below is the unscaled version (equations 6.36-6.39)
+
+# Status: Seems not to work (explodes)
+
+x0 = const(0.1)
+y0 = const(0)
+z0 = const(0)
+
+c1 = const(15.6)
+c2 = const(1)
+c3 = const(28)
+
+m0 = const(-1.143)
+m1 = const(-0.714)
+
+# actually a constant:
+coeff = mult(0.5, neg(sum(m0, neg(m1))))
+
+mfx = sum(mult(m1,x), mult(coeff, neg(sum(abs(sum(x,1)), neg(abs(sum(x,-1)))))))
+
+dt = const(0.001)
+
+x = int(mult(c1, neg(sum(y, neg(x), mfx))), dt, x0)
+y = int(mult(c2, neg(sum(x, neg(y), z))), dt, y0)
+z = int(mult(c3, y), dt, z0)

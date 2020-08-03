@@ -1,0 +1,20 @@
+# Chua attractor, chapter 6.15 from Bernds book ap2.pdf
+# Below is the scaled version (equations 6.40-6.51)
+
+x0 = const(0.1)
+x1 = mult(-10, neg(sum(x, fx)))
+x2 = neg(sum(y, mult(0.5, x1)))
+x  = neg(sum(mult(3.12, neg(int(x2, dt, 0))), x0))
+
+y1 = neg(sum(z, neg(mult(0.125, y))))
+y2 = neg(sum(mult(1.25, x), mult(2, y1)))
+y  = mult(4, neg(int(y2, dt, 0)))
+
+z  = int(mult(3.5, y), dt, 0)
+
+f1 = abs(sum(mult(0.7143,x),  0.2857))
+f2 = abs(sum(mult(0.7143,x), -0.2857))
+f3 = neg(sum(f1, neg(f2)))
+fx = sum(mult(0.714, x), mult(0.3003, f3))
+
+dt = const(0.001)
