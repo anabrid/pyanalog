@@ -1,6 +1,10 @@
+stages:
+- build
+- deploy
+- test
+
 docs:make:
   stage: build
-  needs: []
   image: svek/pydda
   script:
     - make doc
@@ -10,7 +14,7 @@ docs:make:
       - doc/_build/
 
 docs:deploy:
-  stage: build 
+  stage: deploy
   image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
