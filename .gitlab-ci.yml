@@ -1,10 +1,9 @@
 stages:
-- build
+- run
 - deploy
-- test
 
 docs:make:
-  stage: build
+  stage: run
   image: svek/pydda
   script:
     - make doc
@@ -15,6 +14,7 @@ docs:make:
 
 docs:deploy:
   stage: deploy
+  needs: ["docs:make"]
   image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
@@ -22,8 +22,7 @@ docs:deploy:
     - cd doc/_build && echo -e "cd www\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
 
 tests:
-  stage: test
-  needs: []
+  stage: run
   image: svek/pydda
   script:
     - make test
