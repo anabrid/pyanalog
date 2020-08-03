@@ -1,10 +1,4 @@
-stages:
-  - build doc
-  - deploy doc
-  - test dda code
-
 make sphinx docs:
-  stage: build doc
   image: svek/pydda
   script:
     - make doc
@@ -14,7 +8,7 @@ make sphinx docs:
       - doc/_build/
 
 deploy sphinx docs:
-  stage: deploy doc
+  needs: ["make sphinx docs"]
   image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
@@ -22,7 +16,6 @@ deploy sphinx docs:
     - cd doc/_build && echo -e "cd www\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
 
 test code:
-  stage: test dda code
   image: svek/pydda
   script:
     - make test
