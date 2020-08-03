@@ -11,7 +11,6 @@ docs:make:
 
 docs:deploy:
   stage: build 
-  needs: ["docs:make"]
   image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
