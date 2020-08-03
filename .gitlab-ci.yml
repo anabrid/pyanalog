@@ -1,4 +1,6 @@
-make sphinx docs:
+docs:make:
+  stage: build
+  needs: []
   image: svek/pydda
   script:
     - make doc
@@ -7,16 +9,18 @@ make sphinx docs:
     paths:
       - doc/_build/
 
-deploy sphinx docs:
-  stage: test  # since we use DAGs, this should be not neccessary.
-  needs: ["make sphinx docs"]
+docs:deploy:
+  stage: build 
+  needs: ["docs:make"]
   image: svek/pydda
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
     - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
     - cd doc/_build && echo -e "cd www\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
 
-test code:
+tests:
+  stage: test
+  needs: []
   image: svek/pydda
   script:
     - make test
