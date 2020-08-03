@@ -22,6 +22,7 @@ cpp_template = """\
 #include <map>
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 
 bool debug;
 constexpr double %(nan_name)s = std::numeric_limits<double>::signaling_NaN();
@@ -122,11 +123,12 @@ void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int r
 
 struct csv_writer {
     std::vector<std::string> query_variables;
-    bool write_initial_conditions, always_compute_aux_before_printing;
+    bool write_initial_conditions, always_compute_aux_before_printing, binary_output;
 
     const char* sep(size_t i) const { return (i!=query_variables.size() ? "\\t" : "\\n"); }
-
+    
     void write_header() const {
+        if(binary_output) return;
         for(size_t i=0; i<query_variables.size();)
             std::cout << query_variables[i++] << sep(i);
     }
@@ -138,13 +140,17 @@ struct csv_writer {
             compute_aux(%(state_name)s, recomputed__%(aux_name)s);
             actual__%(aux_name)s = &recomputed__%(aux_name)s;
         }
-        for(size_t i=0; i<query_variables.size();) {
+        for(size_t i=0; i<query_variables.size(); i++) {
             const double* lookup=nullptr; std::string var = query_variables[i];
             if(!lookup) lookup = %(state_name)s.byName(var);
             if(!lookup) lookup = actual__%(aux_name)s->byName(var);
             if(!lookup) lookup = %(const_name)s.byName(var);
             if(!lookup) { std::cerr << "Lookup failed" << std::endl; exit(-123); }
-            std::cout << *lookup << sep(++i);
+            if(binary_output) {
+                std::cout.write(reinterpret_cast<const char*>( lookup ), sizeof(double));
+            } else {
+                std::cout << *lookup << sep(i+1);
+            }
         }
     }
 } writer;
@@ -218,6 +224,7 @@ int main(int argc, char** argv) {
     flags["list_all_variables"] = false;
     flags["write_initial_conditions"] = false;
     flags["always_compute_aux_before_printing"] = true;
+    flags["binary_output"] = false;
 
     // Our primitive argument processing:
     vector<string> args(argv + 1, argv + argc);
@@ -279,6 +286,7 @@ int main(int argc, char** argv) {
     debug = flags["debug"];
     writer.write_initial_conditions = flags["write_initial_conditions"];
     writer.always_compute_aux_before_printing = flags["always_compute_aux_before_printing"];
+    writer.binary_output = flags["binary_output"];
     
     simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"]);
 }
