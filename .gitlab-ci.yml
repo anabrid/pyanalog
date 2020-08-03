@@ -8,6 +8,7 @@ make sphinx docs:
       - doc/_build/
 
 deploy sphinx docs:
+  stage: test  # since we use DAGs, this should be not neccessary.
   needs: ["make sphinx docs"]
   image: svek/pydda
   script:
