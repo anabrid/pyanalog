@@ -26,3 +26,5 @@ plot(x,y,lw=0.7)
 ## alternatively, we can plot something which
 ## alternates color by the z value:
 # scatter(x,y,c=z)
+
+savefig("chua.pdf")

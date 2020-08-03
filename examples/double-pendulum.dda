@@ -6,15 +6,15 @@
 g = const(1.)
 
 # initial values for dot{phi_i}
-initial_dp1 = const(0.01)
-initial_dp2 = const(0.01)
+initial_dp1 = const(0)
+initial_dp2 = const(0)
 
 # initial values for phi_i
-initial_p1 = const(0)
+initial_p1 = const(1.57)
 initial_p2 = const(3.14159)
 
 # dt timestep: kind of worthless information in a DDA file...
-dt = const(0.003)
+dt = const(0.0003)
 
 diff = sum(p1, neg(p2))
 cosd = cos(diff)
