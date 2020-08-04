@@ -16,7 +16,7 @@ It can
   steer the operation and gain output data.
   
 The codes are supposed to work well in the
-[Scientific Python](https://www.scipy.org/) ecosystem. The target 
+`Scientific Python <https://www.scipy.org/>`_ ecosystem. The target 
 audience are clearly software engineers and scientists. The user
 interface is either command line (bash or python shell) or scripting
 (python or C/YAML-like domain specific languages). This code can
