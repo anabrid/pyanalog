@@ -76,15 +76,15 @@ def to_latex(state, chunk_n=None):
     systems where we use the align latex environment instead of
     a single equation. For the above example:
     
-    >>> print(sympy.latex(to_sympy(state)))  # doctest: +SKIP
+    >>> import sympy, dda
+    >>> x,int,neg=dda.symbols("x,int,neg")
+    >>> state = dda.State({'x': int(neg(x), 0.2, 1)})
+    >>> print(sympy.latex(to_sympy(state)))  
     \\left[ x = - \\int \\left(1.2 - x\\right)\\, dt\\right]
-    >>> print(to_latex(state))               # doctest: +SKIP
+    >>> print(to_latex(state))               
     \\begin{align}
     x &= - \\int \\left(1.2 - x\\right)\\, dt
     \\end{align}
-
-
-    
     """
     import sympy
     
@@ -93,7 +93,7 @@ def to_latex(state, chunk_n=None):
     # Pretty-print set of equations. That's nicer then just
     # sympy.latex(self.equation_list)
     s = [ f"{sympy.latex(eq.lhs)} &= {sympy.latex(eq.rhs)}" for eq in equation_list ]
-    equation_list_to_align = lambda t: r"\begin{align}"+"\n" + (r" \\"+"\n").join(t) + "\n\end{align}"
+    equation_list_to_align = lambda t: r"\begin{align}"+"\n" + (r" \\"+"\n").join(t) + "\n" + r"\end{align}"
     
     def chunks(lst, n):
         """Yield successive n-sized chunks from lst."""

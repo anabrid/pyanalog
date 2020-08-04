@@ -4,6 +4,7 @@ _build/
 .cache
 *.egg-info
 *.out
+*.exe
 *.tmp
 *.csv
 *.img

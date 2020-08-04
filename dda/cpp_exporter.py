@@ -551,7 +551,7 @@ def run(command="./a.out", return_ndarray=True, arguments={}, fields_to_export=[
     Generated code has about 333 lines
     >>> compile(cpp_code, compiler_output="foo.exe")
     >>> res = run("./foo.exe", arguments={'max_iterations':20}, fields_to_export=['x'])
-    Running: ./a.out --max_iterations=20 x
+    Running: ./foo.exe --max_iterations=20 x
     >>> res["x"]
     array([ 1.2    ,  1.44   ,  1.728  ,  2.0736 ,  2.48832,  2.98598,
             3.58318,  4.29982,  5.15978,  6.19174,  7.43008,  8.9161 ,
