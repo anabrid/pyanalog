@@ -16,7 +16,9 @@ textual output or TCP/IP communication with the HyCon microcontroller.
 It is up to the user to ensure proper communication. A few examples
 are given at the end of this file.
 
-(c) Sven Köppel 2019, Dual licensed with GPLv2, BSD
+::
+
+    (c) Sven Köppel 2019, Dual licensed with GPLv2, BSD
 
 Examples
 --------

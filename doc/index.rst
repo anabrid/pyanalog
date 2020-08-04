@@ -26,6 +26,39 @@ as a service).
 The `pyanalog` code is open-source,  *currently work in progress* and
 authored by the upcoming `Anabrid Inc. <http://anabrid.com>`_. 
 
+Big picture
+-----------
+
+.. code-block:: none
+
+    Input: Ordinary Differential Equation in mathematical notation
+           (for instance in SymPy, Sage, Matlab, Latex, etc.)
+         |
+         v
+         
+    PyDDA: Generation of a circuit
+         |
+      +--+---+   Several backends to deal with the
+      |  |   |   circuits, for instance:
+      | ...  |
+      |      +--> Simulation with numerics (C++ or SciPy/Netlib ODE solver)
+      |
+      v
+    
+    PyFPAA:  Circuit synthesis (=mapping) with based on architecture
+             description.
+      |
+      |
+      v
+    
+    PyHyCon: Interaction with Analog-as-a-service
+             (SSH to the small analog machine in Bernds basement)
+      |
+      v
+      
+    Output: Measurement data from all relevant fields
+
+
 The particular python modules
 -----------------------------
 
@@ -63,12 +96,13 @@ Contents
    :maxdepth: 1
    :caption: PyDDA
 
-   rationale
-   intro
-   ast
-   dsl
-   computing_elements
-   cas
+   dda-intro
+   dda-rationale
+   dda-ast
+   dda-dsl
+   dda-computing_elements
+   dda-cpp-codegen
+   dda-cas
    
 .. toctree::
    :maxdepth: 1
@@ -81,6 +115,7 @@ Contents
    :caption: Hybrid Controller
    
    hycon
+   hycon-networking
    
 
 About this documentation

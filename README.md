@@ -13,36 +13,9 @@ analog computers on a software developer/mathematican level:
 * `PyHyCon` is an interface to a Model-1 Hybrid Controller in order to
   run a program, steer the operation and gain output data.
   
-## Big picture
-
-```
-Input: Ordinary Differential Equation in mathematical notation
-       (for instance in SymPy, Sage, Matlab, Latex, etc.)
-     |
-     v
-     
-PyDDA: Generation of a circuit
-     |
-  +--+---+   Several backends to deal with the
-  |  |   |   circuits, for instance:
-  | ...  |
-  |      +--> Simulation with numerics (C++ or SciPy/Netlib ODE solver)
-  |
-  v
-
-PyFPAA:  Circuit synthesis (=mapping) with based on architecture
-         description.
-  |
-  |
-  v
-
-PyHyCon: Interaction with Analog-as-a-service
-         (SSH to the small analog machine in Bernds basement)
-  |
-  v
-  
-Output: Measurement data from all relevant fields
-```
+## Please see the docs!
+See doc/index.rst or call "make docs".
+You can also go to http://ai.svenk.org/html/ for the rendered docs.
   
 ## DDA and Analog synthesis codes
 

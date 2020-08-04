@@ -16,13 +16,16 @@ identity = lambda x:x
 def to_sympy(state, symbol_mapper=identity, round_n=15):
     """
     Export a state to a set of equations for SymPy.
-    Returns a list of sympy.Eq objects.
+    Returns a list of ``sympy.Eq`` objects.
     Of course it requires Sympy installed/available.
     
     With Sympy, you can do all funny things, such as:
-    > ss = export(state).to_sympy()
-    > import sympy
-    > print(sympy.latex(ss)) # Will pretty-print simplified equations
+    
+    >>> from dda import *
+    >>> x,int,neg=symbols("x,int,neg")
+    >>> state = State({'x': int(neg(x), 0.2, 1)})
+    >>> to_sympy(state)
+    [Eq(x, -Integral(1.2 - x, t))]
     """
     import sympy
     
@@ -66,7 +69,23 @@ def to_sympy(state, symbol_mapper=identity, round_n=15):
     return equation_list
 
 def to_latex(state, chunk_n=None):
-    "Export to latex using sympy"
+    """
+    Export to latex, using sympy.
+    
+    This mostly differs from ``sympy.latex`` for large equation
+    systems where we use the align latex environment instead of
+    a single equation. For the above example:
+    
+    >>> print(sympy.latex(to_sympy(state)))  # doctest: +SKIP
+    \\left[ x = - \\int \\left(1.2 - x\\right)\\, dt\\right]
+    >>> print(to_latex(state))               # doctest: +SKIP
+    \\begin{align}
+    x &= - \\int \\left(1.2 - x\\right)\\, dt
+    \\end{align}
+
+
+    
+    """
     import sympy
     
     equation_list = to_sympy(state)

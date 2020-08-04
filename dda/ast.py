@@ -6,14 +6,14 @@ representation in this module is the heart of the PyDDA package.
 The code has no external dependencies, especially it does not rely
 on a Computer Algebra System or even on SymPy.
 
-The :class:Symbol object represents a node in a AST and the edges
+The :class:`Symbol` object represents a node in a AST and the edges
 to it's children. In order to simplify mass symbol generation,
-:meth:symbols can be used.
+:meth:`symbols` can be used.
 
-The :class:State object represents a list (set) of equations.
-It basically maps variables to their expressions. The :class:State
+The :class:`State` object represents a list (set) of equations.
+It basically maps variables to their expressions. The :class:`State`
 represents a (traditional) DDA file. From a python perspective, a
-:class:State is not much more then a dictionary on stereoids.
+:class:`State` is not much more then a dictionary on stereoids.
 """
 
 # all "batteries included":
@@ -62,13 +62,20 @@ class Symbol:
     >>> f.tail
     (x, y)
     
-    Symbols can be used to create even more Symbols:
+    Variables can be used to create complex expressions for which
+    they then serve for as a head:
     
-    >>> f,x = Symbol("f"), Symbol("x")
-    >>> f(x)
-    f(x)
+    >>> f,x,y,z = Symbol("f"), Symbol("x"), Symbol("y"), Symbol("z")
+    >>> f(x,y)
+    f(x, y)
+    >>> # example for kind of nonsensical terms:
     >>> x(x,f,x)
     x(x, f, x)
+    
+    Calling a symbol will always replace it's tail:
+    
+    >>> f(x)(y)
+    f(y)
     
     Symbols are equal to each other if their head and tail equals:
     
@@ -106,7 +113,7 @@ class Symbol:
        behaviour. It can be hard to find such errors. That could probably
        be improved by providing the correct ``repr()``.
        
-       It is a good convention to only have Symbols and floats/integers
+       It is a good convention to *only* have Symbols and floats/integers
        being part of the AST.
     
     
@@ -176,8 +183,8 @@ class Symbol:
         """
         return Symbol(self.head, *[(mapping(el.map_tails(mapping)) if is_symbol(el) else el) for el in self.tail])
         
-# Convenience functions:
 def is_symbol(smbl):
+    "Convenience function"
     return isinstance(smbl, Symbol)
 
 #def convenience(method, cls=Symbol):
@@ -307,15 +314,27 @@ class State(collections.UserDict):
         """
         Syntactic sugar for adding new equations to the system. Usage:
 
-        >> eq = state.equation_adder
-        >> eq(y=int(x))
-        >> eq(x=add(y,z), z=int(x,0,0.1))
+        >>> state = State()
+        >>> x,y,z,add,int = symbols("x,y,z,add,int")
+        >>> eq = state.equation_adder()
+        >>> eq(y=int(x))
+        >>> eq(x=add(y,z), z=int(x,0,0.1))
+        >>> state
+        State({'x': add(y, z), 'y': int(x), 'z': int(x, 0, 0.1)})
         
-        Known limitations: This doesn't work because keywords must
-        not be variables:
+        Known limitations: This doesn't work any better then the ``BreveState``
+        below because keywords must not be variables, they will always resolve
+        to their string representation.
         
-        >> x,y,z = State("x,y,z")
-        >> eq(x=add(y,z))
+        >>> foo = Symbol("bar")
+        >>> s1, s2 = State(), State()
+        >>> eq1 = s1.equation_adder()
+        >>> eq1(foo=42)
+        >>> s2[foo] = 42
+        >>> s1
+        State({'foo': 42})
+        >>> s2
+        State({'bar': 42})
         """
         def adder(**dct):
             for k,v in dct.items():
@@ -335,19 +354,21 @@ class State(collections.UserDict):
         return State({ mapper(var): self[var].map_heads(mapper) for var in self })
     
     def symbols(self, *query):
-        "Same as symbols() above, but register at self (state)"
+        "Same as :meth:`symbols()` above, but register at self (state)"
         return [ self[x.head] for x in symbols(*query) ]
         
     def constant_validity(self):
         """
         Check validity of numeric constants in the state.
         Depending on context, values -1 < t < +1 are illegal.
+        
+        (Not yet implemented!)
         """
         pass # TBD, probably not here
     
     def dependency_graph(self):
         """Returns the edge list of the variable dependency graph of this state.
-        We can call ``topological_sort()`` on the result of this method.
+        We can call :meth:`topological_sort()` on the result of this method.
         """
         # Comptue adjacency list of dependencies. All is strings, no more symbols
         adjacency_list = { k: list(map(str, self[k].all_variables())) for k in self }
@@ -358,7 +379,7 @@ class State(collections.UserDict):
     def draw_dependency_graph(self, export_dot=True, dot_filename="test.dot"):
         """
         If you have ``networkx`` and ``pyGraphViz`` installed, you can use this method
-        to draw the *variable dependency graph* (see method ``dependency_graph()``)
+        to draw the *variable dependency graph* (see method :meth:`dependency_graph()`)
         with ``Dot``/``GraphViz``. This method will return the ``nx.DiGraph()`` instance.
         If ``export_dot`` is set, it will also write a dotfile, call ``dot`` to
         render it to a bitmap and open that bitmap.
@@ -399,7 +420,7 @@ class State(collections.UserDict):
            True
            
            But this is clearly wrong, the correct linearization would give ``x(y)`` a name.
-           FIXME
+           FIXME (https://lab.analogparadigm.com/koeppel/dda/-/issues/8)
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
@@ -421,7 +442,7 @@ class State(collections.UserDict):
     def variable_ordering(self):
         """
         Will perform an analysis of all variables occuring in this state (especially in the RHS).
-        This is based on the linarized variant of this state (see ``name_computing_elements()``).
+        This is based on the linarized variant of this state (see :meth:`name_computing_elements()`).
         
         The return value is an object (actually a types.SimpleNamespace instance) which contains
         lists of variable names (as strings). The properties (categories) are primarly
@@ -517,6 +538,18 @@ class BreveState(State):
     
        * Breaks Python class introspection (for instance tab completion in *iPython*)
        * Of course users cannot add any non-data related attribute (or method)
+
+    See also :meth:`State.equation_adder()` for similar sugar which might have
+    unexpected effects:
+    
+    >>> s, b = State(), BreveState()
+    >>> foo = Symbol("bar") # in this context, similar to a string foo = "bar"
+    >>> s[foo] = 42         # foo resolves to string represntation "bar"
+    >>> b.foo = 42          # equals b["foo"], thus has nothing to do with variable foo
+    >>> s
+    State({'bar': 42})
+    >>> b
+    BreveState({'foo': 42})
     
     If you find this class useful, you also might like ``types.SimpleNamespace`` or
     ``collections.namedtuple``. Both are basically immutable, while this object type

@@ -6,25 +6,36 @@ Software testing in PyAnalog
 The PyAnalog code is still quite alpha, but we do a number of software tests
 without much extra work:
 
-* `Doctests <https://docs.python.org/3/library/doctest.html>`_ are super
-  simple to add, they are just embedded in the documentation. It's a quite
-  pythonic way to demonstrate (and test at the same time) the functionality
-  of small pieces of code.
+`Doctests <https://docs.python.org/3/library/doctest.html>`_
+    are super
+    simple to add, they are just embedded in the documentation. It's a quite
+    pythonic way to demonstrate (and test at the same time) the functionality
+    of small pieces of code.
   
-  We have doctests all over the place. The code snippets are of course
-  also included in the documentation. You can copy & paste them into your
-  python console to play with the API.
+    We have doctests all over the place. The code snippets are of course
+    also included in the documentation. You can copy & paste them into your
+    python console to play with the API.
   
-* Acceptance/Integration tests: We can provide some DDA files
-  where we know the solution analytically. It should be a useful exercise
-  both for readers and testers to run these examples. We use the
-  `Pytest <https://pytest.org>`_ third party library for (unit) testing.
+Acceptance/Integration tests
+    We can provide some DDA files
+    where we know the solution analytically. It should be a useful exercise
+    both for readers and testers to run these examples. We use the
+    `Pytest <https://pytest.org>`_ third party library for (unit) testing.
   
-  These tests are located in the ``tests/`` directory. They can be executed
-  by running ``pytest tests`` or just ``make test`` from the parent directory.
-  Test files can also be run and inspected with python interactively, i.e.
+    These tests are located in the ``tests/`` directory. They can be executed
+    by running ``pytest tests`` or just ``make test`` from the parent directory.
+    
+.. note::
+
+    Tests are special because they can be evaluated for success or failure
+    automatically. This differs them from other code contributions, such
+    as the example codes in the ``examples/`` directory, which cannot be
+    evaluated for correctnes.
+
+Test scripts can also be run and inspected with python interactively, i.e.
   
 ::
+
     you@yourcomputer$ python -i test_exponential_solution.py
     >>> from pylab import *
     >>> ion()
@@ -62,10 +73,13 @@ doctest builtin, for instance:
     $ cd $(git rev-parse --show-toplevel)            # execute from PyAnalog root directory
     $ pytest-3 --doctest-modules --pyargs dda  -v
 
-See also the *Makefile* provided in the root directory.
+See also the ``Makefile`` provided in the root directory.
 
 What else about tests
 ---------------------
 
-- Tests are run whenever the code is committed. See for instance https://lab.analogparadigm.com/koeppel/dda/-/pipelines
-- *What about Hardware tests?*  This would require having dedicated testing hardware somewhere. This is out of scope for the moment.
+Continous integration
+   Tests are run whenever the code is committed. See for instance https://lab.analogparadigm.com/koeppel/dda/-/pipelines
+
+What about hardware tests?
+   This would require having dedicated testing hardware somewhere. This is out of scope for the moment.
