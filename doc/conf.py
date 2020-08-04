@@ -31,6 +31,11 @@ extensions = [
    'sphinx.ext.viewcode',
    'sphinx.ext.autosummary',
    'sphinx.ext.mathjax',
+
+   # Mermaid diagrams
+   # pip install sphinxcontrib-mermaid
+   # https://github.com/mgaitan/sphinxcontrib-mermaid
+#   'sphinxcontrib.mermaid'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -46,6 +51,8 @@ autodoc_member_order = "bysource"
 # Solves "Sphinx Error contents.rst not found" on some systems, see
 # https://stackoverflow.com/a/56448499
 master_doc = "index"
+
+#mermaid_pdfcrop = "pdfcrop"
 
 # -- Options for HTML output -------------------------------------------------
 

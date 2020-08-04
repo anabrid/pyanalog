@@ -19,6 +19,21 @@ def to_sympy(state, symbol_mapper=identity, round_n=15):
     Returns a list of ``sympy.Eq`` objects.
     Of course it requires Sympy installed/available.
     
+    .. note::
+
+       The heart of this function is a mapping from :class:`ast.Symbol`
+       terms (functions) to Sympy functions, for instance by mapping
+       ``Symbol("int")(...)`` to ``-sympy.Integral(sympy.Add(...), t)``.
+
+       Thanks to the ease of the computing elements, this mapping does
+       not require pattern matching but can be performed on a basic
+       level. However, not all terms are yet supported.
+
+
+    The argument `symbol_mapper` allows to apply another mapping
+    on the DDA Symbol heads. By default, it is the identity
+    function.
+    
     With Sympy, you can do all funny things, such as:
     
     >>> from dda import *

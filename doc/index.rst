@@ -29,6 +29,7 @@ authored by the upcoming `Anabrid Inc. <http://anabrid.com>`_.
 Big picture
 -----------
 
+
 .. code-block:: none
 
     Input: Ordinary Differential Equation in mathematical notation
@@ -78,7 +79,7 @@ by the following three python modules:
   run a program, steer the operation and gain output data.
   
 You can read more about the goals of this software at the page
-:ref:`rationale`. 
+:ref:`dda-rationale`. 
 
 Contents
 --------
@@ -103,12 +104,14 @@ Contents
    dda-computing_elements
    dda-cpp-codegen
    dda-cas
+   dda-examples
    
 .. toctree::
    :maxdepth: 1
    :caption: FPAA
    
    fpaa
+   fpaa-examples
    
 .. toctree::
    :maxdepth: 1
@@ -116,6 +119,7 @@ Contents
    
    hycon
    hycon-networking
+   
    
 
 About this documentation

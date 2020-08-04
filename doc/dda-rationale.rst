@@ -1,4 +1,4 @@
-.. _rationale:
+.. _dda-rationale:
 
 A rationale about DDA
 =====================
