@@ -1,0 +1,17 @@
+# Zweiter Anlauf, etwas schlauere Rechenschaltung
+# Verhaelt sich aber ebenso anders als Sprott, S. 95 f.
+dt = const(.01)
+#
+minus_x = int(y, dt, -.4)
+minus_y = int(minus_x, mult(.666, yz), dt, 0)
+y       = neg(minus_y)
+ysq     = mult(mult(.675, y), y)
+yz      = mult(4.5, mult(y, z))
+z       = int(-1, mult(30, ysq), dt, 0)
+#
+#minus_x    OK
+#minus_y    OK
+#y          OK
+#ysq        OK
+#yz         
+#z          

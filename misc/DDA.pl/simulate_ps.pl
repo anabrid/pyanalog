@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+#
+#  simulate.pl is a convenience wrapper for dda2c.pl which in fact implements a simple "compiler" accepting the
+# definition of a DDA-setup and generating a C-program which effectively performs the DDA's tasks.
+#
+
+use strict;
+use warnings;
+
+die "
+Usage: simulate.pl <circuit_file> <iterations> <variable_list> [phase]
+
+    circuit_file:  Contains the DDA-setup.
+    iterations:    Number of integration steps to be performed.
+    variable_list: List of variables to be plotted.
+    phase:         If omitted, the variables are plotted as separated
+                   graphs. If specified, gnuplot will be told to generate
+                   a phase-space plot.
+
+" if @ARGV < 3;
+
+my $phase;
+pop(@ARGV) and $phase = 1 if $ARGV[-1] eq 'phase';
+
+my ($compiler, $scratch_file, $gnuplot_file) = ('dda2c.pl', 'scratch.dat', 'gnuplot.dat');
+my ($circuit_file, $iterations, @dump_list) = @ARGV;
+my $variables = join(' ', @dump_list);
+map{$_ =~ s/_(\w*)/_\{$1\}/g}@dump_list;
+(my $output_file = $circuit_file) =~ s/\./_/g;
+$output_file .= '.c';
+
+system("./$compiler $circuit_file $iterations $variables") and die "Could no generate C source!\n";
+system("cc $output_file")                                  and die "Could not compile C source!\n";
+system("./a.out > $scratch_file")                          and die "Could not execute simulation!\n";
+
+open my $fh, '>', $gnuplot_file or die "Could not open $gnuplot_file: $!\n";
+print $fh "set terminal postscript enhanced color\nset output 'output.ps'\nplot ";
+my $count;
+print $fh $phase ? "\"$scratch_file\" with lines" : 
+                   join(', ', map{"\"$scratch_file\" using " . ++$count . " with lines title \"$_\""}(@dump_list));
+close($fh);
+
+system("gnuplot \"$gnuplot_file\"")                        and die "Could not run gnuplot!\n";
+#map{unlink($_)}($scratch_file, $gnuplot_file, 'a.out', $output_file)
