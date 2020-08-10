@@ -35,7 +35,10 @@ extensions = [
    # Mermaid diagrams
    # pip install sphinxcontrib-mermaid
    # https://github.com/mgaitan/sphinxcontrib-mermaid
-#   'sphinxcontrib.mermaid'
+#   'sphinxcontrib.mermaid',
+
+   # Jupyter Notebooks in sphinx
+   'nbsphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

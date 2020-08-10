@@ -23,3 +23,4 @@ pytest
 sphinx-rtd-theme
 sphinxcontrib-programoutput
 recommonmark
+nbsphinx

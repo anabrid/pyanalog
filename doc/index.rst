@@ -105,6 +105,7 @@ Contents
    dda-cpp-codegen
    dda-cas
    dda-examples
+   examples/chua.ipynb
    
 .. toctree::
    :maxdepth: 1

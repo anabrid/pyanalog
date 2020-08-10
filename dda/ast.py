@@ -182,7 +182,56 @@ class Symbol:
         Returns a new mapped Symbol.
         """
         return Symbol(self.head, *[(mapping(el.map_tails(mapping)) if is_symbol(el) else el) for el in self.tail])
+    
+    def draw_graph(self, graph=None):
+        """
+        Uses graphviz to draw the AST down from this symbol.
         
+        See also :method:`State.draw_dependency_graph` for similar draph
+        drawing code and notes on python library dependencies.
+        
+        >>> x,y,z = symbols("x,y,z")
+        >>> expression = x(1,y,2,z(3,4))
+        >>> graph = expression.draw_graph()
+        >>> print(graph)
+        digraph "DDA-Symbol" {
+                size="8,5"
+                node [shape=doublecircle]
+                x
+                node [shape=circle]
+                x -> 1
+                node [shape=doublecircle]
+                y
+                node [shape=circle]
+                x -> y
+                x -> 2
+                node [shape=doublecircle]
+                z
+                node [shape=circle]
+                z -> 3
+                z -> 4
+                x -> z
+        }
+        >>> graph.view() # Call this to draw the graph  # doctest: +SKIP
+        """
+        if not graph:
+            from graphviz import Digraph
+            graph = Digraph("DDA-Symbol", filename="symbol.gv")
+            graph.attr(size="8,5")  # rankdir="LR"
+        
+        graph.attr("node", shape="doublecircle")
+        graph.node(self.head)
+        
+        graph.attr("node", shape="circle")
+        for k in self.tail:
+            if is_symbol(k):
+                graph = k.draw_graph(graph)
+                graph.edge(self.head, k.head)
+            else:
+                graph.edge(self.head, str(k))
+
+        return graph
+
 def is_symbol(smbl):
     "Convenience function"
     return isinstance(smbl, Symbol)
