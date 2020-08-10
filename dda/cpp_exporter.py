@@ -204,7 +204,7 @@ struct csv_writer {
 #else
         // Debugging for non-glibc (ie. non-Linux), see https://stackoverflow.com/a/12762999
         // If you want do debugging on some other platform, please implement it on your own...
-        std::cerr << "Warning: Debugging floating point not yet supported" << std::cendl;
+        std::cerr << "Warning: Debugging floating point not yet supported" << std::endl;
 #endif
     }
 
