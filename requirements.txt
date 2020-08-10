@@ -15,7 +15,9 @@ numpy
 matplotlib
 
 networkx
+graphviz
 pyGraphViz
+pydot
 sphinx
 pytest
 
