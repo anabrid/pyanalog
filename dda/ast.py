@@ -193,24 +193,24 @@ class Symbol:
         >>> x,y,z = symbols("x,y,z")
         >>> expression = x(1,y,2,z(3,4))
         >>> graph = expression.draw_graph()
-        >>> print(graph)
+        >>> print(graph)  # doctest: +NORMALIZE_WHITESPACE
         digraph "DDA-Symbol" {
-                size="8,5"
-                node [shape=doublecircle]
-                x
-                node [shape=circle]
-                x -> 1
-                node [shape=doublecircle]
-                y
-                node [shape=circle]
-                x -> y
-                x -> 2
-                node [shape=doublecircle]
-                z
-                node [shape=circle]
-                z -> 3
-                z -> 4
-                x -> z
+           size="8,5"
+           node [shape=doublecircle]
+           x
+           node [shape=circle]
+           x -> 1
+           node [shape=doublecircle]
+           y
+           node [shape=circle]
+           x -> y
+           x -> 2
+           node [shape=doublecircle]
+           z
+           node [shape=circle]
+           z -> 3
+           z -> 4
+           x -> z
         }
         >>> graph.view() # Call this to draw the graph  # doctest: +SKIP
         """
