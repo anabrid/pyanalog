@@ -7,7 +7,7 @@ docs:make:
   image: svek/pydda
   script:
     - make doc
-    - cd doc && make latexpdf PAPER=a4
+#   - cd doc && make latexpdf PAPER=a4
   artifacts:
     paths:
       - doc/_build/
