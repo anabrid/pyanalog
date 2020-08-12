@@ -2,6 +2,7 @@
 __pycache__
 _build/
 .cache
+.ipynb_checkpoints
 *.egg-info
 *.out
 *.exe
