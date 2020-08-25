@@ -106,6 +106,7 @@ Contents
    dda-cas
    dda-examples
    examples/chua.ipynb
+   examples/Heat-Equation.ipynb
    
 .. toctree::
    :maxdepth: 1
