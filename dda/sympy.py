@@ -8,10 +8,20 @@ We use this currently to provide a lean latex representation for the
 cumbersome DDA expressions.
 """
 
-from . import Symbol
+from . import Symbol, dda
 import builtins
 
 identity = lambda x:x
+
+def from_sympy(sympy_equation_list):
+    """
+    Import a state from a set of equations from SymPy.
+    The argument should be a python list of sympy equations where
+    there is a single symbol on the LHS and an integral on the rhs.
+    """
+    import sympy
+    
+    raise ValueError("Not yet implemented!")
 
 def to_sympy(state, symbol_mapper=identity, round_n=15):
     """
