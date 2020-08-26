@@ -52,7 +52,7 @@ z = mult(y, y)
    
 """
 
-from . import ast as dda # in order to explicitely write dda.Symbol, dda.State
+from . import clean, ast as dda # in order to explicitely write dda.Symbol, dda.State
 import collections, sys, argparse, builtins, os, inspect # python included
 
 def to_traditional_dda(state):
@@ -64,7 +64,7 @@ def to_traditional_dda(state):
     
     # Not sure about scattered consts, maybe just remove them for the time being.
     remove_const = lambda x: x.tail[0] if isinstance(x,dda.Symbol) and x.head=="const" else x
-    state = state.map_tails(remove_const)
+    state = clean(state, target="dda").map_tails(remove_const)
     # TODO: Treat constants better. They have deserved it!
 
     dda_lines = []
@@ -105,9 +105,15 @@ def read_traditional_dda(content, return_ordered_dict=False):
     assert type(tree.body) == list, "DDA file malformed, I was expecting a list of statements"
     assert all(type(f) == ast.Assign for f in tree.body), "DDA file malformed, I was expecting a list of assignments only"
     
+    def expr2str(ast_obj):
+        "Get source back; https://stackoverflow.com/questions/32146363/python-ast-abstract-syntax-trees-get-back-source-string-of-subnode"
+        if hasattr(ast, "get_source_segment"): # Python >=3.8
+            return ast.get_source_segment(content, ast_obj)
+        else:
+            return ast.dump(ast_obj) + " (Hint: Use Python >=3.8 to get source segment)"
+
     def arg2symbol(argument):
         "Transform some DDA function argument to the Symbol hierarchy"
-        expr_as_str = ast.get_source_segment(content, argument) 
         if isinstance(argument, ast.Constant):
             return argument.value
         elif isinstance(argument, ast.Name):
@@ -117,23 +123,23 @@ def read_traditional_dda(content, return_ordered_dict=False):
         elif isinstance(argument, ast.UnaryOp):
             # something like -1 is represented as ~ ast.USub(-1)
             return ast.literal_eval(argument)
+        elif isinstance(argument, ast.Num):
+            return argument.n
         else:
-            raise TypeError(f"Don't understand argument '{expr_as_str}'")
+            raise TypeError(f"Don't understand argument type '{expr2str(argument)}'")
     
     def call2symbol(statement):
         "Transform some Right Hand Side nested function call to Symbol hierarchy"
-        expr_as_str = ast.get_source_segment(content, statement) # for debugging, can also print ast.dump(statement)
-        assert type(statement) == ast.Call, f"Was expecting a simple f(x) call but got '{expr_as_str}'"
-        assert len(statement.keywords) == 0, f"Did not expect pythonic keyword arguments f(x=bar) in '{expr_as_str}'"
+        assert type(statement) == ast.Call, f"Was expecting a simple f(x) call but got '{expr2str(statement)}'"
+        assert len(statement.keywords) == 0, f"Did not expect pythonic keyword arguments f(x=bar) in '{expr2str(statement)}'"
         assert type(statement.func) == ast.Name, f"Dunno, what is {statement.func}?"
         head = statement.func.id
         tail = map(arg2symbol, statement.args)
         return dda.Symbol(head, *tail)
     
     def ast_assignment_to_tuple(assign):
-        line = ast.get_source_segment(content, assign) # for debugging, can also print ast.dump(assign)
-        assert len(assign.targets)==1, f"Was expecting only a single assignment, but got '{line}'"
-        assert type(assign.value) == ast.Call, f"DDA file malformed, expecting foo=call(bar), but got '{line}'."
+        assert len(assign.targets)==1, f"Was expecting only a single assignment, but got '{expr2str(assign)}'"
+        assert type(assign.value) == ast.Call, f"DDA file malformed, expecting foo=call(bar), but got '{expr2str(assign)}'."
         variable_name = assign.targets[0].id
         rhs = call2symbol(assign.value)
         return (variable_name, rhs)

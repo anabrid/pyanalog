@@ -94,6 +94,70 @@ def export(state, to, **kw):
             return v(state, **kw)
     raise ValueError(f"Export format {to} not known. Valid (regexps) are {list(exporters.keys())}.")
 
+def clean(thing, target="C"):
+    """
+    Cleans an identifier for being compatible with the `target` language. This can be something like
+    `C`, `python` or `dda` (cf. languages supported by :py:meth:`dda.export`) or also `latex`.
+    
+    It will basically try to transliterate all Unicode to ASCII and then try to ensure that the
+    identifier is a valid C variable name (i.e. don't start with numbers, etc.).
+    
+    This function is nice, if you pass a :py:class:`dda.State` or :py:class:`dda.Symbol`, it will
+    map the whole State/Symbol. Otherwise, it expects a string.
+    
+    Examples:
+    
+    >>> clean(r"\frac{x}{y}")
+    'fracxy'
+    >>> clean(r'a^{-1}')
+    'a__1'
+    >>> clean('a^b_c^{ef}')
+    'a_b_c_ef'
+    >>> clean(u'µ²')   # only if python package "unidecode" is installed # doctest: +SKIP
+    'u2'
+    >>> clean('77%alc')   # well, you can use numbers at the beginning of strings
+    '_77alc'
+    """
+    import re, functools
+    wants = lambda expr: re.match(expr, target, re.IGNORECASE)
+
+    if isinstance(thing, State) or isinstance(thing, Symbol):
+        return thing.map_heads(functools.partial(clean, target=target))
+    elif not isinstance(thing, str):
+        raise TypeError(f"Can only operate on strings (or States, Symbols, for convenience), but got '{thing}', which is of type {type(thing)}.")
+    else:
+        identifier = thing
+        original = identifier # keep a copy
+
+    # First, compose a decoder to remove any non-ascii stuff:
+    try:
+        from unidecode import unidecode
+        identifier = unidecode(identifier)
+    except ImportError as e:
+        identifier = identifier.encode("ascii", errors="ignore").decode()
+
+    if wants(r"c(\+\+|pp)?|python") or wants("dda"):
+        if re.match(r"^\d", identifier):
+            identifier = "_" + identifier
+
+        identifier = identifier.replace("{","").replace("}","").replace("^","_").replace("\\","")
+
+        # a^{-1} gets a_m1 and -a gets _a but a-b-c gets a_b_c
+        identifer = re.sub(r"(\W)-", r"\1m", identifier)
+        identifer = re.sub(r"^-", r"m", identifier)
+        identifier = identifier.replace("-","_")
+
+        # Remove anything left
+        allowed = "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
+        identifier = "".join(c for c in identifier if c in allowed)
+    elif wants("tex"):
+        # Don't do anything, expect the user to be able to write valid latex identifiers.
+        pass
+
+    if not identifier: # empty string?
+        raise ValueError(f"Identifier '{original}' is so weird that it was chopped to an empty string by the clean() function. Please choose a more subtle identifier.")
+
+    return identifier
 
 # populate namespace with some useful objects which should
 # live in the package namespace.
