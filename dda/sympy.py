@@ -22,6 +22,19 @@ def from_sympy(sympy_equation_list):
     import sympy
     
     raise ValueError("Not yet implemented!")
+    
+    dda_Symbol = Symbol # just to make sure
+    
+    for eq in sympy_equation_list:
+        eq = eq.canonical # ensure symbol on the left
+        lhs, rhs = eq.args
+        if not isinstance(lhs, sympy.Symbol):
+            raise ValueError(f"Missing single symbol on LHS of Sympy equation {eq}")
+        
+        dda_lhs = dda_Symbol(lhs.name)
+        # TODO: Traversal https://stackoverflow.com/questions/59816730/run-through-the-ast-of-an-expression-in-sympy
+    
+
 
 def to_sympy(state, symbol_mapper=identity, round_n=15):
     """
