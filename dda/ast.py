@@ -253,7 +253,6 @@ def symbols(*query):
     symbols = [ Symbol(p.strip()) for q in query for p in q.split(",") ]
     return symbols if len(symbols)>1 else symbols[0]
 
-
 def topological_sort(dependency_pairs):
     """Sort a graph (given as edge list) subject to dependency constraints.
     The result are two lists: One for the sorted nodes, one for the
