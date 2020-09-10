@@ -40,7 +40,7 @@ weirdos = [
     r"a^{-1}",       
     r"a^b_c^{ef}",   
     r"0123g",        
-    r"µ²",           
+    r"µ²Weirdness",  # µ² is just removed if no unicode-transliterate library is available
     r"^^^",          
     r"foo[bar]baz",  
     r"Foo(bar)Baz",  

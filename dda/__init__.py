@@ -132,7 +132,7 @@ def clean(thing, target="C"):
     
     Examples:
     
-    >>> clean(r"\frac{x}{y}")
+    >>> clean(r"\frac{x}{y}")  # backslashes are just removed   # doctest: +SKIP
     'fracxy'
     >>> clean(r'a^{-1}')
     'a__1'
