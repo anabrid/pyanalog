@@ -1,3 +1,14 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the DDA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
+
 """
 The DDA language is built around the analog computing elements (or primitives).
 These are basically electrical block circuits implementing basic arithmetics

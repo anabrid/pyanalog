@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 #
-# N-body with an inverse square law force (Coulumb/Newton like)
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
 #
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
+"""
+N-body with an inverse square law force (Coulumb/Newton like)
+"""
 
 from os import system
 from numpy import *

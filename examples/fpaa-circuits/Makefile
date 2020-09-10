@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
 
 # or something like python -m fpaa
 FPAA=../../fpaa/fpaa.py

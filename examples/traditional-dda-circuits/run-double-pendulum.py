@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
 
 import os
 

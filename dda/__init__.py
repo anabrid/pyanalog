@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the DDA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 """
 PyDDA is a small library to write and generate DDA code in Python.
 DDA stands for *digital differential analyzer*. In this context, it is

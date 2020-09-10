@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 # Double pendulum example, see section 6.25 in Bernds new book (ap2.pdf).
 #
 # The two degrees of freedom, phi_1 and phi_2 (abbreveated to p1 and p2 here)

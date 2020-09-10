@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the DDA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 """
 The DDA domain specific language, also refered to as "traditional dda",
 is the C-like language invented by Bernd for his Perl'ish dda code.

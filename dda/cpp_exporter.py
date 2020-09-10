@@ -1,3 +1,14 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the DDA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
+
 """
 C++ code generation is a major feature of the PyDDA code. The generated
 code is built from a string template and has the following features:

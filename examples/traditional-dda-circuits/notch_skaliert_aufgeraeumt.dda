@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 #  Scaled biochemistry example: Scale factors (just a proof of concept):
 #
 #   \lambda_{c_n}=100

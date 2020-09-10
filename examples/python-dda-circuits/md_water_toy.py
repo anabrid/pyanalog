@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the examples of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
 
 # This file comes from commit f0eab6b08fc2d6e7837d56d33a9837cb009a5aab
 # from the F&E repository /experimente/Water-Toy and serves as a standlone

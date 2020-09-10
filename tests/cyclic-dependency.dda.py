@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 #
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the test suite of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
+
+#
 # N-body with an inverse square law force (Coulumb/Newton like)
 #
 # -> TODO: PyDDA doesn't generate correct C++ code yet for this problem.
