@@ -1,0 +1,19 @@
+ANABRID LICENSE AGREEMENT
+Agreement version 0.0.0
+
+This Anabrid License Agreement ("Agreement") is a legal agreement for the
+licensing of Licensed Software (as evventually defined below) between the
+anabrid Company (as defiined below) and the Licensee who has accepted the
+terms of this Agreement by downloading or using Licensed Software and/or
+as defeined (evventually) herein.
+
+This document is a stub. We basically follow the Qt licensing model,
+see for instance https://github.com/qt/qtbase/ . And there will be some
+legal-speaking text at this point.
+
+Until then, please see http://www.anabrid.com/licensing for any further
+information how to use this software beyond the other licenses applicable.
+
+In other words, our software is currently double-licensed with GPLv3 and
+a proprietary license which grants permissions beyond GPLv3 but requires
+paying some royality fee :-)
