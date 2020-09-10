@@ -1,3 +1,12 @@
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the FPAA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 """
 PyFPAA is a compiler for programmable analog computers (FPAAs). It was written by SvenK in Dec 2019
 for quickly approaching a testing infrastructure for the XBAR module for the *Analog Paradigm M-1*

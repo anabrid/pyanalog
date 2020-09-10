@@ -1,5 +1,14 @@
 # This is a YAML description file for a machine.
 # A poor man's Analog HDL (should use Verilog HDLs instead)
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the FPAA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
 
 title: AP/M-1 Mini
 
