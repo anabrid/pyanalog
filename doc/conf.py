@@ -43,7 +43,7 @@ extensions = [
    
    # Allow SVGs in the PDF make target
    # https://github.com/missinglinkelectronics/sphinxcontrib-svg2pdfconverter
-   'sphinxcontrib.rsvgconverter',
+#   'sphinxcontrib.rsvgconverter',  # not yet included into the docker image
 
    # Pygments lexer ipython3
    # https://github.com/spatialaudio/nbsphinx/issues/24
