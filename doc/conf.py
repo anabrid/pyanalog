@@ -39,6 +39,15 @@ extensions = [
 
    # Jupyter Notebooks in sphinx
    'nbsphinx',
+   
+   
+   # Allow SVGs in the PDF make target
+   # https://github.com/missinglinkelectronics/sphinxcontrib-svg2pdfconverter
+   'sphinxcontrib.rsvgconverter',
+
+   # Pygments lexer ipython3
+   # https://github.com/spatialaudio/nbsphinx/issues/24
+   'IPython.sphinxext.ipython_console_highlighting'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -1,3 +1,13 @@
+#
+# Copyright (c) 2020 anabrid GmbH
+# Contact: https://www.anabrid.com/licensing/
+#
+# This file is part of the DDA module of the PyAnalog toolkit.
+#
+# ANABRID_BEGIN_LICENSE:GPL
+# ANABRID_END_LICENSE
+#
+
 """
 This module provides interplay with the SymPy package. SymPy is a lightweight
 pure-python computer algebra system which is bundled with SciPy.
@@ -16,14 +26,70 @@ identity = lambda x:x
 def from_sympy(sympy_equation_list):
     """
     Import a state from a set of equations from SymPy.
-    The argument should be a python list of sympy equations where
-    there is a single symbol on the LHS and an integral on the rhs.
+    
+    This function expects a python list of sympy equations where there
+    is a single sympy symbol on one hand and an expression on the other
+    hand (see examples below).
+    
+    The mapping basically follows the SymPy key invariant
+    (see https://docs.sympy.org/latest/tutorial/manipulation.html#args):
+    *Every well-formed SymPy expression must either have empty ``args``
+    or satisfy ``expr == expr.func(*expr.args)``.
+    Therefore we basically map a sympy expression ``(expr.func,
+    expr.args)`` to the DDA ``(head, tail)`` notation. While the heads
+    are easy to map (for instance, ``sympy.Mul`` equals ``dda.mult``),
+    special attention must be given to the tails, for instance SymPys
+    ``Mul(a,b,c)`` translates to DDAs ``mult(mult(a,b),c)`` (in DDA
+    we always assume commutative real-valued variables). Also in DDA
+    there is ``neg(x)`` or ``div(x,y)`` which is represented in SymPy as
+    ``Mul(Integer(-1), x)`` and ``Mul(Symbol('x'), Pow(Symbol('y'), Integer(-1)))``,
+    respectively.
     """
     import sympy
     
     raise ValueError("Not yet implemented!")
+
+    # This is terribly nontrivial.
     
-    dda_Symbol = Symbol # just to make sure
+    # final mappings without simplifications
+    sympy2dda = {
+        sympy.Mul:   dda.mult,
+        sympy.sqrt:  dda.sqrt,
+        sympy.Abs:   dda.abs,
+        sympy.Add:   lambda *x: dda.neg(dda.sum(*x)),
+        sympy.exp:   dda.exp,
+        sympy.floor: dda.floor,
+        sympy.integral: lambda function, *symbols: dda.int(function)
+    }
+    
+    dda_Symbol = Symbol # just to be verbose
+    atom = sympy.Wild("x", properties=[lambda k: k.is_Symbol])
+    
+    # Do a depth-first-traversal mapping sympy to dda expressions
+    def expr2dda(expr):
+        if len(expr.args) == 0: # reached leaf
+            if expr.is_number:
+                return float(expr)
+            else:
+                raise ValueError(f"Found {expr} but don't know how to handle.\n(srepr: {srepr(expr)})")
+        else: # map compound expression
+            # First, try shorthands:
+            
+            # expressions 1/x for atom x:
+            #( sympy.Mul(sympy.Integer(-1), atom), lambda match: dda.inv(
+                
+            # border cases which are really mad to catch:
+            # srepr(-3*b) -> Mul(Integer(-1), Integer(3), Symbol('b'))
+            
+            # Last, try anything else
+            if type(expr) in sympy2dda:
+                return sympy2dda[type(expr)](*expr.args)
+            else:
+                raise ValueError(f"Found compound expression of type {type(expr)}, don't know how to handle. It is: {expr}\n(srepr: {srepr(expr)})")
+            
+            
+        for arg in expr.args:
+            expr2dda(arg)
     
     for eq in sympy_equation_list:
         eq = eq.canonical # ensure symbol on the left
@@ -32,8 +98,8 @@ def from_sympy(sympy_equation_list):
             raise ValueError(f"Missing single symbol on LHS of Sympy equation {eq}")
         
         dda_lhs = dda_Symbol(lhs.name)
-        # TODO: Traversal https://stackoverflow.com/questions/59816730/run-through-the-ast-of-an-expression-in-sympy
-    
+        
+
 
 
 def to_sympy(state, symbol_mapper=identity, round_n=15):
