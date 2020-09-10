@@ -51,8 +51,8 @@ for fname in files:
     with open(fname, "r") as fh:
         try:
             for i, line in enumerate(fh):
-                start = re.match(f"^(?P<prefix>.*) {magic_begin_license}:(?P<license>[a-zA-Z0-9]+)\s*$", line)
-                end   = re.match(f"^(?P<prefix>.*) {magic_end_license}\s*$", line)
+                start = re.match(f"^(?P<prefix>.*){magic_begin_license}:(?P<license>[a-zA-Z0-9]+)\s*$", line)
+                end   = re.match(f"^(?P<prefix>.*){magic_end_license}\s*$", line)
                 if start:
                     if not start.group("license") in license_text:
                         raise MalformedTagsError(f"{fname}: Skipped because license {license} not known. Available licenses are {list(keys(license_text))}.")
@@ -66,7 +66,7 @@ for fname in files:
                             raise MalformedTagsError(f"{fname}: Start line {groups[-1]['start']} has incompatible prefix to end line {i}")
                         else:
                             groups[-1]["end"] = i
-        class MalformedTagsError as e:
+        except MalformedTagsError as e:
             counters["Skipped (errnous tags)"] += 1
             print(e.message, file=sys.stderr)
             continue
@@ -78,12 +78,18 @@ for fname in files:
         counters["Skipped (no license tag)"] += 1
         continue
 
-    with open(fname, "rw") as fh:
+    with open(fname, "r+") as fh:
         content = list(fh)
         for group in groups:
-            content[group["start"]+1, group["end"]-1] = list(license_text[group["license"]].strip())
+            amended_license = [ f"{group['prefix']}{line}\n" for line in license_text[group["license"]].strip().split("\n")]
+            content[group["start"]+1 : group["end"]] = amended_license
+        fh.seek(0)
         fh.writelines(content)
-
+        fh.truncate()
+        counters["Processed"] += 1
 
 print("Statistics on number of processed files:")
 for k,v in counters.items(): print(f"* {k}: {v}")
+
+# Exit with error exit code if any error counter is > 0.
+sys.exit(1 if any([ v for k,v in counters.items() if "err" in k]) else 0)
