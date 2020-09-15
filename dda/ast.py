@@ -219,7 +219,6 @@ class Symbol:
         >>> graph = expression.draw_graph()
         >>> print(graph)  # doctest: +NORMALIZE_WHITESPACE
         digraph "DDA-Symbol" {
-           size="8,5"
            node [shape=doublecircle]
            x
            node [shape=circle]
@@ -241,7 +240,7 @@ class Symbol:
         if not graph:
             from graphviz import Digraph
             graph = Digraph("DDA-Symbol", filename="symbol.gv")
-            graph.attr(size="8,5")  # rankdir="LR"
+            #graph.attr(size="8,5")  # rankdir="LR"
         
         graph.attr("node", shape="doublecircle")
         graph.node(self.head)

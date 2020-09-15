@@ -16,9 +16,9 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyDDA'
-copyright = '2020, Anadigm Inc.'
-author = 'Anadigm Inc.'
+project = 'PyAnalog'
+copyright = '2020, Anabrid GmbH'
+author = 'The Analog People'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,11 +43,17 @@ extensions = [
    
    # Allow SVGs in the PDF make target
    # https://github.com/missinglinkelectronics/sphinxcontrib-svg2pdfconverter
-#   'sphinxcontrib.rsvgconverter',  # not yet included into the docker image
+   'sphinxcontrib.rsvgconverter',  # not yet included into the docker image
+   # Problem with the generated SVGs within PDFs: Size ist not preserved, small figures
+   # are filling whole pages.
+
+   # Instead, builtin and cheap SVG to PNG:
+   #'sphinx.ext.imgconverter',
+   # Same problem as above but worse quality
 
    # Pygments lexer ipython3
    # https://github.com/spatialaudio/nbsphinx/issues/24
-#  'IPython.sphinxext.ipython_console_highlighting'   # also not yet included in the docker image
+  'IPython.sphinxext.ipython_console_highlighting'   # also not yet included in the docker image
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -78,3 +84,29 @@ html_theme = 'sphinx_rtd_theme' # Read the docs theme, nicer.
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# -- Options for nbsphinx input --------------------------------------------------
+
+nbsphinx_execute = 'never'  # we expect all notebooks to have output stored
+
+# Otherwise we could do this:
+#nbsphinx_execute_arguments = [
+#    "--InlineBackend.figure_formats={'svg', 'pdf'}",
+#    "--InlineBackend.rc={'figure.dpi': 96}",
+#]
+
+
+# -- Options for PDF output --------------------------------------------------
+
+latex_elements = {
+    'papersize': 'a4paper',  # default
+    'pointsize': '11pt',     # default is microscopic 10pt
+    'preamble': '\setcounter{tocdepth}{2}',
+    'fncychap':  '\\usepackage[Bjornstrup]{fncychap}'  # cf https://ctan.mirror.norbert-ruehl.de/macros/latex/contrib/fncychap/fncychap.pdf
+}
+
+latex_show_pagerefs = True
+latex_show_urls = 'footnote'
+
+# SVG to PDF conversion for Latex output
+rsvg_converter_args = [ "--dpi-x=300", "--dpi-y=300", "--keep-aspect-ratio" ]
