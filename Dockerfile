@@ -21,7 +21,7 @@ FROM sphinxdoc/sphinx-latexpdf
 # The following adds another 1GB of docker image layers. Well, that's docker!
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-     bash openssh-client curl make build-essential graphviz-dev python-pygraphviz pandoc \
+     bash openssh-client curl make build-essential graphviz-dev python-pygraphviz pandoc librsvg2-bin imagemagick \
      && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /docs
