@@ -15,7 +15,7 @@ The digital number flow machine
 DDA is short for *digital differential analyzer*. This term describes a certain way of
 building an algorithmic-logical unit which is programmed with a dataflow paradigm. It
 can be imagined as an analog computer but with digital computing elements in place of
-analog computing elements. Such a DDA machine could feature $n$ bit integer adders
+analog computing elements. Such a DDA machine could feature *n* bit integer adders
 (for instance a ripple-carry adder), binary multipliers, and even discrete integrators
 for adding integers (i.e. a stateful computing element). In general, it is straightforward
 to design such a machine for some fixed width binary number representation. It is worth
@@ -57,13 +57,14 @@ are written in some standard C-like notation ``f(x,y,...)`` where ``f`` is the i
 the function and ``x,y,...`` are comma seperated arguments. The following *basic arithmetic*
 (from the perspective of an analog computer) computing elements are defined:
 
-* $$neg(x) = -x$$, the inverse
-* $$div(x, b) = a/b$$, the standard division
-* $$mult(a_0, a_1, \dots) = \prod_i a_i$$, the standard multiplication
-* $$sum(a_0, a_1, \dots) = - \sum_i a_i$$, the summation in analog-computer typical
+* :math:`neg(x) = -x`, the inverse
+* :math:`div(x, b) = a/b`, the standard division
+* :math:`mult(a_0, a_1, \dots) = \prod_i a_i`, the standard multiplication
+* :math:`sum(a_0, a_1, \dots) = - \sum_i a_i`, the summation in analog-computer typical
   *negating* convention.
-* $$int(a_0, a_1, \dots, \Delta t, I_0) \approx - \int \sum_i a_i \, \Delta t + I_0$$,
-  the time integration (again in analog-computer typical negating convention)
+* :math:`int(a_0, a_1, \dots, \Delta t, I_0) \approx - \int \sum_i a_i \, \Delta t + I_0`,
+  the time integration (again in analog-computer typical negating convention).
+  The digital integrator is discussed in detail in the following text.
 
 Furthermore, a couple of case-discreminating computing elements are defined. Here,
 they are given in C-like notation ``x ? y : z`` which evaluates to ``if(x) then y else z``.
@@ -97,65 +98,67 @@ operation at a time.
    It would be interesting to think a bit whether we could not write an DDA-level exact
    simulator, since the DDA machine is clocked. We should be able to correctly simulate
    this clock.
+
+Since the DDA is subject to a discrete computing cycle, a register machine can simulate
+the DDA architecture cycle by cycle, computing the value of each computing element
+input and output. For the sake of extraordinary introspection and debugging facilities,
+the DDA to C compiler dismantles compound expressions ``f(g(x))`` or ``f(a,b(c),d(e))``
+and entitles all intermediate expressions such as ``gx=g(x)`` in ``f(gx)`` or
+``g=b(c)`` and ``h=d(e)`` in ``f(a,g,h)``. This is especially handy when the DDA is seen
+as an approximation of the analog computer, as it allows for checking the boundness
+(correct scaling) of all variables during the cycles (time evolution).
+
+Having said that, the DDA simulator allows for simulating a DDA circuit iteration by
+iteration and dumping (outputting) values every *n*th iteration. Therefore, while
+the input of a circuit is always fixed by the constants (``const`` statements, no
+focus has given to the point of interfacing other codes, which is left as an exercise
+for the reader), the output is always a time series for a given set of quantities. We
+refer to theses quantities as *observables*, which are *queried* for at code generation
+time. One can thus understand the output as a fully discrete table of numbers, where
+the columns hold the time series for a given variable and the each row stands for one
+time iteration (or some average or surrogate for a larger number of iterations, if
+requested). These numbers are represented as ASCII column seperated values (CSV) in the
+output of the compiled C program.
+
+Applicability for solving differential equations
+------------------------------------------------
+
+The usability for this software-based DDA implemenetation for solving ordinary differential
+equations highly depends on the internals of the integrator component. From all computing
+elements described above, the integrator is the only one with an *internal state*. That
+is, it has to remember from iteration to iteration the current integration value.
+
+The most easy integrator component will internally look like the following imperative
+dummy code:
+
+.. code-block:: c
+
+    double integrate(double integrand, double dx, double initial_value) {
+        static double internal_state = initial_value;
+        internal_state += integrand * dx;
+        return internal_state;
+    }
+
+Here, the ``internal_state`` is declared as a *static* variable, which you can think of a
+global variable (with a lifetime longer then the function evaluation) if you don't know C.
+In fact, this dummy code comes quite close to the actual implementation of the integrator
+in the DDA C code. We refer to the above numerical scheme as the *Euler time integration*,
+since it approximates the time-continous integral by it's Riemann sum.
+
+Within the DDA code, higher order explicit integration schemes can be chosen, such as
+Runge-Kutta. However, given the nature of the problem description in a circuit, implicit
+methods can not be applied by the compiler without an actual analysis of the differential
+equation. Howver, on can imagine a DDA circuit which itself describes a numerical scheme
+on a digital-circuit level.   
    
    
-   
-other stuff, to be joined
--------------------------
-
-
-
+On PyDDA, the scucessor of the DDA Perl code
+--------------------------------------------
 The first DDA code was written by Bernd. It's job was to simulate circuits, and this was
 performed by a small Perl script which threw a few regexes onto the DDA file to convert it
 to an executable C numeric simulation.
 
-The idea was actually pretty brilliant as there was minimal code overhead and the iterative
-solution would evventually bring a stable circuit. Circuit files look like
-
-
-
-Would result in a C code which basically looks like
-
-.. code-block:: c
-
-    #include <stdio.h>
-    #include <math.h>
-    #include "dda.h"
-
-    int main() {
-        /* Constant declarations */
-        double dt = 0.0005;
-        double minus_dy0 = -1;
-        double y0 = -1;
-
-        /* Initial value definitions */
-        double t = 0;
-        double y = -y0;
-
-        /* Scratch variables */
-        double __dyold_minus_dy[6] = {minus_dy, minus_dy, minus_dy, minus_dy, minus_dy, minus_dy, };
-        double __dyold_t[6] = {t, t, t, t, t, t, };
-        double __dyold_y[6] = {y, y, y, y, y, y, };
-
-        /* Variable definitions */
-        double fix_minus_dy = 0.;
-
-        /* Auxiliary variable definitions */
-        unsigned int __i;
-
-        /* Integration loop */
-        for (__i = 0; __i < 10000; __i++) {
-            __integrate(&t, 1, dt, __dyold_t);;
-            __integrate(&minus_dy, y, dt, __dyold_minus_dy);;
-            __integrate(&y, minus_dy, dt, __dyold_y);;
-           printf("%.12g %.12g \n", y, t);
-        }
-        
-        return 0;
-    }
-
-
-However, we found out that even with slightly more challenging circuits (kind of *border
+As described above, we found out that even with slightly more challenging circuits (kind of *border
 cases*, such as the depicted one above) the simple ideology of looping over numeric
 equations breaks down.
 
