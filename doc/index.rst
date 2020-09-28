@@ -97,7 +97,7 @@ Contents
    :maxdepth: 1
    :caption: PyDDA
 
-   dda-intro
+   dda-package
    dda-rationale
    dda-ast
    dda-dsl
