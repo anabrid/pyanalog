@@ -6,14 +6,18 @@ demonstrator code for a software stack for analog computers developers.
 It can
 
 * manipulate ordinary differential equations in a way suitable for
-  procession with the exemplary *Model-1 Analog Computer*
-* simulate circuits and generate C++ code for them
-* generate and manipulate netlists and VHDL-like circuit descriptions
+  procession with the exemplary
+  `Analog Paradigm Model-1 <http://analogparadigm.com/>`_
+  analog computer.
+* simulate circuits and 
+  :ref:`generate C++ code for them <cpp-codegen>`.
+* generate and manipulate
+  :ref:`netlists and VHDL-like circuit descriptions <fpaa>`
 * compile against machine architectures on a macrocell-level,
   set digital potentiometer arrays, cross bar switches, digital switches,
   etc.
-* interface a Model-1 hybrid controller in order to run a program,
-  steer the operation and gain output data.
+* :ref:`interface a Model-1 hybrid controller <hycon>` in order to run
+  a program, steer the operation and gain output data.
   
 The codes are supposed to work well in the
 `Scientific Python <https://www.scipy.org/>`_ ecosystem. The target 
@@ -24,62 +28,8 @@ interface with remote analog computers (AAAS - analog computing
 as a service).
 
 The `pyanalog` code is open-source,  *currently work in progress* and
-authored by the upcoming `Anabrid Inc. <http://anabrid.com>`_. 
+authored by `Anabrid GmbH <http://www.anabrid.com>`_. 
 
-Big picture
------------
-
-
-.. code-block:: none
-
-    Input: Ordinary Differential Equation in mathematical notation
-           (for instance in SymPy, Sage, Matlab, Latex, etc.)
-         |
-         v
-         
-    PyDDA: Generation of a circuit
-         |
-      +--+---+   Several backends to deal with the
-      |  |   |   circuits, for instance:
-      | ...  |
-      |      +--> Simulation with numerics (C++ or SciPy/Netlib ODE solver)
-      |
-      v
-    
-    PyFPAA:  Circuit synthesis (=mapping) with based on architecture
-             description.
-      |
-      |
-      v
-    
-    PyHyCon: Interaction with Analog-as-a-service
-             (SSH to the small analog machine in Bernds basement)
-      |
-      v
-      
-    Output: Measurement data from all relevant fields
-
-
-The particular python modules
------------------------------
-
-First and foremost, this documentation is an API documentation.
-Therefore, it mostly covers the functions and classes exposed
-by the following three python modules:
-
-* `PyDDA` is a tool for simple algebraic transformations of equations
-  and circuits as well as their numerical simulation.
-  DDA stands for *Digital Differential Analyzer*.
-* `PyFPAA` is a tool for compiling an electrical circuit to a machine
-  architecture. This especially programs digital potentiometers and
-  cross bar switches and relies on a minimalistic hardware description
-  language (HDL) written in YAML.
-  FPAA stands for *Field Programmable Analog Array*.
-* `PyHyCon` is an interface to a Model-1 *Hybrid Controller* in order to
-  run a program, steer the operation and gain output data.
-  
-You can read more about the goals of this software at the page
-:ref:`dda-rationale`. 
 
 Contents
 --------
@@ -88,15 +38,17 @@ Contents
    :maxdepth: 1
    :caption: Introduction
 
+   overview
    installation
    tips
    code-testing
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: PyDDA
 
+   dda-intro
    dda-rationale
    dda-api-reference
    dda-examples
