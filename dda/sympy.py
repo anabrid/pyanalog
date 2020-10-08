@@ -46,10 +46,11 @@ def from_sympy(sympy_equation_list):
     is a single sympy symbol on one hand and an expression on the other
     hand (see examples below).
     
-    The mapping basically follows the SymPy key invariant
-    (see https://docs.sympy.org/latest/tutorial/manipulation.html#args):
-    *Every well-formed SymPy expression must either have empty ``args``
-    or satisfy ``expr == expr.func(*expr.args)``.
+    The mapping basically follows the `SymPy key invariant
+    <https://docs.sympy.org/latest/tutorial/manipulation.html#args>`_:
+    "Every well-formed SymPy expression must either have empty ``args``
+    or satisfy ``expr == expr.func(*expr.args)``".
+
     Therefore we basically map a sympy expression ``(expr.func,
     expr.args)`` to the DDA ``(head, tail)`` notation. While the heads
     are easy to map (for instance, ``sympy.Mul`` equals ``dda.mult``),
