@@ -97,16 +97,9 @@ Contents
    :maxdepth: 1
    :caption: PyDDA
 
-   dda-package
    dda-rationale
-   dda-ast
-   dda-dsl
-   dda-computing_elements
-   dda-cpp-codegen
-   dda-cas
+   dda-api-reference
    dda-examples
-   examples/chua.ipynb
-   examples/Heat-Equation.ipynb
    
 .. toctree::
    :maxdepth: 1

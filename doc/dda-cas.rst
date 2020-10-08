@@ -1,7 +1,7 @@
 .. _cas:
 
 Computer Algebra Interfaces
-===========================
+---------------------------
 
 DDA implements a few parts of computer algebra system (CAS), especially with it's :ref:`abstract-syntax-tree`.
 Since we don't want to reinvent the wheel, we interface with common computer algebra systems.
@@ -17,10 +17,10 @@ There are at least two popular for the Python ecosystem available:
   `Maple <https://maplesoft.com/>`_, `Mupad <https://www.mathworks.com/discovery/mupad.html>`_ or
   `Mathematica <https://www.wolfram.com/mathematica/>`_ are part of sage.
 
-So far, we had quick success with adopting SymPy:
+So far, we had quick success with adopting SymPy (see next section).
 
-SymPy
------
+SymPy module API reference
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: dda.sympy
    :members:
