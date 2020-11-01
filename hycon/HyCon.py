@@ -27,8 +27,9 @@
 """
 PyHyCon -- a Python Hybrid Controller interface.
 
-Note that the IO::HyCon Perl module is the reference implementation
-that is maintained by the HyConAVR firmware author (Bernd).
+Note that the IO::HyCon Perl 5 module is the reference implementation
+that is maintained by the HyConAVR firmware author (Bernd). You can find
+the IO::HyCon Perl module at https://metacpan.org/pod/IO::HyCon
 
 While this implementation tries to be API-compatible with the reference
 implementation, it tries to be minimal/low-level and won't implement any
@@ -41,9 +42,6 @@ textual output or TCP/IP communication with the HyCon microcontroller.
 It is up to the user to ensure proper communication. A few examples
 are given at the end of this file.
 
-::
-
-    (c) Sven Köppel 2019, Dual licensed with GPLv2, BSD
 
 Examples
 --------
