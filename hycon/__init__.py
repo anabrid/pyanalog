@@ -23,8 +23,7 @@
 # ANABRID_END_LICENSE
 #
 
-
-
 # Please see HyCon.py or ../doc/ for documentation.
 
 from .HyCon import HyCon, HyConRequest
+from .autosetup import yaml_load, PotentiometerAddress, autosetup, AutoConfHyCon
