@@ -107,7 +107,7 @@ def autosetup(hycon, conf, reset=True):
 
         # Define read out group if specified:s
         if "ro-group" in problem:
-            addresses = map(elements.get, problem["ro-group"])
+            addresses = list(map(elements.get, problem["ro-group"]))
             hycon.set_ro_group(addresses)
     except KeyError as e:
         raise KeyError("Unknown coefficient or computing element: '%s'. It is not part of the element map." % e)

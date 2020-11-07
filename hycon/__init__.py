@@ -27,3 +27,4 @@
 
 from .HyCon import HyCon, HyConRequest
 from .autosetup import yaml_load, PotentiometerAddress, autosetup, AutoConfHyCon
+from .replay import HyConRequestReader, replay

@@ -203,7 +203,9 @@ class HyCon:
     DIGITAL_OUTPUT_PORTS = 8
     DIGITAL_INPUT_PORTS = 8
     DPT_RESOLUTION = 10
+    DPT_MAX_INT_VALUE = (2 ** DPT_RESOLUTION - 1)  # 0 <= value <= 1023
     XBAR_CONFIG_BYTES = 10
+    MAX_RO_GROUP_SIZE = 500 # hardcoded in HyConAVR.ino
     
     def __init__(self, fh, unidirectional=False):
         """
@@ -285,6 +287,7 @@ class HyCon:
     
     def set_ro_group(self, addresses):
         "Defines a read out group, expects addresses to be an integer list of 16-bit element addresses."
+        ensure(len(addresses), inrange=(1,5*self.MAX_RO_GROUP_SIZE))
         for a in addresses: ensure(a, isa=int)
         return self.query("G" + ";".join([f"{a:04X}" for a in addresses]) + ".")
     
@@ -306,7 +309,7 @@ class HyCon:
     def set_pt(self, address, number, value):
         "Set a digital potentiometer by address/number."
         ensure(value, inrange=(0,1))
-        value = int(value * (2 ** self.DPT_RESOLUTION - 1)) # 0000 <= value <= 1023
+        value = int(value * self.DPT_MAX_INT_VALUE) # 0000 <= value <= 1023
         return self.query(f"P{address:04X}{number:02X}{value:04d}", expect(eq=f"P{address:X}.{number:X}={value:d}"))
     
     read_dpts = wont_implement("because it doesn't actually self.query the hardware but just ask the HC about its internal storage.")
@@ -321,7 +324,7 @@ class HyCon:
 
     get_op_time = command('t', expect(re=r"t_OP=(?P<time>-?\d*)", ret='time', type=float), help="Asks about current OP time")
     reset = command('x', expect(eq='RESET'), help="Resets the HybridController (has no effect on python instance itself)")
-
+    
 class serialdummy:
     "Dummy IOWrapper for testing HyCon.py without the actual hardware"
     def write(self, sth):      print(f"<< Sending [{sth}] to uC")
