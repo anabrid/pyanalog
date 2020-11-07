@@ -51,8 +51,8 @@ class PotentiometerAddress(namedtuple("PotentiometerAddress", ["address", "numbe
     Stores a potentiometer address, which is a tuple of a (typically hex-given) bus address
     of the hardware element and an element-internal number. Example:
     
-    >>> a = PotentiometerAddress(0x200, 20)
-    >>> b = PotentiometerAddress.fromText("0x200/20")
+    >>> a = PotentiometerAddress(0x200, 0x20)
+    >>> b = PotentiometerAddress.fromText("0x200/20")  # FIXME: Is number really base 16?
     >>> a == b
     True
     >>> a.address   # Don't forget that python standard numeric output is in decimal

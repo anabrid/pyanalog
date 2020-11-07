@@ -49,7 +49,7 @@ bigger interest.
 The ordering follows the AVR Ino code.
 """
 
-import io, functools
+import sys, io, functools
 identity = lambda x:x
 
 from .HyCon import HyCon
@@ -90,7 +90,7 @@ class consume:
     >>> tokenizer = [consume.exact("test"), consume.decimals(3), consume.exact("foo"), consume.hex(2)]
     >>> test = io.StringIO("test123fooAA")
     >>> reader = test.read
-    >>> [ token(read) for token in tokenizer ]
+    >>> [ token(reader) for token in tokenizer ]
     ['test', 123, 'foo', 170]
     """
     @delayed
@@ -103,9 +103,9 @@ class consume:
         """
         Reads a number with #digit digits in some base. Can perform a multiplication afterwards.
         
-        >>> consume.number(8,16)(StringIO("deadbeef").read)
+        >>> consume.number(8,16)(io.StringIO("deadbeef").read)
         3735928559
-        >>> consume.number(2,10,multiply=2)(StringIO("42").read)
+        >>> consume.number(2,10,multiply=2)(io.StringIO("42").read)
         84
         """
         text = reader(digits)
@@ -128,9 +128,9 @@ class consume:
         
         Examples:
         
-        >>> consume.list(split=",",digits=1,base=10,end=".")(StringIO("1,5,2,3,9.").read)
+        >>> consume.list(split=",",digits=1,base=10,end=".")(io.StringIO("1,5,2,3,9.").read)
         [1, 5, 2, 3, 9]
-        >> consume.list(split=":",digits=2,base=16,end=";")(StringIO("5a:88:ff:ff;").read)
+        >>> consume.list(split=":",digits=2,base=16,end=";")(io.StringIO("5a:88:ff:ff;").read)
         [90, 136, 255, 255]
         """
         assert len(split) == len(end)
@@ -190,14 +190,15 @@ class HyConRequestReader:
     
     >>> instructions = 'C000100c015000P0200000204P0300030000G0362;0363;0220;0221;0222;0223.'
     >>> commands = list(HyConRequestReader(instructions))
-    [('set_ic_time', 100),
-     ('set_op_time', 15000),
-     ('set_pt', 512, 0, 0.19941348973607037),
-     ('set_pt', 768, 3, 0.0),
-     ('set_ro_group', [866, 867, 544, 545, 546, 547])]
-    >>> replayed = StringIO()
-    >>> hc = HyCon(replayed, unidirectional=true)
-    >>> replay(hc, replayed)
+    >>> for c in commands: print(c)
+    ('set_ic_time', 100)
+    ('set_op_time', 15000)
+    ('set_pt', 512, 0, 0.19941348973607037)
+    ('set_pt', 768, 3, 0.0)
+    ('set_ro_group', [866, 867, 544, 545, 546, 547])
+    >>> replayed = io.StringIO()
+    >>> hc = HyCon(replayed, unidirectional=True)
+    >>> replay(hc, commands)
     >>> replayed.getvalue() == instructions
     True
     """
