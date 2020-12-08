@@ -25,6 +25,6 @@
 
 # Please see HyCon.py or ../doc/ for documentation.
 
-from .HyCon import HyCon, HyConRequest
+from .HyCon import HyCon, HyConRequest, tcpsocket
 from .autosetup import yaml_load, PotentiometerAddress, autosetup, AutoConfHyCon
 from .replay import HyConRequestReader, replay

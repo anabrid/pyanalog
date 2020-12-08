@@ -253,7 +253,7 @@ class HyCon:
         "Synchronous run (finishes after a single run finished). Return value is true if terminated by ext. halt condition"
         q = self.query('F', '^SINGLE-RUN')
         timeout = 1.1 * (self.ictime + self.optime) # raises error if set_ic_time/set_op_time not called before
-        time.sleep(timeout / 1000)
+        time.sleep(timeout / 1000 / 1000)  # converting timeout (microseconds) to seconds
         res = q.read(self, expect(re='^EOSR(HLT)?'), read_again=True)
         was_terminated_by_ext_halt_condition = res.reply.groups()[0]=="HLT" # EOSRHLT
         return was_terminated_by_ext_halt_condition

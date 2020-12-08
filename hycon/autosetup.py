@@ -126,5 +126,18 @@ class AutoConfHyCon(HyCon):
     and set access.
     """
     def setup(self, conf):
-        if isinstance(conf, str): conf = yaml_load(conf)
-        autosetup(self, conf)
+        "Will store conf as DotDict for easier later access"
+        self.conf = DotDict(yaml_load(conf) if isinstance(conf, str) else conf)
+        autosetup(self, self.conf)
+        
+    def get_data_by_name(self):
+        "Get readout group data handily labeled by name"
+        if not "ro-group" in self.conf.problem: raise ValueError("No Read-out group defined")
+        data = self.get_data() # shape (sample_points, readout_group_length)
+        return { name: [line[i] for line in data] for i,name in enumerate(self.conf.problem["ro-group"]) }
+    
+    def set_pt_by_name(self, name, value):
+        "Set a digital potentiometer by name"
+        dp = PotentiometerAddress.fromText(self.conf.elements[name])
+        return self.set_pt(dp.address, dp.number, value)
+    
