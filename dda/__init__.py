@@ -61,11 +61,13 @@ def export(state, to, **kw):
     from .cpp_exporter import to_cpp
     from .dsl import to_traditional_dda
     from .sympy import to_sympy, to_latex
+    from .scipy import to_scipy
     exporters = {
         r"c(\+\+|pp)?": to_cpp,
         "dda": to_traditional_dda,
         "sympy": to_sympy,
         "latex": to_latex,
+        "scipy": to_scipy,
     }
     for k,v in exporters.items():
         if re.match(k, to, re.IGNORECASE):
