@@ -27,7 +27,6 @@ dda2python = {
     "const": lambda x: x,
     "neg":   lambda x: -x,
     "div":   lambda x,y: x/y,
-    #"int":   lambda *x: - sympy.Integral(sympy.Add(*x), t), # special meaning
     "Int":   lambda *x: - sum(x), # mangled integral
     "sum":   lambda *x: - sum(x),
     "mult":  lambda x,y: x*y,
@@ -37,98 +36,135 @@ dda2python = {
     "floor": lambda x: math.floor(x),
 }
 
-def to_scipy(state):
+def evaluate_values(smbl, values):
+    "Evaluate a symbol within the context of an already evaluated values dictionary given."
+    if isinstance(smbl, float) or isinstance(smbl, int):
+        return smbl # usable node
+    if not isinstance(smbl, Symbol): raise TypeError(f"Expecting symbol, got {smbl}")
+    if smbl.is_variable():
+        return values[smbl.head] # can raise KeyError if variable not found.
+    else: # symbl.is_term()
+        if smbl.head in dda2python:
+            return dda2python[smbl.head](*(evaluate_values(t, values) for t in smbl.tail))
+        else:
+            raise ValueError(f"DDA Symbol {smbl.head} in expression {smbl} not (yet) implemented.")
+
+class to_scipy:
     """
-    Returns a function ``f(dqdt)`` where dqdt are the evolution
-    quantities (obtainable with :meth:`evolution_vector`).
+    Basically provides a function ``f(dqdt)`` where dqdt are the evolution
+    quantities.
+    
+    # FIXME: 
+    >>> from dda.computing_elements import neg,int,mult
+    >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
+    >>> clean(dda_state, target="python").name_computing_elements().variable_ordering()
+    # Should contain evolved variables, but does not!
+    #>>> py_state = to_scipy(dda_state)
     """
-    state = clean(state, target="C").name_computing_elements()
-    vars = state.variable_ordering()
-    # no need to compute vars.aux.unneeded.
-    evaluation_ordered = vars.aux.sorted + vars.aux.cyclic
-    # this was wrong:
-    #evaluation_ordered = sum(map(list, state.variable_ordering().ordering.values()),[])
     
-    if not vars.evolved:
-        raise ValueError("Nothing to evolve. Lacking some dda.int(f,dt,ic) integrators")
+    def __init__(self, state):
+        state = clean(state, target="python").name_computing_elements()
+        self.vars = state.variable_ordering()
+        
+        if not self.vars.evolved:
+            raise ValueError("Nothing to evolve. Lacking some dda.int(f,dt,ic) integrators")
+        
+        # by intention, dt and initial condition are ignored
+
+        # Extract int(..., timestep, initial_data) and mark integrator as visited (mangled)
+        timesteps = {}
+        initial_data = {}
+        def map_and_treat_integrals(var):
+            if not var in self.vars.evolved: return state[var]
+            tail = state[var].tail
+            if not len(tail) >= 3: raise ValueError("int(...) requires at least int(value, dt, ic)")
+            timesteps[var] = self.evaluate_const(tail[-2])
+            initial_data[var] = self.evaluate_const(tail[-1])
+            return Symbol("Int", *tail[0:len(tail)-2])
+        self.state = State({ var: map_and_treat_integrals(var) for var in state })
+        
+        # Scipy needs numpy arrays for further processing
+        timesteps = np.array([timesteps[k] for k in self.vars.evolved])
+        self.y0 = np.array([initial_data[k] for k in self.vars.evolved])
+
+        # The Scipy integrate methods cannot treat different timestep sizes.
+        self.dt = timesteps[0]
+        if not np.all(timesteps == self.dt):
+            raise ValueError(f"Scipy requires all timesteps to be the same, however dt_({self.vars.evolved}) = {timesteps}")
+        
+        # set beginning values for each call of f(y). This dictionary can be
+        # mutated over repeated calls, but if you want to go sure, make a 
+        # deep copy at every call.
+        self.evaluation_default_values = { k: np.nan for k in state.keys() }
+        for var in self.vars.explicit_constants:
+            self.evaluation_default_values[var] = state[var].tail[0]
+            
+        self.debug = False
     
-    # Translate const(foo) by stripping foo or some bar by looking up if it is an explicit constant.
-    # Dynamical variables are not allowed here. This is somewhat similar but different to
-    # cpp_exporter:lookup_const(var).
-    def evaluate_const(var, state):
+    def evaluate_const(self, var):
+        """
+        Translate const(foo) by stripping foo or some bar by looking up if it is an explicit constant.
+        Dynamical variables are not allowed here. This is somewhat similar but different to
+        cpp_exporter:lookup_const(var).
+        """
         if isinstance(var,Symbol):
             if var.head == "const":
                 var = var.tail[0] # continue
             elif var.is_variable():
-                if not var.head in vars.explicit_constants:
+                if not var.head in self.vars.explicit_constants:
                     raise ValueError(f"Only constants allowed in this context. {var} however refers to {var.head}.")
-                return evaluate_const(state[var.head], state)
+                return self.evaluate_const(state[var.head])
             else: # remaining case: var.is_term()
                 raise ValueError(f"Was expecting const(foo) or so, but got term {var}.")
         if not is_number(var): raise ValueError(f"Got a weird {type(var)} in a constant context: {var}")
         return var
     
-    # by intention, dt and initial condition are ignored
 
-    # Extract int(..., timestep, initial_data) and mark integrator as visited (mangled)
-    timesteps = {}
-    initial_data = {}
-    def map_and_treat_integrals(var):
-        if not var in vars.evolved: return state[var]
-        tail = state[var].tail
-        if not len(tail) >= 3: raise ValueError("int(...) requires at least int(value, dt, ic)")
-        timesteps[var] = evaluate_const(tail[-2], state)
-        initial_data[var] = evaluate_const(tail[-1], state)
-        return Symbol("Int", *tail[0:len(tail)-2])
-    state = State({ var: map_and_treat_integrals(var) for var in state })
-    
-    # Scipy needs numpy arrays for further processing
-    timesteps = np.array([timesteps[k] for k in vars.evolved])
-    y0 = np.array([initial_data[k] for k in vars.evolved])
-
-    # The Scipy integrate methods cannot treat different timestep sizes.
-    dt = timesteps[0]
-    if not np.all(timesteps == dt):
-        raise ValueError(f"Scipy requires all timesteps to be the same, however dt_({vars.evolved}) = {timesteps}")
-    
-    def evaluate(smbl, values):
-        "Evaluate a symbol within the context of an already evaluated values dictionary given."
-        if isinstance(smbl, float) or isinstance(smbl, int):
-            return smbl # usable node
-        if not isinstance(smbl, Symbol): raise TypeError(f"Expecting symbol, got {smbl}")
-        if smbl.is_variable():
-            return values[smbl.head] # can raise KeyError if variable not found.
-        else: # symbl.is_term()
-            if smbl.head in dda2python:
-                return dda2python[smbl.head](*(evaluate(t, values) for t in smbl.tail))
-            else:
-                raise ValueError(f"DDA Symbol {smbl.head} in expression {smbl} not (yet) implemented.")
-
-    # set beginning values for each call of f(y). This dictionary can be
-    # mutated over repeated calls, but if you want to go sure, make a 
-    # deep copy at every call.
-    evaluation_default_values = { k: np.nan for k in state.keys() }
-    for var in vars.explicit_constants:
-        evaluation_default_values[var] = state[var].tail[0]
-    
-    def f(y):
-        values = copy.deepcopy(evaluation_default_values)
-        for i,var in enumerate(vars.evolved):
+    def f(self, y):
+        """
+        The ODE right hand side in ``dy / dt = f(y)``. ``y`` is a numpy vector,
+        and ``f(y)`` returns a similarly sized vector:
+        
+        >>> ode = to_scipy(State({ x: int(x,0,0) }))
+        >>> y1 = ode.y0 + ode.f(ode.y0) * ode.dt   # perform some euler integration step
+        [ will give some vector ]
+        
+        Usually, you want to pass this function to some scipy integrator. See
+        also :meth:`ft`.
+        """
+        values = self.evaluation_default_values
+        if self.debug: values = copy.deepcopy(values)
+        for i,var in enumerate(self.vars.evolved):
             values[var] = y[i]  # scatter
         # TODO: md3.py doesnt work when vars.aux.unneeded is skipped, because
         #       Int(...) depends on such an unneeded guy. This is wrong.
-        for var in vars.aux.sorted + vars.aux.cyclic + list(vars.aux.unneeded):
-            values[var] = evaluate(state[var], values)
+        for var in self.vars.aux.sorted + self.vars.aux.cyclic + list(self.vars.aux.unneeded):
+            values[var] = evaluate_values(self.state[var], values)
             if np.isnan(values[var]):
                 from pdb import set_trace as bp
                 bp()
-        dqdt = [ evaluate(state[var], values) for var in vars.evolved ]
+        dqdt = [ evaluate_values(self.state[var], values) for var in self.vars.evolved ]
         if np.any(np.isnan(np.array(dqdt))):
             from pdb import set_trace as bp
             bp()
         return np.array(dqdt)
 
-    dtype = namedtuple("OdeProblem", "f dt y0")
-    return dtype(f, dt, y0)
-    
+    def ft(self, t, y):
+        """Syntactic sugar for scipy integrators who want a signature ``f(t,y)``. Will
+        just call ``f(y)`` instead."""
+        return self.f(y)
+
+    def solve(self, tfinal, **kwargs):
+        """
+        Usage is then like:
+        
+        >>> system = State({ "x": int(...), "y": ... })
+        >>> ode = system.export(to="scipy")
+        >>> sol = ode.solve(tfinal=100)
+        >>> for i,fieldname in enumerate(ode.vars.evolved):
+                plot(sol.t, sol.y[i], label=fieldname)
+        >>> legend(); show()
+        """
+        from scipy.integrate import solve_ivp
+        return solve_ivp(self.ft, [0, tfinal], self.y0, **kwargs)
 
