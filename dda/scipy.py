@@ -63,7 +63,7 @@ class to_scipy:
     """
     
     def __init__(self, state):
-        state = clean(state, target="python").name_computing_elements()
+        self.state = clean(state, target="python").name_computing_elements()
         self.vars = state.variable_ordering()
         
         if not self.vars.evolved:
@@ -75,13 +75,13 @@ class to_scipy:
         timesteps = {}
         initial_data = {}
         def map_and_treat_integrals(var):
-            if not var in self.vars.evolved: return state[var]
-            tail = state[var].tail
+            if not var in self.vars.evolved: return self.state[var]
+            tail = self.state[var].tail
             if not len(tail) >= 3: raise ValueError("int(...) requires at least int(value, dt, ic)")
             timesteps[var] = self.evaluate_const(tail[-2])
             initial_data[var] = self.evaluate_const(tail[-1])
             return Symbol("Int", *tail[0:len(tail)-2])
-        self.state = State({ var: map_and_treat_integrals(var) for var in state })
+        self.state = State({ var: map_and_treat_integrals(var) for var in self.state })
         
         # Scipy needs numpy arrays for further processing
         timesteps = np.array([timesteps[k] for k in self.vars.evolved])
@@ -113,7 +113,7 @@ class to_scipy:
             elif var.is_variable():
                 if not var.head in self.vars.explicit_constants:
                     raise ValueError(f"Only constants allowed in this context. {var} however refers to {var.head}.")
-                return self.evaluate_const(state[var.head])
+                return self.evaluate_const(self.state[var.head])
             else: # remaining case: var.is_term()
                 raise ValueError(f"Was expecting const(foo) or so, but got term {var}.")
         if not is_number(var): raise ValueError(f"Got a weird {type(var)} in a constant context: {var}")
