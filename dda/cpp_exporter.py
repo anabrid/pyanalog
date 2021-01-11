@@ -45,7 +45,7 @@ code is built from a string template and has the following features:
    **C++17** is required for building the C++ code. This is because
    we use variadic templates.
 
-For the runtime arguments, we support so far:
+For the C++ runtime arguments, we support so far:
 
 - *Simulation steering*: Selection of number of integration iterations
   and frequency of dumping the solution.
@@ -53,12 +53,12 @@ For the runtime arguments, we support so far:
   at runtime.
 - Further *Flags* and *Numeric arguments* as well as a useful ``--help``
   message.
+- *Initial data* and *time step sizes* can also be chosen at run time.
+- *Introspection capabilities*, for instance one can ask the binary
+  about the evolution quantities built in.
 
-We still hardcode at code generation time:
-
-- Initial data
-- time step sizes
-- Variables and equation structure
+Basically the equation structure is the only thing left hardcoded at
+C++ code generation time.
 
 """
 

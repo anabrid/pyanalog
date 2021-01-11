@@ -324,7 +324,8 @@ class State(collections.UserDict):
     
     In order to simplify writing DDA files in Python, this class extends
     the dictionary idiom with the following optional features, which
-    are turned on by default:
+    are turned on by default (but can be disabled by constructor
+    arguments ``type_peacemaking`` and ``default_symbol``).
     
     - **Type peacemaking**: Query a ``Symbol()``, get translated to
       ``str()``:
@@ -343,7 +344,8 @@ class State(collections.UserDict):
        This also should make sure you don't use complex ASTs for keys,
        such as ``Symbol("foo", "bar")``.
     
-    As this is a ``collections.UserDict``, you can access the underlying dict:
+    As ``State``` extends ``collections.UserDict``, you can access the underlying
+    dictionary:
     
     >>> x,y = symbols("x,y")
     >>> add, integrate = symbols("add", "integrate")
@@ -352,6 +354,59 @@ class State(collections.UserDict):
     State({'x': add(y, y), 'y': integrate(x)})
     >>> state.data
     {'x': add(y, y), 'y': integrate(x)}
+    
+    .. warning::
+
+       Don't be fooled by refering to the state while constructing the state. This
+       will end up in overly complex expressions. By rule of thumb, only use
+       :class:`Symbols` at the state definition (or in particular on the right hand side).
+       For instance, you do want to construct a state like
+       
+       >>> state = State()
+       >>> state["x"] = Symbol("add", Symbol("y"), Symbol("y"))
+       >>> state["y"] = Symbol("int", Symbol("x"))
+       >>> state
+       State({'x': add(y, y), 'y': int(x)})
+       
+       In contrast, this is most likely not what you want:
+       
+       >>> state = State()
+       >>> state["x"] = Symbol("add", Symbol("y"), Symbol("y"))
+       >>> state["y"] = Symbol("int", state["x"])
+       >>> state
+       State({'x': add(y, y), 'y': int(add(y, y))})
+       
+       This time, you did not exploit the definition of ``state["x"]`` by referencing
+       on DDA level but instead inserted the expression by referencing on Python
+       level. This is like *compile-time evaluation* versus *runtime evaluation*,
+       when *compile-time* is at python and *runtime* is when evaluating the DDA
+       expressions in some time evolution code.
+       
+       Summing up, the mistake above is to reference to ``state`` while constructing
+       the ``state``. You should not do that. You go best by defining the ``Symbol``
+       instances before and then only using them all over the place:
+       
+       >>> x, y, add, int = symbols("x, y, add, int")
+       >>> state = State()
+       >>> state[x] = add(y,y)
+       >>> state[y] = int(x)
+       >>> state
+       State({'x': add(y, y), 'y': int(x)})
+
+    .. note::
+
+       Why the name? The class name ``State`` seems arbitrary and quirky, ``System`` may
+       be a better choice (given that the class instances hold an equation system).
+       However, one could also argue that the class instances hold the definition for
+       a system in a particular state. especially, ``State.keys()`` are the state
+       variables which undergo a definition by their corresponding ``State.values()``.
+       Most CAS do not have a special class for collections of equations. Instead,
+       they typically have some *equation* type and equation systems are sets or lists
+       of equations. In PyDDA, we don't have an equation type because the DDA domain
+       specific language (see :mod:`dsl`) doesn't provide advanced treatments of
+       equations but is basically only a lengthy definition of a set of equations,
+       which you could understand as a mapping/dictionary data type defining the state
+       of the system. That's why `State` is actually an enriched `dict`.
 
     """    
     def __init__(self, initialdata=dict(), type_peacemaking=True, default_symbol=True):

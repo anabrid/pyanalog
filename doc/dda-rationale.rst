@@ -152,7 +152,7 @@ equation. Howver, on can imagine a DDA circuit which itself describes a numerica
 on a digital-circuit level.   
    
    
-On PyDDA, the scucessor of the DDA Perl code
+On PyDDA, the successor of the DDA Perl code
 --------------------------------------------
 The first DDA code was written by Bernd. It's job was to simulate circuits, and this was
 performed by a small Perl script which threw a few regexes onto the DDA file to convert it
