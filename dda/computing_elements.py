@@ -90,7 +90,7 @@ from .ast import Symbol, State, symbols
 import types
 
 # Here is the list of well-known DDA functions:
-dda_functions = "const neg div int sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor".split()
+dda_functions = "funcgen const neg div int sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor".split()
 dda_symbols = { k: Symbol(k) for k in dda_functions }
 
 # This allows for easy namespace access, but cannot be easily imported
@@ -135,3 +135,8 @@ A abs(double a) { return a < 0 ? -a : a; } // abs(int) part of cstdlib
 // A exp(double a) is part of <cmath>
 A floor(double a) { return (int)(a); } // also part of cmath since c++11
 """
+
+# see also scipy.py for a pure-python implementation
+
+# see also sympy.py for yet another implementation (non pure python but
+# sympy-related)

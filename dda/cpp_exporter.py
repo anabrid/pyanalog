@@ -675,6 +675,7 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
                     warnings.warn("Returning one-dimensional numpy array instead of a structured two-dimensional array. Pass fields_to_export=['foo','bar','baz'] in order to recieve two-dimensional array.")
                     pass
             else:
-                data = np.genfromtxt(datafh, names=True)
+                from io import StringIO
+                data = np.genfromtxt(StringIO(stdout), names=True)
             return data
         return stdout

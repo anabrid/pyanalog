@@ -11,6 +11,7 @@ PyDDA API reference
    dda-dsl
    dda-computing_elements
    dda-cpp-codegen
+   dda-scipy
    dda-cas
    dda-package
    

@@ -491,7 +491,8 @@ class State(collections.UserDict):
            True
            
            But this is clearly wrong, the correct linearization would give ``x(y)`` a name.
-           FIXME (https://lab.analogparadigm.com/koeppel/dda/-/issues/8)
+           FIXME (https://lab.analogparadigm.com/software/pyanalog/-/issues/8).
+           FIXME (https://lab.analogparadigm.com/software/pyanalog/-/issues/12)
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
@@ -552,6 +553,10 @@ class State(collections.UserDict):
         >>> state = function_of(dqdt)                         # doctest: +SKIP
         
         TODO: Write more documentation :-)
+        
+        TODO: This should be a proper class, not a namespace, with methods and thelike.
+        
+        
         """
         
         lin = self.name_computing_elements()
@@ -579,8 +584,17 @@ class State(collections.UserDict):
 
         vars.aux.unneeded = set(vars.aux.all) - (set(vars.aux.sorted) | set(vars.aux.cyclic) | set(vars.explicit_constants))
         
+        # The following is an evil eval trick to avoid repetition. It just dumps the content of the mentioned vars.[...] arrays.
         ordering = ["vars.explicit_constants", "vars.aux.sorted", "vars.aux.cyclic", "vars.evolved", "vars.aux.unneeded"]
         vars.ordering = collections.OrderedDict([ (name, eval(name, {"vars":vars})) for name in ordering ])
+        
+        # allow inverse lookup for debugging
+        vars.where_is = { i: k  for k,l in vars.ordering.items() for i in l }
+        
+        # In the end, make sure we haven't lost something!
+        residium = set(lin.keys()) - set(vars.where_is.keys())
+        if len(residium) != 0: print("Lost variables in ordering analysis: ", residium)
+        # TODO: Should raise or badly warn instead of printing.
         
         return vars
 
