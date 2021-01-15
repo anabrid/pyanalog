@@ -192,20 +192,113 @@ class Symbol:
     def map_heads(self, mapping):
         """
         Call a mapping function on all heads in all (nested) subexpressions.
+        The mapping is effectively carried out on the head (ie. maps strings)
         Returns a new mapped Symbol. This routine is suitable for renaming
-        variable names within the AST. Example usage:
-
+        variables and terms within an AST. Example usage:
+        
         >>> Symbol("x", Symbol("y"), 2).map_heads(lambda head: head+"foo")
         xfoo(yfoo, 2)
+
+        The mapping is unaware of the AST context, so you have to distinguish
+        between variables and terms yourself if you need to. See also
+        :meth:`map_variables` for context-aware head mapping. Compare these
+        examples to the ones given for :meth:`map_variables`:
+
+        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x.map_heads(map) == x.map_variables(map)  # == y
+        True
+        >>> x(x,x).map_heads(map) == y(y,y)
+        True
+        >>> x(x, x(x)).map_heads(map) == y(y, y(y))
+        True
         """
         return Symbol(mapping(self.head), *[(el.map_heads(mapping) if is_symbol(el) else el) for el in self.tail])
+
+    def map_variables(self, mapping):
+        """
+        Calls a mapping function on all variables within the (nested) subexpressions.
+        The mapping is effectively carried out on the head (ie. maps strings). This
+        is a mixture between :meth:`map_heads` and :meth:`map_tails`.
+        
+        Returns a new mapped Symbol. This routine is suitable for renaming
+        variables but not terms within the AST. Examples:
+        
+        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x.map_variables(map) == y
+        True
+        >>> x(x,x).map_variables(map) == x(y,y)
+        True
+        >>> x(x, x(x)).map_variables(map) == x(y, x(y))
+        True
+        
+        This function ignores non-symbols as they cannot be variables. This is the same
+        as :meth:`map_tails` does and is handy when you have numbers within your expressions:
+        
+        >>> x = Symbol("x")
+        >>> x(123, x(9.1), x, x(x,0.1,x)).map_variables(lambda xx: Symbol("y"))
+        x(123, x(9.1), y, x(x,0.1,y))
+        """
+        return Symbol(mapping(self.head)) if self.is_variable() else \
+            Symbol(self.head, *[ (el.map_variables(mapping) if is_symbol(el) else el) for el in self.tail ])
 
     def map_tails(self, mapping):
         """
         Calls a mapping function on all tails in all (nested) subexpressions.
-        Returns a new mapped Symbol.
+        The mapping is carried out on the tail symbols (ie. maps Symbols).
+        Returns a new mapped Symbol. The routine is suitable for AST walking,
+        adding/removing stuff in the tails while preserving the root symbol.
+        
+        Example for recursively wrapping all function calls:
+        
+        >>> x,y,z = symbols("x,y,z")
+        >>> x(y, z(x), x(y)).map_tails(lambda smb: Symbol("foo")(smb))
+        x(foo(y), foo(z(foo(x))), foo(x(foo(y))))
+        
+        Example for recursively removing certain unary functions ``z(x)`` for any ``x``:
+
+        >>> remover = lambda head: lambda x: x.tail[0] if isinstance(x,Symbol) and x.head==head else x
+        >>> x,y,z = symbols("x,y,z")
+        >>> x(y, z(x), x(z(y),x)).map_tails(remover("z"))
+        x(y, x, x(y, x))
+        
+        For real-life examples, study for instance the source code of :mod:`cpp_exporter` or
+        grep any DDA code for ``map_tails``.
+        
+        While the following example is stupid, it compares within the set of methods
+        :meth:`map_heads` and :meth:`map_variables`:
+        
+        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x(x,x).map_tails(map)
+        x(y, y)
+        >>> x(x,x(x,x)).map_tails(map)
+        x(y, y)
         """
         return Symbol(self.head, *[(mapping(el.map_tails(mapping)) if is_symbol(el) else el) for el in self.tail])
+
+    
+    def map_terms(self, mapping):
+        """
+        Calls a mapping function on all terms within the (nested) subexpressions.
+        The mapping is effectively carried out on the term head (ie. maps strings).
+        See :meth:`map_variables` for the similar-minded antoganist as well as
+        :meth:`map_heads` and :meth:`map_tails` for more *low level* minded variants.
+        
+        Returns a new mapped Symbol. This routine is suitable for renaming terms
+        but not variables within the AST. Examples:
+        
+        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x.map_terms(map) == x
+        True
+        >>> x(x,x).map_terms(map) == y(x,x)
+        True
+        >>> x(x, x(x)).map_terms(map) == y(x, y(x))
+        True
+        
+        This function ignores non-symbols as they cannot be variables, similar to
+        :meth:`map_variables`.
+        """
+        return self if self.is_variable() else \
+            Symbol(mapping(self.head), *[ (el.map_terms(mapping) if is_symbol(el) else el) for el in self.tail ])
     
     def draw_graph(self, graph=None):
         """
@@ -213,6 +306,16 @@ class Symbol:
         
         See also :method:`State.draw_dependency_graph` for similar draph
         drawing code and notes on python library dependencies.
+        
+        .. note:: This method constructs the graph by drawing edges between similar
+           named symbols. This will *not* represent the abstract syntax tree if
+           a single symbol head, regardless of whether variable or term, appears
+           twice.
+           
+           If you want to draw the actual AST with this function, you have to make
+           each symbol (head) unique by giving them distinct names.
+        
+        Simple usage example:
         
         >>> x,y,z = symbols("x,y,z")
         >>> expression = x(1,y,2,z(3,4))
@@ -469,6 +572,7 @@ class State(collections.UserDict):
         
     def map_tails(self, mapper):
         "Apply :meth:`Symbol.map_tails` on all right hand sides."
+        # FIXME: This definition is not 100% identical to Symbol.map_tails
         apply_mapper = lambda el: el.map_tails(mapper) if el.is_term() else mapper(el)
         return State({var: apply_mapper(self[var]) for var in self })
     
