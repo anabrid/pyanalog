@@ -141,7 +141,7 @@ class to_scipy:
     def __init__(self, state):
         "state needs to be an instance of :class:`ast.State`"
         self.state = clean(state, target="python").name_computing_elements()
-        self.vars = state.variable_ordering()
+        self.vars = self.state.variable_ordering()
         
         if not self.vars.evolved:
             raise ValueError("Nothing to evolve. Lacking some dda.int(f,dt,ic) integrators")
@@ -196,19 +196,23 @@ class to_scipy:
         if not is_number(var): raise ValueError(f"Got a weird {type(var)} in a constant context: {var}")
         return var
     
-
-    def f(self, y):
+    def evaluate_state(self, evolution_vector, copy=False):
         """
-        The ODE right hand side in ``dy / dt = f(y)``. ``y`` is a numpy vector,
-        and ``f(y)`` returns a similarly sized vector:
+        Recomputes the full state from the evolution state vector.
+        Returns a dictionary with same keys as ``self.state`` and scalars (floats) as
+        values.
         
-        >>> ode = to_scipy(State({ Symbol("x"): Symbol("int")(Symbol("x"),0.1,1) }))
-        >>> y1 = ode.y0 + ode.f(ode.y0) * ode.dt   # perform some euler integration step
-        >>> y1
-        array([0.9])
+        This will especially compute the aux variables, while for the evaluation
+        variables the RHS of ``dy / dt = f(y)`` is computed.
         
-        Usually, you want to pass this function to some scipy integrator. See
-        also :meth:`ft`.
+        .. note:: As a user, you most likely want to call :meth:`reconstruct_state` or
+           :meth:`rhs` instead of this function.
+        
+        For optimization purpose, numerical state evaluation is always carried
+        out on the ``evaluation_default_values`` member (which also hold the initial
+        values for the first ``rhs`` evaluation). If you set ``copy=True``,
+        a shallow copy (which is equal to a deep copy for a dict holding floats)
+        is returned. In external calls, you should probably always set ``copy=True``.
         
         .. note:: The implementation of this function currently evaluates the (prepared) DDA 
             sytem by recursive calls with the help of a variable assignment directory. This is
@@ -231,32 +235,71 @@ class to_scipy:
             and can result in infinite recursions (stack overflow).
         """
         values = self.evaluation_default_values
-        if self.debug: values = copy.deepcopy(values)
+        # A shallow copy should be fine, since self.evaluation_default_values 
+        # only holds immutable datat types (floats) and never mutable ones
+        # (such as lists). We allow for *not* doing this copy only for performance
+        # reasons, as calls to self.rhs() basically overwrite the values dict
+        # completely and thus don't need to reallocate all the dict on every call.
+        if copy or self.debug: values = values.copy() #copy.deepcopy(values)
         for i,var in enumerate(self.vars.evolved):
-            values[var] = y[i]  # scatter
+            values[var] = evolution_vector[i]  # scatter
         # TODO: md3.py doesnt work when vars.aux.unneeded is skipped, because
         #       Int(...) depends on such an unneeded guy. This is wrong.
         for var in itertools.chain(self.vars.aux.sorted, self.vars.aux.cyclic, self.vars.aux.unneeded):
             values[var] = evaluate_values(self.state[var], values)
-            if np.isnan(values[var]):
-                from pdb import set_trace as bp
-                bp()
-        dqdt = [ evaluate_values(self.state[var], values) for var in self.vars.evolved ]
+        nanmask = np.isnan(list(values.values()))
+        if any(nanmask):
+            nankeys = np.array(list(values.keys()))[nanmask]
+            print(f"to_scipy(state).evaluate_state({evolution_vector}): NaN detected in evaluation of {nankeys}")
+            print("Here is a PDB shell for debugging:")
+            from pdb import set_trace as bp
+            bp()
+        return values
+    
+    def reconstruct_state(self, evolution_vector, copy=True):
+        """
+        Given the evolution vector sizes, this computes the full state. That is, this function
+        differs from :meth:`evaluate` at all evaluation quantities where the values of the
+        evolution vector itself are put in place.
+        """
+        values = self.evaluate_state(evolution_vector, copy=copy)
+        for i,var in self.vars.evolved:
+            values[var] = evolution_vector[i]
+        return values
+
+    def rhs(self, evolution_vector):
+        """
+        The ODE *right hand side* in ``dy / dt = f(y)``. ``y`` is a numpy vector,
+        and ``f(y)`` returns a similarly sized (numpy) vector which we call ``rhs`` here:
+        
+        >>> ode = to_scipy(State({ Symbol("x"): Symbol("int")(Symbol("x"),0.1,1) }))
+        >>> y1 = ode.y0 + ode.rhs(ode.y0) * ode.dt   # perform some euler integration step
+        >>> y1
+        array([0.9])
+        
+        Usually, you want to pass this function to some scipy integrator. See
+        also :meth:`ft`.
+        """
+        values = self.evaluate_state(evolution_vector)
+        dqdt = [ evaluate_values(self.state[var], values) for var in self.vars.evolved ] # gather
         if np.any(np.isnan(np.array(dqdt))):
             from pdb import set_trace as bp
             bp()
         return np.array(dqdt)
 
-    def ft(self, t, y):
-        """Syntactic sugar for scipy integrators who want a signature ``f(t,y)``. Will
-        just call ``f(y)`` instead."""
-        return self.f(y)
+    def rhst(self, t, evolution_vector):
+        """Syntactic sugar for scipy integrators who want a signature ``rhst(t,y)``. Will
+        just call ``rhs(y)`` instead."""
+        return self.rhs(evolution_vector)
 
     def solve(self, tfinal, **kwargs):
         """
         Basically passes all arguments to ``scipy.integrate.solve_ivp``. See
         documentation for :class:`to_scipy` for usage example.
+        
+        Currently, it is hardcodedly ``tspan=[0,tfinal]``. All other (keyword) arguments
+        are passed to ``solve_ivp``.
         """
         from scipy.integrate import solve_ivp
-        return solve_ivp(self.ft, [0, tfinal], self.y0, **kwargs)
+        return solve_ivp(self.rhst, [0, tfinal], self.y0, **kwargs)
 
