@@ -516,6 +516,12 @@ class State(collections.UserDict):
         self.type_peacemaking = type_peacemaking
         self.default_symbol = default_symbol
         super().__init__(initialdata)
+        
+    @classmethod
+    def from_string(cls, *string_or_list_of_strings):
+        "Shorthand for :meth:`.dsl.read_traditional_dda`. Returns new instance"
+        from .dsl import read_traditional_dda
+        return read_traditional_dda("\n".join(string_or_list_of_strings))
 
     def __getitem__(self, name):
         if self.type_peacemaking and isinstance(name, Symbol):
@@ -636,28 +642,72 @@ class State(collections.UserDict):
         a new State which is *linearized* in a way that the numbering proposes a computing
         order.
         
-        Linearization is a fix point operation, i.e. for any
+        Linearization is an idempotent operation, i.e. for any
         ``lin = state.name_computing_elements()`` it is ``lin == lin.name_computing_elements()``.
+        Mathematically, it is a projection of the state on its linearized one.
         
-        .. warning::
-           
-           Known limitations: expresions like ``foo(bar, baz(bla))`` are not resolved.
-           This is good for ``const(1)`` but bad for ``neg(foo)`` or ``sqrt(bar)``:
-           
-           >>> x,y = symbols("x,y")
-           >>> ns = State({ x: x(x, x(y)) })
-           >>> ns.name_computing_elements() == ns
-           True
-           
-           But this is clearly wrong, the correct linearization would give ``x(y)`` a name.
-           FIXME (https://lab.analogparadigm.com/software/pyanalog/-/issues/8).
-           FIXME (https://lab.analogparadigm.com/software/pyanalog/-/issues/12)
+        Linearization means to define a evaluation order and to give unique names
+        to all terms occuring.
+        
+        >>> x, y, sum, mult = symbols("x, y, sum, mult")
+        >>> ns = State({ x: sum(x,y, sum(y, mult(y,x))), y: mult(x) })
+        >>> ns.name_computing_elements()   # doctest: +NORMALIZE_WHITESPACE
+        State({
+         'mult_1': mult(y, x),
+         'sum_1': sum(y, mult_1),
+         'x': sum(x, y, sum_1),
+         'y': mult(x)
+        })
+        
+        The linearized state only has entries of a *normal form* ``state[vi] = f(v1,v2,...)``,
+        i.e. for any value in the linearized state, the tail only contains variables,
+        no terms. This is handy for many things, such as circuit drawing, imperative
+        evaluation (in combination with :meth:`variable_ordering`, cf. :mod:`cpp_exporter`)
+        and determination of integrands/actual variables. For instance
+        
+        >>> s = State.from_string("foo = const(0.7)", "baz=mult(bar,bar)", "bar = neg(int(neg(baz), foo, 0.3))")
+        >>> s
+        State({'bar': neg(int(neg(baz), foo, 0.3)), 'baz': mult(bar, bar), 'foo': const(0.7)})
+        >>> s.name_computing_elements()    # doctest: +NORMALIZE_WHITESPACE
+        State({'bar': neg(int_1),
+        'baz': mult(bar, bar),
+        'foo': const(0.7),
+        'int_1': int(neg_1, foo, 0.3),
+        'neg_1': neg(baz)})
+
+        Here one sees immediately that ``int_1`` is the actual integral solution while
+        ``bar`` is only a derived quantity. Calls like ``const(float)`` remain unchanged
+        since they are already in the normal form ``f(v1,v2,...)``.
+        
+        Here is a more complex example:
+        
+        >>> from dda.computing_elements import neg,int,mult
+        >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
+        >>> clean(dda_state, target="python").name_computing_elements().variable_ordering() # doctest: +NORMALIZE_WHITESPACE
+        namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'x'],
+                                sorted=['x', 'mult_1', 'neg_1'],
+                                cyclic=[],
+                                unneeded={'neg_2'}),
+                evolved=['int_1', 'int_2'],
+                explicit_constants=[],
+                all=['int_1', 'int_2', 'mult_1', 'neg_1', 'neg_2', 'x'],
+                ordering=OrderedDict([('vars.explicit_constants', []),
+                                        ('vars.aux.sorted', ['x', 'mult_1', 'neg_1']),
+                                        ('vars.aux.cyclic', []),
+                                        ('vars.evolved', ['int_1', 'int_2']),
+                                        ('vars.aux.unneeded', {'neg_2'})]),
+                where_is={'x': 'vars.aux.sorted',
+                            'mult_1': 'vars.aux.sorted',
+                            'neg_1': 'vars.aux.sorted',
+                            'int_1': 'vars.evolved',
+                            'int_2': 'vars.evolved',
+                            'neg_2': 'vars.aux.unneeded'})
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
         #NamedSymbol = collections.namedtuple('NamedSymbol', ['symbol', 'number'])
         def register_computing_element(el):
-            if len(el.tail) >= 2 and not el in intermediates:
+            if len(el.tail) and not el in intermediates:
                 symbol_counter[el.head] += 1
                 named_symbol = "%s_%d" % (el.head, symbol_counter[el.head])
                 while named_symbol in self:
