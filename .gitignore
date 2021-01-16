@@ -19,6 +19,9 @@ _build/
 *.out
 *.dat
 
+*.gv
+*.dot
+
 generated.cc
 
 .glab-cli
