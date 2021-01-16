@@ -98,9 +98,9 @@ class to_scipy:
     array([-1,  1])
     >>> py_state.dt # same timestep for all integrals (but see note below)
     1
-    >>> py_state.f(py_state.y0)  # evaluation of f(y) on y0
+    >>> py_state.rhs(py_state.y0)  # evaluation of f(y) on y0
     array([-1, -2])
-    >>> y1 = py_state.f(py_state.y0) * py_state.dt  # a single Euler integration timestep, for instance
+    >>> y1 = py_state.rhs(py_state.y0) * py_state.dt  # a single Euler integration timestep, for instance
     >>> y1
     array([-1, -2])
     >>> sol = py_state.solve(10)  # ODE integration with SciPy

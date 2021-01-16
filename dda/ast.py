@@ -235,8 +235,8 @@ class Symbol:
         as :meth:`map_tails` does and is handy when you have numbers within your expressions:
         
         >>> x = Symbol("x")
-        >>> x(123, x(9.1), x, x(x,0.1,x)).map_variables(lambda xx: Symbol("y"))
-        x(123, x(9.1), y, x(x,0.1,y))
+        >>> x(123, x(9.1), x, x(x, 0.1, x)).map_variables(lambda xx: Symbol("y"))
+        x(123, x(9.1), y, x(y, 0.1, y))
         """
         return Symbol(mapping(self.head)) if self.is_variable() else \
             Symbol(self.head, *[ (el.map_variables(mapping) if is_symbol(el) else el) for el in self.tail ])
@@ -519,9 +519,14 @@ class State(collections.UserDict):
         
     @classmethod
     def from_string(cls, *string_or_list_of_strings):
-        "Shorthand for :meth:`.dsl.read_traditional_dda`. Returns new instance"
+        "Shorthand for :meth:`.dsl.read_traditional_dda`. Returns new instance."
         from .dsl import read_traditional_dda
         return read_traditional_dda("\n".join(string_or_list_of_strings))
+    
+    def to_string(self):
+        "Shorthand for :meth:`.dsl.to_traditional_dda`. Returns a string (representation)."
+        from .dsl import to_traditional_dda
+        return to_traditional_dda(self, cleanup=False, prefix=None, suffix=None)
 
     def __getitem__(self, name):
         if self.type_peacemaking and isinstance(name, Symbol):
@@ -651,14 +656,12 @@ class State(collections.UserDict):
         
         >>> x, y, sum, mult = symbols("x, y, sum, mult")
         >>> ns = State({ x: sum(x,y, sum(y, mult(y,x))), y: mult(x) })
-        >>> ns.name_computing_elements()   # doctest: +NORMALIZE_WHITESPACE
-        State({
-         'mult_1': mult(y, x),
-         'sum_1': sum(y, mult_1),
-         'x': sum(x, y, sum_1),
-         'y': mult(x)
-        })
-        
+        >>> print(ns.name_computing_elements().to_string())   # doctest: +NORMALIZE_WHITESPACE
+        mult_1 = mult(y, x)
+        sum_1 = sum(y, mult_1)
+        x = sum(x, y, sum_1)
+        y = mult(x)
+
         The linearized state only has entries of a *normal form* ``state[vi] = f(v1,v2,...)``,
         i.e. for any value in the linearized state, the tail only contains variables,
         no terms. This is handy for many things, such as circuit drawing, imperative
@@ -668,12 +671,12 @@ class State(collections.UserDict):
         >>> s = State.from_string("foo = const(0.7)", "baz=mult(bar,bar)", "bar = neg(int(neg(baz), foo, 0.3))")
         >>> s
         State({'bar': neg(int(neg(baz), foo, 0.3)), 'baz': mult(bar, bar), 'foo': const(0.7)})
-        >>> s.name_computing_elements()    # doctest: +NORMALIZE_WHITESPACE
-        State({'bar': neg(int_1),
-        'baz': mult(bar, bar),
-        'foo': const(0.7),
-        'int_1': int(neg_1, foo, 0.3),
-        'neg_1': neg(baz)})
+        >>> print(s.name_computing_elements().to_string())    # doctest: +NORMALIZE_WHITESPACE
+        bar = neg(int_1)
+        baz = mult(bar, bar)
+        foo = const(0.7)
+        int_1 = int(neg_1, foo, 0.3)
+        neg_1 = neg(baz)
 
         Here one sees immediately that ``int_1`` is the actual integral solution while
         ``bar`` is only a derived quantity. Calls like ``const(float)`` remain unchanged
@@ -683,7 +686,7 @@ class State(collections.UserDict):
         
         >>> from dda.computing_elements import neg,int,mult
         >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
-        >>> clean(dda_state, target="python").name_computing_elements().variable_ordering() # doctest: +NORMALIZE_WHITESPACE
+        >>> dda_state.name_computing_elements().variable_ordering() # doctest: +NORMALIZE_WHITESPACE
         namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'x'],
                                 sorted=['x', 'mult_1', 'neg_1'],
                                 cyclic=[],
@@ -802,8 +805,10 @@ class State(collections.UserDict):
         
         # In the end, make sure we haven't lost something!
         residium = set(lin.keys()) - set(vars.where_is.keys())
-        if len(residium) != 0: print("Lost variables in ordering analysis: ", residium)
-        # TODO: Should raise or badly warn instead of printing.
+        if len(residium) != 0: 
+                import warnings # bultin
+                warnings.warn("State.variable_ordering(): Lost these variables in ordering analysis: " + str(residium))
+                # could also raise an issue, because it is kind of serious.
         
         return vars
 
