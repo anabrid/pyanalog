@@ -45,6 +45,31 @@ import os, sys, pprint, collections, types
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
 
+#class VariableTaxonomy(types.SimpleNamespace):
+#    """
+#    Inherits __init__, __repr__ and __eq__ from the SimpleNamespace.
+#    """
+#    def __repr__(self):
+#        items = ((f"{k}={v!r}" if len(v)<5 else "%s={%s}"%(k,f"{len(v)} items")) for k,v in self.__dict__.items())
+#        return f"VariableTaxonomy({', '.join(items)})"
+#    def verbose(self):
+#        "Calls the 'traditional' full dump of the namespace object"
+#        return types.SimpleNamespace.__repr__(self)
+#    def __init__(self, **kwargs):
+#        super(**kwargs)
+#    def find(self,variable):
+#        candidates = [ cls for cls, members in self.__dict__.items() if variable in members ]
+#        if len(candidates) == 1: return candidates[0]
+#        elif len(candidates) > 1:  raise KeyError(f"Variable {variable} is in multiple classes: {candidates}")
+#        else: raise KeyError(f"Variable {variable} is in no class.")
+#    __contains__ = find
+#    def __len__(self): return len(self.__dict__)
+#    def where_is(self, variable_list=[]):
+#        if not variable_list:
+#            variable_list = [ var for var in members for cls,members in self.__dict__.items() ]
+#        return { var: self.find(var) for var in variable_list }
+#        
+    
 
 class Symbol:
     """
@@ -686,25 +711,14 @@ class State(collections.UserDict):
         
         >>> from dda.computing_elements import neg,int,mult
         >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
-        >>> dda_state.name_computing_elements().variable_ordering() # doctest: +NORMALIZE_WHITESPACE
-        namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'x'],
-                                sorted=['x', 'mult_1', 'neg_1'],
-                                cyclic=[],
-                                unneeded={'neg_2'}),
-                evolved=['int_1', 'int_2'],
-                explicit_constants=[],
-                all=['int_1', 'int_2', 'mult_1', 'neg_1', 'neg_2', 'x'],
-                ordering=OrderedDict([('vars.explicit_constants', []),
-                                        ('vars.aux.sorted', ['x', 'mult_1', 'neg_1']),
-                                        ('vars.aux.cyclic', []),
-                                        ('vars.evolved', ['int_1', 'int_2']),
-                                        ('vars.aux.unneeded', {'neg_2'})]),
-                where_is={'x': 'vars.aux.sorted',
-                            'mult_1': 'vars.aux.sorted',
-                            'neg_1': 'vars.aux.sorted',
-                            'int_1': 'vars.evolved',
-                            'int_2': 'vars.evolved',
-                            'neg_2': 'vars.aux.unneeded'})
+        >>> dda_state.name_computing_elements().variable_ordering().where_is # doctest: +NORMALIZE_WHITESPACE
+        {'x': 'vars.aux.sorted',
+         'mult_1': 'vars.aux.sorted',
+         'neg_1': 'vars.aux.sorted',
+         'int_1': 'vars.evolved',
+         'int_2': 'vars.evolved',
+         'neg_2': 'vars.aux.unneeded'}
+
         """
         symbol_counter = collections.defaultdict(lambda:0)
         intermediates = {}
@@ -772,8 +786,8 @@ class State(collections.UserDict):
         """
         
         lin = self.name_computing_elements()
-        vars = types.SimpleNamespace()
-        vars.aux = types.SimpleNamespace()
+        vars = types.SimpleNamespace() # VariableTaxonomy()
+        vars.aux = types.SimpleNamespace() # VariableTaxonomy()
         
         # Thanks to named computing elements, can find all int(...) expressions
         # without searching, since they must come first.
