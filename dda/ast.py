@@ -170,11 +170,14 @@ class Symbol:
     def __init__(self, head, *tail):
         self.head = head
         self.tail = tail
+        # be nice and provide some support to avoid shooting in the foot:
+        if isinstance(self.head, Symbol):
+            raise TypeError(f"Trying to initialize Symbol {self} but head {head} is a Symbol, not a String.")
     def __call__(self, *tail):
         return Symbol(self.head, *tail)
     def __str__(self):
         # could also say tailstr = str(self.tail) if len(self.tail) else ""
-        tailstr = "(" + ", ".join(map(str, self.tail)) + ")" if self.tail else ""
+        tailstr = "(" + ", ".join(map(repr, self.tail)) + ")" if self.tail else ""
         return str(self.head) + tailstr
     def __eq__(self, other):
         "Allow to check Symbol('foo') == Symbol('foo')"
@@ -239,7 +242,7 @@ class Symbol:
         """
         return Symbol(mapping(self.head), *[(el.map_heads(mapping) if is_symbol(el) else el) for el in self.tail])
 
-    def map_variables(self, mapping):
+    def map_variables(self, mapping, returns_symbol=False):
         """
         Calls a mapping function on all variables within the (nested) subexpressions.
         The mapping is effectively carried out on the head (ie. maps strings). This
@@ -262,16 +265,28 @@ class Symbol:
         >>> x = Symbol("x")
         >>> x(123, x(9.1), x, x(x, 0.1, x)).map_variables(lambda xx: Symbol("y"))
         x(123, x(9.1), y, x(y, 0.1, y))
+        
+        If you want to use ``map_variables`` to change a variable to a term, and/or if your
+        mapping function does not return strings but Symbols, use ``returns_symbol=True``:
+        
+        >>> Symbol("x").map_variables(lambda x: Symbol("y", 123), returns_symbol=True)
+        y(123)
+        >>> Symbol("x").map_variables(lambda x: Symbol("y", 123)) # this won't work
+        Traceback (most recent call last):
+        ...
+        TypeError: Trying to initialize Symbol y(123) but head y(123) is a Symbol, not a String.
         """
-        return Symbol(mapping(self.head)) if self.is_variable() else \
-            Symbol(self.head, *[ (el.map_variables(mapping) if is_symbol(el) else el) for el in self.tail ])
+        SymbId = lambda x:x if returns_symbol else Symbol
+        return SymbId(mapping(self.head)) if self.is_variable() else \
+            Symbol(self.head, *[ (el.map_variables(mapping, returns_symbol=returns_symbol) if is_symbol(el) else el) for el in self.tail ])
 
-    def map_tails(self, mapping):
+    def map_tails(self, mapping, _isroot=True):
         """
         Calls a mapping function on all tails in all (nested) subexpressions.
         The mapping is carried out on the tail symbols (ie. maps Symbols).
         Returns a new mapped Symbol. The routine is suitable for AST walking,
         adding/removing stuff in the tails while preserving the root symbol.
+        This could also be called ``map_symbols``, c.f. :meth:`map_terms`.
         
         Example for recursively wrapping all function calls:
         
@@ -298,10 +313,11 @@ class Symbol:
         >>> x(x,x(x,x)).map_tails(map)
         x(y, y)
         """
-        return Symbol(self.head, *[(mapping(el.map_tails(mapping)) if is_symbol(el) else el) for el in self.tail])
+        r = Symbol(self.head, *[(mapping(el.map_tails(mapping), _isroot=False) if is_symbol(el) else el) for el in self.tail])
+        return mapping(r) if _isroot else r
 
     
-    def map_terms(self, mapping):
+    def map_terms(self, mapping, returns_symbol=False):
         """
         Calls a mapping function on all terms within the (nested) subexpressions.
         The mapping is effectively carried out on the term head (ie. maps strings).
@@ -322,8 +338,10 @@ class Symbol:
         This function ignores non-symbols as they cannot be variables, similar to
         :meth:`map_variables`.
         """
-        return self if self.is_variable() else \
-            Symbol(mapping(self.head), *[ (el.map_terms(mapping) if is_symbol(el) else el) for el in self.tail ])
+        if self.is_variable(): return self
+        r = mapping(self.head)
+        if not returns_symbol: r = Symbol(r)
+        return r(*[ (el.map_terms(mapping) if is_symbol(el) else el) for el in self.tail ])
     
     def draw_graph(self, graph=None):
         """
