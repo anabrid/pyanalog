@@ -41,7 +41,7 @@ represents a (traditional) DDA file. From a python perspective, a
 """
 
 # all "batteries included":
-import os, sys, pprint, collections, types
+import os, sys, pprint, collections, types, warnings
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
 
@@ -151,26 +151,35 @@ class Symbol:
        Think of Symbol implementing the following type (hint):
        ``Tuple[str, List[Symbol]]``.
        
-       In the above example, you can write
-       
-       >>> f = Symbol("f", "x", "y")
-       >>> print(f)
+       The DDA code helps you to follow this guide. For instance, the
+       representation of ``f1`` shows that it is a symbol with two
+       string arguments, while ``f2`` has symbol arguments:
+
+       >>> f1 = Symbol("f", "x", "y")
+       >>> f2 = Symbol("f", Symbol("x"), Symbol("y"))
+       >>> f1
+       f('x', 'y')
+       >>> f2
        f(x, y)
        
-       which looks identical to the example given before. This is
-       *by intention* and breaks Python standard for ``repr()``
-       behaviour. It can be hard to find such errors. That could probably
-       be improved by providing the correct ``repr()``.
+       And DDA prevents you from shooting in your foot:
        
-       It is a good convention to *only* have Symbols and floats/integers
-       being part of the AST.
-    
+       >>> f, x, y = symbols("f,x,y")
+       >>> f3 = Symbol(f,x,y)
+       Traceback (most recent call last):
+       ...
+       TypeError: Trying to initialize Symbol f(x, y) but head f is a Symbol, not a String.
+       
+       In previous versions of DDA, the thin line between strings and
+       symbols hasn't been made so clear and tracing errors was harder.
+       
+       Summing up, it is a good convention to *only* have Symbols and
+       floats/integers being part of the Symbol tails.
     
     """
     def __init__(self, head, *tail):
         self.head = head
         self.tail = tail
-        # be nice and provide some support to avoid shooting in the foot:
         if isinstance(self.head, Symbol):
             raise TypeError(f"Trying to initialize Symbol {self} but head {head} is a Symbol, not a String.")
     def __call__(self, *tail):
@@ -280,7 +289,7 @@ class Symbol:
         return SymbId(mapping(self.head)) if self.is_variable() else \
             Symbol(self.head, *[ (el.map_variables(mapping, returns_symbol=returns_symbol) if is_symbol(el) else el) for el in self.tail ])
 
-    def map_tails(self, mapping, _isroot=True):
+    def map_tails(self, mapping, map_root=True):
         """
         Calls a mapping function on all tails in all (nested) subexpressions.
         The mapping is carried out on the tail symbols (ie. maps Symbols).
@@ -292,7 +301,7 @@ class Symbol:
         
         >>> x,y,z = symbols("x,y,z")
         >>> x(y, z(x), x(y)).map_tails(lambda smb: Symbol("foo")(smb))
-        x(foo(y), foo(z(foo(x))), foo(x(foo(y))))
+        foo(x(foo(y), foo(z(foo(x))), foo(x(foo(y)))))
         
         Example for recursively removing certain unary functions ``z(x)`` for any ``x``:
 
@@ -301,20 +310,43 @@ class Symbol:
         >>> x(y, z(x), x(z(y),x)).map_tails(remover("z"))
         x(y, x, x(y, x))
         
+        The argument ``map_root`` decides whether the map is run on the
+        root node or not. It will be ``map_root=False`` in any recursive use.
+        In former instances of this code, it was always ``map_root=False``.
+        Example:
+        
+        >>> (a, b), flip = symbols("a,b"), lambda smb: b if smb.head==a.head else a
+        >>> a(b,a,b).map_tails(flip)
+        b
+        >>> a(b,a,b).map_tails(flip, map_root=False)
+        b(a, b, a)
+        
+        Note how the ``flip`` function cuts every tail and returns variables only.
+        Here is a variant which perserves any tail:
+        
+        >>> (a, b) = symbols("a,b")
+        >>> flipper = lambda smb: (b if smb.head==a.head else a)(*smb.tail)
+        >>> a(b,a,b).map_tails(flipper)
+        b(a, b, a)
+        >>> b(a, b, a)
+        a(a, b, a)
+        
+        Here is another example which highlights how ``map_tails`` can convert terms to
+        variables:
+        
+        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x(x,x).map_tails(map, map_root=False)
+        x(y, y)
+        >>> x(x,x(x,x)).map_tails(map, map_root=False)
+        x(y, y)
+        
         For real-life examples, study for instance the source code of :mod:`cpp_exporter` or
         grep any DDA code for ``map_tails``.
         
-        While the following example is stupid, it compares within the set of methods
-        :meth:`map_heads` and :meth:`map_variables`:
-        
-        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
-        >>> x(x,x).map_tails(map)
-        x(y, y)
-        >>> x(x,x(x,x)).map_tails(map)
-        x(y, y)
+        See also :meth:`map_heads` and :meth:`map_variables` for variants.
         """
-        r = Symbol(self.head, *[(mapping(el.map_tails(mapping), _isroot=False) if is_symbol(el) else el) for el in self.tail])
-        return mapping(r) if _isroot else r
+        r = Symbol(self.head, *[(mapping(el.map_tails(mapping, map_root=False)) if is_symbol(el) else el) for el in self.tail])
+        return mapping(r) if map_root else r
 
     
     def map_terms(self, mapping, returns_symbol=False):
@@ -337,6 +369,12 @@ class Symbol:
         
         This function ignores non-symbols as they cannot be variables, similar to
         :meth:`map_variables`.
+        
+        It is basically ``map_terms(map) = map_tails(lambda smb: Symbol(map(smb.head))(smbl.tail) if symb.is_variable() else smb)``.
+        
+        The argument ``returns_symbol`` allows to discriminate between mapping
+        functions which return strings (for symbol heads) or symbols. The later
+        allows for manipulating expressions.
         """
         if self.is_variable(): return self
         r = mapping(self.head)
@@ -528,7 +566,7 @@ class State(collections.UserDict):
        when *compile-time* is at python and *runtime* is when evaluating the DDA
        expressions in some time evolution code.
        
-       Summing up, the mistake above is to reference to ``state`` while constructing
+       Summing up, the mistake above is to reference to ``state`` while constructing7
        the ``state``. You should not do that. You go best by defining the ``Symbol``
        instances before and then only using them all over the place:
        
@@ -624,10 +662,9 @@ class State(collections.UserDict):
                 self[k] = v
         return adder
         
-    def map_tails(self, mapper):
+    def map_tails(self, mapper, map_root=True):
         "Apply :meth:`Symbol.map_tails` on all right hand sides."
-        # FIXME: This definition is not 100% identical to Symbol.map_tails
-        apply_mapper = lambda el: el.map_tails(mapper) if el.is_term() else mapper(el)
+        apply_mapper = lambda el: el.map_tails(mapper, map_root=map_root) if el.is_term() else mapper(el)
         return State({var: apply_mapper(self[var]) for var in self })
     
     def map_heads(self, mapper):
@@ -684,7 +721,7 @@ class State(collections.UserDict):
             os.system(f"dot -Tpng {dot_filename} > {dot_filename}.png && open {dot_filename}.png")
         return G
 
-    def name_computing_elements(self):
+    def name_computing_elements(self, strict=False):
         """
         Name all computing elements / intermediate expressions. Returns
         a new State which is *linearized* in a way that the numbering proposes a computing
@@ -695,18 +732,47 @@ class State(collections.UserDict):
         Mathematically, it is a projection of the state on its linearized one.
         
         Linearization means to define a evaluation order and to give unique names
-        to all terms occuring.
+        to all terms occuring. Note that *all* depends on the strictness (`strict=True` vs.
+        the default `strict=False`):
         
         >>> x, y, sum, mult = symbols("x, y, sum, mult")
         >>> ns = State({ x: sum(x,y, sum(y, mult(y,x))), y: mult(x) })
-        >>> print(ns.name_computing_elements().to_string())   # doctest: +NORMALIZE_WHITESPACE
+        >>> print(ns.name_computing_elements().to_string())              # doctest: +NORMALIZE_WHITESPACE
         mult_1 = mult(y, x)
         sum_1 = sum(y, mult_1)
         x = sum(x, y, sum_1)
         y = mult(x)
+        >>> print(ns.name_computing_elements(strict=True).to_string())   # doctest: +NORMALIZE_WHITESPACE
+        mult_1 = mult(y, x)
+        mult_2 = mult(x)
+        sum_1 = sum(y, mult_1)
+        sum_2 = sum(x, y, sum_1)
+        x = sum_2
+        y = mult_2
+        
+        Here, *strict* means that really *every* term is labeled, even if this yields in "dumb"
+        assignments such as ``x = sum_2``. You want a strict naming when enumerating computing elements,
+        while a non-strict naming is preferable for brief evaluation. Also note that
+        
+        >>> x,const = symbols("x,const")
+        >>> State({ x: const(42) }).name_computing_elements(strict=False)
+        State({'x': const(42)})
+        >>> State({ x: const(42) }).name_computing_elements(strict=True)
+        State({'const_1': const(42), 'x': const_1})
+        >>> State({ x: const(42) }).name_computing_elements(strict=True).name_computing_elements(strict=True) # doctest:+ELLIPSIS +NORMALIZE_WHITESPACE
+        /.../ast.py:813: serWarning: State.named_computing_elements(): While counting const, I notice that  const_1 is already part of the state. Maybe you want to run name_computing_elements(strict=False) for idempotence.
+          warnings.warn(...)
+        State({'const_1': const_1_, 'const_1_': const(42), 'x': const_1})
+        
+        On this mini example, one especially sees that idempotence is only given when ``strict=False``. 
+        It is ``state.name_computing_elements(True) == state.name_computing_elements(s[0]).name_computing_elements(s[1])....name_computing_elements(s[n])``
+        when ``s`` is a boolean array of ``len(s)==n`` and ``sum(s) == 1``, i.e. only one
+        occurence of ``strict=True`` and all other ``False``.
 
-        The linearized state only has entries of a *normal form* ``state[vi] = f(v1,v2,...)``,
-        i.e. for any value in the linearized state, the tail only contains variables,
+        The linearized state only has entries of a *normal form* ``state[f_i] = f(v1,v2,...)``
+        for a function (term) ``f`` and some variables ``v_j``. Furthermore note how even
+        ``x = sum_2`` in the above example indirects the former assignment of ``x = sum(x,y...)``.
+        Again, for any value in the linearized state, the tail only contains variables,
         no terms. This is handy for many things, such as circuit drawing, imperative
         evaluation (in combination with :meth:`variable_ordering`, cf. :mod:`cpp_exporter`)
         and determination of integrands/actual variables. For instance
@@ -715,11 +781,14 @@ class State(collections.UserDict):
         >>> s
         State({'bar': neg(int(neg(baz), foo, 0.3)), 'baz': mult(bar, bar), 'foo': const(0.7)})
         >>> print(s.name_computing_elements().to_string())    # doctest: +NORMALIZE_WHITESPACE
-        bar = neg(int_1)
-        baz = mult(bar, bar)
-        foo = const(0.7)
+        bar = neg_2
+        baz = mult_1
+        const_1 = const(0.7)
+        foo = const_1
         int_1 = int(neg_1, foo, 0.3)
+        mult_1 = mult(bar, bar)
         neg_1 = neg(baz)
+        neg_2 = neg(int_1)
 
         Here one sees immediately that ``int_1`` is the actual integral solution while
         ``bar`` is only a derived quantity. Calls like ``const(float)`` remain unchanged
@@ -746,12 +815,14 @@ class State(collections.UserDict):
                 symbol_counter[el.head] += 1
                 named_symbol = "%s_%d" % (el.head, symbol_counter[el.head])
                 while named_symbol in self:
+                    # Note that this naming clash could also happen by pure coincidence.
+                    warnings.warn(f"State.named_computing_elements(): While counting {el.head}, I notice that  {named_symbol} is already part of the state. Maybe you want to run name_computing_elements(strict=False) for idempotence.")
                     named_symbol += "_"
                 intermediates[named_symbol] = el
                 return Symbol(named_symbol)
             return el
         
-        linearized_state = self.map_tails(register_computing_element)
+        linearized_state = self.map_tails(register_computing_element, map_root=strict)
         linearized_state.update(intermediates)
         return linearized_state
         
@@ -767,7 +838,7 @@ class State(collections.UserDict):
           * State variables/evolved variables: Any outcome of a time integration, i.e. ``int(...)``,
             i.e. ``Symbol("int")``. This can be as simple as ``state["foo"] = int(Symbol("foo"),...)``.
             Complex terms such as ``state["foo"] = mult(int(foo), int(bar))`` will result in
-            intermediate variables called like ``int_0``, ``int_1``(see ``name_computing_elements()``
+            intermediate variables called like ``int_0``, ``int_1``(see :meth:`name_computing_elements`
             for the code which invents these names), which are the actual evolved variables.
           * Auxilliary variables: Any other variables which are required to compute evolved
             variables.
@@ -784,10 +855,10 @@ class State(collections.UserDict):
           * ``unneeded_auxers``: Auxilliaries which are not required to compute the state.
             These are probably used in postprocessing. If they depend on the state variables,
             further work is neccessary.
-            
-        An imperative code for evolving this state in time should then compute all aux.
-        variables in the respective order before computing ``dqdt``. The dependency is
-        basically, in pseudo code:
+        
+        Given an ODE problem ``dq/dt = f(q)``, an imperative code for evolving the state
+        ``q`` in time  should compute all auxillairy variables in the respective order
+        before computing the actual ``dq/dt``. The dependency is basically, in pseudo code:
         
         >>> aux  = function_of(aux, state)                    # doctest: +SKIP
         >>> dqdt = function_of(aux, state)                    # doctest: +SKIP
@@ -796,14 +867,22 @@ class State(collections.UserDict):
         
         >>> state = function_of(dqdt)                         # doctest: +SKIP
         
-        TODO: Write more documentation :-)
+        This method returns a namespace object, which is basically a fancy dictionary. It
+        is used over a simple dictionary just for shorter syntax.
         
-        TODO: This should be a proper class, not a namespace, with methods and thelike.
+        ### TODO FIXME
+        ### THIS EXAMPLE DOES NOT RUN properly:
         
+        >>> from dda.computing_elements import neg,int,mult
+        >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
+        >>> dda_state.variable_ordering()
+        x is in vars.aux.unneeded! But it should not FIXME
+        >>> dda_state.name_computing_elements(strict=True).variable_ordering()
+        neg_2 and neg_3 are unneeded! But they should not FIXME
         
         """
         
-        lin = self.name_computing_elements()
+        lin = self.name_computing_elements(strict=False)
         vars = types.SimpleNamespace() # VariableTaxonomy()
         vars.aux = types.SimpleNamespace() # VariableTaxonomy()
         
@@ -811,7 +890,7 @@ class State(collections.UserDict):
         # without searching, since they must come first.
         vars.evolved  = sorted(filter(lambda var: lin[var].head == "int",   lin))
         vars.explicit_constants = sorted(filter(lambda var: lin[var].head == "const", lin))
-
+        
         # Then compute ALL aux variables BEFORE computing dqdt.
         # The order of dqdt should not be touched, as there CAN NOT be any
         # dependency, since dqdt.foo = int(lin).
@@ -838,7 +917,6 @@ class State(collections.UserDict):
         # In the end, make sure we haven't lost something!
         residium = set(lin.keys()) - set(vars.where_is.keys())
         if len(residium) != 0: 
-                import warnings # bultin
                 warnings.warn("State.variable_ordering(): Lost these variables in ordering analysis: " + str(residium))
                 # could also raise an issue, because it is kind of serious.
         
