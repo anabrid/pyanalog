@@ -99,6 +99,7 @@ using namespace dda;
 struct %(state_type)s {
     %(state_var_definition)s
     %(dqdt_operators)s
+    %(diff_or_integrate)s
     const double* byName(std::string %(lookup_name)s) const {
         %(state_vars_by_name)s
         return nullptr;
@@ -151,28 +152,33 @@ void compute_aux(%(state_type)s const& %(state_name)s, %(aux_type)s &%(aux_name)
 %(state_type)s
     initial_data{ %(initial_data)s },
     dt{ %(timestep_data)s };
-
-void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int rk_order) {
+    
+// not used:
+// bool
+//    shall_differentiate{ %(differentiate_data)s };
+    
+%(state_type)s integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int rk_order) {
     %(state_type)s k1, k2, k3, k4;
+    %(state_type)s updated;
 
     switch(rk_order) {
         case 1:
             // Explicit Euler scheme
             f(%(state_name)s, k1, %(aux_name)s);
-            %(state_name)s = %(state_name)s + k1*dt;
+            updated = %(state_name)s + k1*dt;
             break;
         case 2:
             // RK2 scheme
             f(%(state_name)s, k1, %(aux_name)s);
             f(%(state_name)s + k1*dt, k2, %(aux_name)s);
-            %(state_name)s = %(state_name)s + (k1+k2)*dt*0.5;
+            updated = %(state_name)s + (k1+k2)*dt*0.5;
             break;
         case 3:
             // Kutta's third order scheme 
             f(%(state_name)s, k1, %(aux_name)s);
             f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
             f(%(state_name)s + dt*k1*(-1.0) + dt*k2*2.0, k3, %(aux_name)s);
-            %(state_name)s = %(state_name)s + (k1 + k2*4.0 + k3*1.0)*dt*(1./6.);
+            updated = %(state_name)s + (k1 + k2*4.0 + k3*1.0)*dt*(1./6.);
             break;
         case 4:
             // Classical RK4 scheme 
@@ -180,11 +186,13 @@ void integrate(%(state_type)s& %(state_name)s, %(aux_type)s& %(aux_name)s, int r
             f(%(state_name)s + dt*k1*0.5, k2, %(aux_name)s);
             f(%(state_name)s + dt*k2*0.5, k3, %(aux_name)s);
             f(%(state_name)s + dt*k3*1.0, k4, %(aux_name)s);
-            %(state_name)s = %(state_name)s + (k1 + k2*2.0 + k3*2.0 + k4)*dt*(1./6.);
+            updated = %(state_name)s + (k1 + k2*2.0 + k3*2.0 + k4)*dt*(1./6.);
             break;
         default:
             exit(-42);
     }
+    
+    return updated;
 }
 
 struct csv_writer {
@@ -223,8 +231,8 @@ struct csv_writer {
 
 %(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order) {
     %(state_type)s %(state_name)s = initial;
-    %(aux_type)s %(aux_name)s;
-    
+    %(aux_type)s %(aux_name)s, auxhelp1;
+        
     if(debug) {
 #ifdef _GNU_SOURCE
         feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW); // glibc-specific
@@ -243,7 +251,19 @@ struct csv_writer {
     }
     
     for(int iter = 0; iter < max_iterations; iter++) {
-        integrate(%(state_name)s, %(aux_name)s, rk_order);
+        %(state_type)s i0 = integrate(%(state_name)s, %(aux_name)s, rk_order);
+        %(state_type)s i1 = integrate(i0, auxhelp1, rk_order);
+        
+        %(state_type)s differences = (i1 + i0*(-1.0)) / dt;
+        //%(state_type)s differences = (i0 + %(state_name)s*(-1.0)) / dt;
+        
+        %(state_name)s = %(state_type)s::diff_or_integrate(i0, differences);
+            
+        // TODO: Currently, differentiation is always first order forward
+        //       in time. Could also do higher order.
+        
+        // TODO: Integration should be delayed and not yet update the state, so differentiation
+        //       happens simultaneously.
 
         if(iter %% modulo_writer == 0)
             writer.write_line(%(state_name)s, %(aux_name)s, %(const_name)s);
@@ -283,7 +303,16 @@ bool contains(const std::vector<std::string>& haystack, const std::string& needl
     return std::find(haystack.begin(), haystack.end(), needle) != haystack.end();
 }
 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
 int main(int argc, char** argv) {
+    // cstd rand 
+    srand((unsigned int)time(NULL));
+
+
     // runtime-definable arguments and their values:
     
     map<string, int> numbers;
@@ -450,15 +479,19 @@ def to_cpp(state, number_precision=math.inf):
     #c_state = State({ var: map_heads(state[var], c_substitute) for var in state })
 
     # Extract int(..., timestep, initial_data) and rewrite reserved C keyword
+    # Also extract diff(..., timestep) and rewrite symbol
     timesteps = {}
     initial_data = {}
+    differentiate = {}
     def map_and_treat_integrals(var):
         if not var in vars.evolved: return state[var]
-        tail = state[var].tail
-        if not len(tail) >= 3: raise ValueError("int(...) requires at least int(value, dt, ic)")
+        assert state[var].head in ["int", "diff"], f"Expected int(...) or diff(...) but got {state}"
+        head, tail = state[var].head, state[var].tail
+        if not len(tail) >= 3: raise ValueError(f"{head}(...) requires at least {head}(value, dt, initial_value)")
         timesteps[var] = lookup_const(tail[-2])
         initial_data[var] = lookup_const(tail[-1])
-        return Symbol("Int", *tail[0:len(tail)-2])
+        differentiate[var] = head == "diff"
+        return Symbol(head.capitalize(), *tail[0:len(tail)-2])
     state = State({ var: map_and_treat_integrals(var) for var in state })
 
     
@@ -494,6 +527,16 @@ def to_cpp(state, number_precision=math.inf):
 
     initial_data = J(str(initial_data[var]) for var in vars.evolved)
     timestep_data = J(str(timesteps[var]) for var in vars.evolved)
+    
+    diff_or_integrate = C([ \
+        f"static {state_type} diff_or_integrate(const {state_type} &integrals, const {state_type} &difference) "+'{', \
+        C(f"{state_type} {state_name};"), \
+        C(f"{state_name}.{var} = {'difference' if differentiate[var] else 'integrals'}.{var};" for var in vars.evolved), \
+        C(f"return {state_name};"), \
+        "}"])
+    
+    # leftover/bookkeeping/better doing    
+    differentiate_data = J(str(differentiate[var]) for var in vars.evolved)
 
     #state_assignments = lambda lst: C(f"{v} = {state[v]};" for v in lst)) if lst else C("/* none */")
     state_assignments = lambda lhs_struct,lst: [f"{lhs_struct}.{var} = {state[var]};" for var in lst] if lst else ["/* none */"]
@@ -555,7 +598,7 @@ def to_cpp(state, number_precision=math.inf):
         "}"]
 
     dqdt_operators = C(C(make_operator(s,o,a)) for s,(o,a) in
-        itertools.product("*+", zip((state_type, "double"), (True,False))))
+        itertools.product("*+/", zip((state_type, "double"), (True,False,False))))
 
     output = cpp_template % {**locals(), **globals()}
     return output
@@ -660,6 +703,18 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
                     warnings.warn("Could not extract evolution variables automagically from command: "+stderr+", Stdout: "+stdout)
                 else:
                     fields_to_export = fields.strip().split("\n")
+                    
+            # FIXME: The recarray data type is not consistent! 
+            # That is, these three calls should make same results:
+            #
+            # data1 = run(arguments={'max_iterations': 100})
+            # data2 = run(arguments={'max_iterations': 100}, return_recarray=True)
+            # data3 = run(arguments={'max_iterations': 10000}, binary=True, return_recarray=True)
+            # 
+            # but do not,c.f.
+            # raw = run(arguments={'max_iterations': 10000}, binary=True)
+            #
+            # TODO: Fix it.
 
             if binary:
                 # note that this will give you a long array of numbers instead of a two-dimensional array.

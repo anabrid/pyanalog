@@ -90,7 +90,7 @@ from .ast import Symbol, State, symbols
 import types
 
 # Here is the list of well-known DDA functions:
-dda_functions = "funcgen const neg div int sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor".split()
+dda_functions = "funcgen const neg div int diff sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor logical_xor sign noise".split()
 dda_symbols = { k: Symbol(k) for k in dda_functions }
 
 # This allows for easy namespace access, but cannot be easily imported
@@ -120,6 +120,7 @@ cpp_impl = """
 A neg(double a) { return -a; }
 A div(double a, double b) { return a/b; }
 D Int(T... a) { return -(a + ...); } // int() is reserved in C
+D Diff(T... a) { return -(a + ...); } // diff() is not reserved in C, but this is symmetric to Int.
 D sum(T... a) { return -(a + ...); }
 D mult(T... a) { return (a * ...); }
 A dead_upper(double a, double b) { return a > b ? (a-b) : 0; }
@@ -134,6 +135,10 @@ A ge(double a, double b, double c, double d) { return a >= b ? c : d; }
 A abs(double a) { return a < 0 ? -a : a; } // abs(int) part of cstdlib
 // A exp(double a) is part of <cmath>
 A floor(double a) { return (int)(a); } // also part of cmath since c++11
+A logical_xor(double a, double b) { return a != b ? 1 : 0; } // attention with floats!
+A sign(double a) { return a >= 0 ? 1 : -1; } // should be part of cstdlib...
+extern "C" int rand(); // definiing from cstdlib...
+double noise(double x) { return (double)rand()/(double)(RAND_MAX) - 0.5; } // Calling cstdlib!
 """
 
 # see also scipy.py for a pure-python implementation

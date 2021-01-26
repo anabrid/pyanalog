@@ -42,6 +42,7 @@ represents a (traditional) DDA file. From a python perspective, a
 
 # all "batteries included":
 import os, sys, pprint, collections, types, warnings
+identity = lambda x:x
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
 
@@ -251,7 +252,7 @@ class Symbol:
         """
         return Symbol(mapping(self.head), *[(el.map_heads(mapping) if is_symbol(el) else el) for el in self.tail])
 
-    def map_variables(self, mapping, returns_symbol=False):
+    def map_variables(self, mapping, /, returns_symbol=False):
         """
         Calls a mapping function on all variables within the (nested) subexpressions.
         The mapping is effectively carried out on the head (ie. maps strings). This
@@ -285,11 +286,10 @@ class Symbol:
         ...
         TypeError: Trying to initialize Symbol y(123) but head y(123) is a Symbol, not a String.
         """
-        SymbId = lambda x:x if returns_symbol else Symbol
-        return SymbId(mapping(self.head)) if self.is_variable() else \
+        return (identity if returns_symbol else Symbol)(mapping(self.head)) if self.is_variable() else \
             Symbol(self.head, *[ (el.map_variables(mapping, returns_symbol=returns_symbol) if is_symbol(el) else el) for el in self.tail ])
 
-    def map_tails(self, mapping, map_root=True):
+    def map_tails(self, mapping, /, map_root=False):
         """
         Calls a mapping function on all tails in all (nested) subexpressions.
         The mapping is carried out on the tail symbols (ie. maps Symbols).
@@ -349,7 +349,7 @@ class Symbol:
         return mapping(r) if map_root else r
 
     
-    def map_terms(self, mapping, returns_symbol=False):
+    def map_terms(self, mapping, /, returns_symbol=False):
         """
         Calls a mapping function on all terms within the (nested) subexpressions.
         The mapping is effectively carried out on the term head (ie. maps strings).
@@ -888,7 +888,7 @@ class State(collections.UserDict):
         
         # Thanks to named computing elements, can find all int(...) expressions
         # without searching, since they must come first.
-        vars.evolved  = sorted(filter(lambda var: lin[var].head == "int",   lin))
+        vars.evolved  = sorted(filter(lambda var: lin[var].head in ["int", "diff"],   lin))
         vars.explicit_constants = sorted(filter(lambda var: lin[var].head == "const", lin))
         
         # Then compute ALL aux variables BEFORE computing dqdt.
