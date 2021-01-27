@@ -230,8 +230,8 @@ struct csv_writer {
 } writer;
 
 %(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order) {
-    %(state_type)s %(state_name)s = initial;
-    %(aux_type)s %(aux_name)s, auxhelp1;
+    %(state_type)s %(state_name)s = initial, old = initial;
+    %(aux_type)s %(aux_name)s;
         
     if(debug) {
 #ifdef _GNU_SOURCE
@@ -252,18 +252,16 @@ struct csv_writer {
     
     for(int iter = 0; iter < max_iterations; iter++) {
         %(state_type)s integrated = integrate(%(state_name)s, %(aux_name)s, rk_order);
-        %(state_type)s curdqdt; f(%(state_name)s, curdqdt, auxhelp1);
         
-        //%(state_type)s differences = (i1 + i0*(-1.0)) / dt;
-        %(state_type)s differences = (integrated + %(state_name)s*(-1.0)) / dt;
+        %(aux_type)s dummy; %(state_type)s dqdt;
+        f(%(state_name)s, dqdt, dummy); // etxra round for dqdt only neccessary for first timestep
+        %(state_type)s differences = (dqdt + old*(-1.0)) / dt;
         
+        old = dqdt;
         %(state_name)s = %(state_type)s::diff_or_integrate(integrated, differences);
             
         // TODO: Currently, differentiation is always first order forward
         //       in time. Could also do higher order.
-        
-        // TODO: Integration should be delayed and not yet update the state, so differentiation
-        //       happens simultaneously.
 
         if(iter %% modulo_writer == 0)
             writer.write_line(%(state_name)s, %(aux_name)s, %(const_name)s);
