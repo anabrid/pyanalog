@@ -251,13 +251,13 @@ struct csv_writer {
     }
     
     for(int iter = 0; iter < max_iterations; iter++) {
-        %(state_type)s i0 = integrate(%(state_name)s, %(aux_name)s, rk_order);
-        %(state_type)s i1 = integrate(i0, auxhelp1, rk_order);
+        %(state_type)s integrated = integrate(%(state_name)s, %(aux_name)s, rk_order);
+        %(state_type)s curdqdt; f(%(state_name)s, curdqdt, auxhelp1);
         
-        %(state_type)s differences = (i1 + i0*(-1.0)) / dt;
-        //%(state_type)s differences = (i0 + %(state_name)s*(-1.0)) / dt;
+        //%(state_type)s differences = (i1 + i0*(-1.0)) / dt;
+        %(state_type)s differences = (integrated + %(state_name)s*(-1.0)) / dt;
         
-        %(state_name)s = %(state_type)s::diff_or_integrate(i0, differences);
+        %(state_name)s = %(state_type)s::diff_or_integrate(integrated, differences);
             
         // TODO: Currently, differentiation is always first order forward
         //       in time. Could also do higher order.
@@ -703,18 +703,6 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
                     warnings.warn("Could not extract evolution variables automagically from command: "+stderr+", Stdout: "+stdout)
                 else:
                     fields_to_export = fields.strip().split("\n")
-                    
-            # FIXME: The recarray data type is not consistent! 
-            # That is, these three calls should make same results:
-            #
-            # data1 = run(arguments={'max_iterations': 100})
-            # data2 = run(arguments={'max_iterations': 100}, return_recarray=True)
-            # data3 = run(arguments={'max_iterations': 10000}, binary=True, return_recarray=True)
-            # 
-            # but do not,c.f.
-            # raw = run(arguments={'max_iterations': 10000}, binary=True)
-            #
-            # TODO: Fix it.
 
             if binary:
                 # note that this will give you a long array of numbers instead of a two-dimensional array.
@@ -725,12 +713,16 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
                     data = data.reshape(int(N), len(fields_to_export))
                     if return_recarray:
                         dt = [ (f, data.dtype) for f in fields_to_export ]
-                        data = data.view(dt)
+                        data = data.view(dt)  # this will be of shape (N,1)
+                        data = data[:,0]      # strip this unneccessary extra axis!
                 else:
                     warnings.warn("Returning one-dimensional numpy array instead of a structured two-dimensional array. Pass fields_to_export=['foo','bar','baz'] in order to recieve two-dimensional array.")
                     pass
             else:
                 from io import StringIO
-                data = np.genfromtxt(StringIO(stdout), names=True)
+                if return_recarray:
+                    data = np.genfromtxt(StringIO(stdout), names=True)
+                else:
+                    data = np.genfromtxt(StringIO(stdout), skip_header=1)
             return data
         return stdout
