@@ -90,7 +90,7 @@ from .ast import Symbol, State, symbols
 import types
 
 # Here is the list of well-known DDA functions:
-dda_functions = "funcgen const neg div int diff sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor logical_xor sign noise".split()
+dda_functions = "funcgen const neg div int diff sum mult dead_upper dead_lower min max lt le gt ge sqrt abs exp floor logical_xor sign noise arcsin".split()
 dda_symbols = { k: Symbol(k) for k in dda_functions }
 
 # This allows for easy namespace access, but cannot be easily imported
@@ -139,6 +139,7 @@ A logical_xor(double a, double b) { return a != b ? 1 : 0; } // attention with f
 A sign(double a) { return a >= 0 ? 1 : -1; } // should be part of cstdlib...
 extern "C" int rand(); // definiing from cstdlib...
 double noise(double x) { return (double)rand()/(double)(RAND_MAX) - 0.5; } // Calling cstdlib!
+//double arcsin(double a) { return asin(a); }
 """
 
 # see also scipy.py for a pure-python implementation

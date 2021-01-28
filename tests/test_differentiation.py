@@ -39,7 +39,7 @@ import dda.cpp_exporter as cpp
 # postprocessing:
 import numpy as np
 
-diff_in, diff_out, int_out  = symbols("diff_in, diff_out, int_out")
+diff_in, diff_out, int_diff  = symbols("diff_in, diff_out, int_diff")
 dt = 0.01
 t_final = 5
 
@@ -61,7 +61,7 @@ def plot_simulation(time, data):
     plt.ion(); plt.clf()
 
     #cols = data.dtype.names
-    cols = "diff_in diff_out".split()
+    cols = "diff_in diff_out int_diff".split()
 
     for n in cols: plt.plot(time, data[n], label=n)
     plt.legend()
@@ -71,12 +71,14 @@ def setup_constant():
     s = State()
     #s[diff_in]   = dda.const(1)  # TODO: Such an expression does no more work!!
     s[diff_out]  = dda.diff(1, dt, 0)
+    s[int_diff]  = dda.int(diff_out, dt, 1) # integrates over 0, should do it.
     return s
 
 def setup_polynomial():
     s = State()
     s[diff_in]        = dda.mult(2,dda.int(dda.int(1, dt, 0), dt, 0))   # diff_in = 2*int(1) = t^2
-    s[diff_out]       = dda.neg(dda.diff(diff_in, dt,  0))  # 2*t
+    s[diff_out]       = dda.neg(dda.diff(diff_in, dt, 0))  # 2*t
+    s[int_diff]       = dda.neg(dda.int(diff_out, dt, 0)) # t^2 but with increasing deviations due to dt
     return s
 
 def test_polynomial_diff():
@@ -107,9 +109,8 @@ def test_sinusodial_diff():
 
 
 # interactive testing goes like:
-"""
+
 from pylab import *
-s = setup_sinusodial()
+s = setup_polynomial()
 t,d = run(s)
 plot_simulation(t,d)
-"""

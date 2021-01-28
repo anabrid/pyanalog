@@ -68,7 +68,7 @@ def run_simulation():
         'modulo_write': 1,
         "always_compute_aux_before_printing": 1,
         "write_initial_conditions": 0,
-    })
+    }, return_recarray=True)
 
 def test_run_simulation():
     output = run_simulation()

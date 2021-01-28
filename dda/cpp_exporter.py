@@ -229,7 +229,7 @@ struct csv_writer {
     }
 } writer;
 
-%(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order) {
+%(state_type)s simulate_dda(%(state_type)s initial, int max_iterations, int modulo_writer, int rk_order, int modulo_progress) {
     %(state_type)s %(state_name)s = initial, old = initial;
     %(aux_type)s %(aux_name)s;
         
@@ -265,6 +265,11 @@ struct csv_writer {
 
         if(iter %% modulo_writer == 0)
             writer.write_line(%(state_name)s, %(aux_name)s, %(const_name)s);
+            
+        if(modulo_progress >= 0 && iter %% modulo_progress == 0) {
+            fprintf(stderr, "%%.0d%%%%... ", 100*iter / max_iterations );
+            fflush(stderr);
+        }
     }
     
     return %(state_name)s;
@@ -318,6 +323,7 @@ int main(int argc, char** argv) {
     numbers["max_iterations"] = 100;
     numbers["rk_order"] = 1;
     numbers["number_precision"] = 5;
+    numbers["modulo_progress"] = -1;
     
     map<string, bool> flags;
     flags["debug"] = false;
@@ -396,7 +402,7 @@ int main(int argc, char** argv) {
     writer.always_compute_aux_before_printing = flags["always_compute_aux_before_printing"];
     writer.binary_output = flags["binary_output"];
     
-    simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"]);
+    simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"], numbers["modulo_progress"]);
 }
 
 """
@@ -665,29 +671,24 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
         import subprocess # internals
         # Popen: Python 3.6 does not yet have the text keyword. Newer Pythons have.
         # We do a decode("utf-8") later for the same purpose.
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # text=True)        
-        stdout, stderr = b"", b""
-        # instead of proc.wait(), which could deadlock when the stdout buffer is full,
-        # do synchronous read a loop until the proc has finished:
-        while proc.poll() == None:
-            stdout += proc.stdout.read()
-            stderr += proc.stderr.read()
-        stdout += proc.stdout.read()
-        stderr += proc.stderr.read()
-        #stdout, stderr = stdout.getvalue(), stderr.getvalue()
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)#, stderr=subprocess.PIPE) # text=True)        
+        # pass stderr to user for progress bar.
+        (stdout,stderr) = proc.communicate()
+        #stderr += proc.stderr.read()
         if decode:
-            stdout, stderr = stdout.decode("utf-8"), stderr.decode("utf-8")
-        return proc, stdout, stderr
+            stdout = stdout.decode("utf-8")
+            #stderr = stderr.decode("utf-8")
+        return proc, stdout#, stderr
     
     if return_recarray: return_ndarray = True
     if binary: arguments["binary_output"] = 1
     command_with_args = [command] + [ f"--{k}={v}" for k,v in arguments.items() ] + fields_to_export
     print(f"Running: {' '.join(command_with_args)}")
-    proc, stdout, stderr = runproc(command_with_args, decode=not binary)
+    proc, stdout = runproc(command_with_args, decode=not binary)
 
     if proc.returncode:
         print(stdout)
-        print("STDERR:", stderr)
+        #print("STDERR:", stderr)
         raise ValueError(f"Could not execute '{command_with_args}'. Please run on the command line for inspection. Probably use gdb.")
     else:
         if return_ndarray:
@@ -698,7 +699,8 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
                 # in order to know which fields have been read, slurp all variables
                 fproc, fields, ferr = runproc([command, "--list_all_variables"], decode=True)
                 if fproc.returncode:
-                    warnings.warn("Could not extract evolution variables automagically from command: "+stderr+", Stdout: "+stdout)
+                    #warnings.warn("Could not extract evolution variables automagically from command: "+stderr+", Stdout: "+stdout)
+                    warnings.warn("Could not extract evolution variables automagically from command (see stderr above). Stdout: "+stdout)
                 else:
                     fields_to_export = fields.strip().split("\n")
 
