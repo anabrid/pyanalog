@@ -18,10 +18,10 @@
 import numpy as np
 from dda import State, symbols, dda
 
-ddy, y, mdy, my, lu, ld = symbols("ddy, y, mdy, my, lu, ld")
+ddy, y, mdy, my, lu, ld, y2, y2ohne = symbols("ddy, y, mdy, my, lu, ld, y2, y2ohne")
 s = State()
-dt = 0.05
-t_final = 100
+dt = 0.1
+t_final = 50
 
 err = 0.5
 
@@ -35,9 +35,19 @@ s[mdy] = dda.int(my, dt, ic_mdy) # my = ddy
 s[lu]  = dda.mult(1, dda.dead_upper(y, +1))
 s[ld]  = dda.mult(1, dda.dead_lower(y, -1))
 
+# count zero crossings:
+ys, yd, yi = symbols("ys, yd, yi")
+s[ys]  = dda.sign(y)
+s[yd]  = dda.max(0, dda.min(1, dda.diff(ys, dt, 0)))
+s[yi]  = dda.neg(dda.int(dda.mult(yd,1/dt), dt, 0))
+
+# Frequenzverdopplung ohne linearem Offset
+s[y2]  = dda.mult(y,y)
+s[y2ohne] = dda.diff(y2, dt, 0)
+
 from dda.cpp_exporter import compile, run
 compile(s.export(to="C"))
-data = run(arguments={'max_iterations': t_final / dt, "rk_order": 4} )# return_recarray=True)
+data = run(arguments={'max_iterations': t_final / dt, "rk_order": 1}, return_recarray=True)
 xtime = np.arange(0, t_final, dt)
 assert len(data) == len(xtime)
 
@@ -45,7 +55,7 @@ from matplotlib.pylab import *
 ion(); clf()
 
 #cols = data.dtype.names
-cols = "y mdy".split()
+cols = "y y2 y2ohne".split()
 
-for n in cols: plot(xtime, data[n], label=n)
+for n in cols: plot(xtime, data[n], "o-", label=n)
 legend()

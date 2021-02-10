@@ -113,30 +113,46 @@ rimstate = state.map_tails(partial_to_rim)
 nSupport = 10
 Support = Symbol("Support") # Support(name, idx0, idx1, ... idxN)
 support_name = lambda name, idx: f"{name}_n{'_'.join(map(str,idx))}"
+make_support = lambda var, *idx: Support(Symbol(var), *idx)
 # Create a state for the particular nodal idx \in [0, nSupport]^nDim, meaning len(idx)==nDim
-support_state_for = lambda idx: {Support(var,*idx): val.map_variables(lambda rhs: Support(rhs,*idx), returns_symbol=True) for var,val in state.items()}
+support_state_for = lambda idx: {make_support(var,*idx): val.map_variables(lambda rhs: make_support(rhs,*idx), returns_symbol=True) for var,val in state.items()}
 support_state = join_list_of_maps(support_state_for(i) for i in ndindex(*[nSupport]*nDim))
 
 # We now have a large dict (actually not a state because it doesn't allow terms as keys) in support_state
 # and can resolve the Partials next.
 
 def partial_to_support(partial_smbl):
-    if partial_smbl.head != Partial.head: return partial_smbl.map_terms(partial_to_support)
+    if partial_smbl.head != Partial.head: return partial_smbl.map_tails(partial_to_support)
     partial_body, direction = partial_smbl.tail
     def target(idx, offset, direction):
-        target = list(idx)
-        target[direction] += offset
-        return tuple(target)
+        t = list(idx)
+        t[direction] += offset
+        print(f"    Computing from {idx} + {offset} in direction {direction} = {t}")
+        return tuple(t)
+    
+    ### TODO: This is dumb as fuck. We need wildcard matching.
+    ###  Something such as map( Support(Symbol(str),builtin.int), mapper)
+    ###  or in this case as simple as map_deep(Support, mapper).
+
     def neighbour(offset):
+        print(f"Working at {partial_body}...")
         def map_support(support_smbl):
-            if support_smbl.head != Support.head: return support_smbl.map_terms(map_support)
+            if support_smbl.head != Support.head:
+                print(f"  Ascending into {support_smbl}...")
+                r = support_smbl.map_tails(map_support)
+                print(f"  ... resolved {support_smbl} -> {r}")
+                return r
             var, *idx = support_smbl.tail
-            return Support(var, *target(idx, offset, direction))
-        return partial_body.map_terms(map_support)
+            r = Support(var, *target(idx, offset, direction))
+            print(f"  ...mapped {support_smbl} -> {r}")
+            return r
+        r = partial_body.map_tails(map_support)
+        print(f"... {partial_body}: neighbour({offset}) = {r}")
+        return r
     
     assert nFD == 2, "only nFD=2 implemented so far"
     return div(sum(neighbour(-1), neg(neighbour(+1)), dx[direction]))
-resolved_supports = { var: val.map_terms(partial_to_support) for var,val in support_state.items() }
+resolved_partials = { var: val.map_tails(partial_to_support) for var,val in support_state.items() }
 
 """
 

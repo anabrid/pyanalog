@@ -697,7 +697,7 @@ def run(command="./a.out", return_ndarray=True, return_recarray=False, arguments
             
             if not fields_to_export:
                 # in order to know which fields have been read, slurp all variables
-                fproc, fields, ferr = runproc([command, "--list_all_variables"], decode=True)
+                fproc, fields = runproc([command, "--list_all_variables"], decode=True)
                 if fproc.returncode:
                     #warnings.warn("Could not extract evolution variables automagically from command: "+stderr+", Stdout: "+stdout)
                     warnings.warn("Could not extract evolution variables automagically from command (see stderr above). Stdout: "+stdout)
