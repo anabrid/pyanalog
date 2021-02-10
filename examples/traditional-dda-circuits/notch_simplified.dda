@@ -1,0 +1,54 @@
+#  Simplified biochemistry example: Scale factors (just a proof of concept):
+#
+#   \lambda_{c_n}=100
+#   \lambda_{c_d}=100
+#   \lambda_{c_nr}=100
+#   \lambda_{c_rd}=100
+#   \lambda_{c_nrd}=10^4
+
+
+dt = const(.01)
+kp1 = const(.5)
+km1 = const(.5)
+kp2 = const(.5)
+km2 = const(.5)
+kp3 = const(.5)
+km3 = const(.5)
+kubi = const(.5)
+
+cn_ic = const(.85)
+cd_ic = const(1)
+
+kp1cncr_minus = mult(kp1, cn_minus)
+kp1cncr       = neg(kp1cncr_minus)
+
+km1cnr        = mult(km1, cnr)
+km1cnr_minus   = neg(km1cnr)
+
+kp2cdcnr_minus = mult(kp2, mult(mult(.1, cd_minus), mult(.1, cnr)))
+kp2cnrcd_minus = mult(kp2, mult(cnr_minus, mult(.1, cd)))
+kp2cnrcd       = neg(kp2cnrcd_minus)
+
+km2cnrd        = mult(km2, cnrd)
+km2cnrd_minus = neg(km2cnrd)
+
+kp3crcd_minus = mult(kp3, cd_minus)
+kp3crcd       = neg(kp3crcd_minus)
+
+km3crd        = mult(km3, crd)
+km3crd_minus = neg(km3crd)
+
+kubicnr_minus  = mult(kubi, cnr_minus)
+
+cn = neg(cn_minus)
+#cr       = const(1)
+cd       = neg(cd_minus)
+cnr       = neg(cnr_minus)
+crd       = neg(crd_minus)
+cnrd       = neg(cnrd_minus)
+
+cn_minus = int(kp1cncr_minus, km1cnr, dt, cn_ic)
+cd_minus = int(kp2cdcnr_minus, kp3crcd_minus, mult(.01, km2cnrd), km3crd, dt, cd_ic)
+cnr_minus = int(kp1cncr, mult(.1, kp2cnrcd_minus), kubicnr_minus, mult(.01, km2cnrd), km1cnr_minus, dt, 0)
+crd_minus = int(km3crd_minus, kp3crcd, dt, 0)
+cnrd_minus = int(km2cnrd_minus, mult(10, kp2cnrcd), dt, 0)
