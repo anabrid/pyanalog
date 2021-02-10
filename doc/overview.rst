@@ -57,3 +57,10 @@ by the following three python modules:
   
 You can read more about the goals of this software at the page
 :ref:`dda-rationale`. 
+
+.. note::
+
+   Currently, the DDA code is by far the biggest part of the pyanalog package.
+   The Hybrid Controller client is also usable. The FPAA part is working on its
+   own and there are interfaces to the PyHyCon, however the interface between
+   DDA and FPAA is basically nonexistent in the moment.

@@ -74,11 +74,14 @@ they are given in C-like notation ``x ? y : z`` which evaluates to ``if(x) then 
 * ``gt(a,b,c,d) = lt(b,a,c,d)``
 * ``ge(a,b,c,d) = le(b,a,c,d)``
 * ``dead_lower(a,b) = (a<b) ? (a-b) : 0 = gt(a,b,a-b,0)``
-* ``dead_upper(a,b) = (a>b) ? (a-b) : 0 = lt(b,a,a-b,0) ``
+* ``dead_upper(a,b) = (a>b) ? (a-b) : 0 = lt(b,a,a-b,0)``
 * ``min(a,b) = (a<b) ? a : b = lt(a,b,a,b)``
 * ``max(a,b) = (a>b) ? a : b = gt(a,b,a,b)``
 * ``abs(a) = (a<0) ? -a : a  = lt(a,0,-a,a)``
 * ``floor(a) = (int)a``  rounds ``a`` to the next lower integer.
+
+Note that this is only a subset of the overall computing elements defined. It is easy
+to introduce new computing elements, they are defined in the :mod:`dda.computing_elements`.
 
 Linearization of a circuit
 --------------------------

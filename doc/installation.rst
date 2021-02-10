@@ -32,6 +32,16 @@ right now.
     you have to contact the authors/maintainers at http://www.anabrid.com
     (refered to as *the analogians* in the following).
 
+.. note::
+
+   We try to keep the `master branch <https://github.com/anabrid/pyanalog/commits/master>`_
+   in a working condition. If things do not work, you might want to checkout the last
+   working commit in the master. You can recognize it 
+   `at the github commit history <<https://github.com/anabrid/pyanalog/commits/master>`_
+   where there is a green checkmark at the tests (and not a red crossmark).
+   I promise there will be releases/versions/tags soon :-)
+
+    
 Recommended way of installation (developer machine setup)
 ---------------------------------------------------------
 
@@ -80,6 +90,16 @@ flag.
 
 Note that by using this installation method, you cannot easily make edits to the pyanalog
 code itself. This is perfectly fine if you only want to use the library.
+
+.. note::
+
+   Since the overall code is still subject to heavy changes, you should also opt in
+   for the developer machine setup installation method if you do not indend to work
+   on the PyAnalog code. This is for easier updating or changing versions with ``git``
+   without having to perform a fresh installation. Basically, with the development
+   installation way, you can change/update/downgrade the PyAnalog code and immediately
+   profit in your applications.
+
 
 Other ways of installation/usage
 --------------------------------

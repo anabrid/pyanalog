@@ -1,34 +1,40 @@
 Pyanalog: A pythonic analog computer demonstrator interface
 ===========================================================
 
-`pyanalog` is a `Python3 <https://www.python.org/>`_ package and 
-demonstrator code for a software stack for analog computers developers.
-It can
+``pyanalog`` is a `Python3 <https://www.python.org/>`_ package and 
+demonstrator/research code for a software stack for analog computers.
+It empowers users to
 
 * manipulate ordinary differential equations in a way suitable for
   procession with the exemplary
   `Analog Paradigm Model-1 <http://analogparadigm.com/>`_
-  analog computer.
-* simulate circuits and 
-  :ref:`generate C++ code for them <cpp-codegen>`.
+  analog computer or similar *high-level* architectures in terms of
+  OpAmp-Level circuit description (*not* SPICE-level circuit description).
+* simulate abstract computing circuits made of elements such as
+  *summers, integrators, differentiator and multipliers*. The heart of the code is
+  a :ref:`custom ODE solver (based on C++ codegeneration) <cpp-codegen>`,
+  but also interfaces to :ref:`SciPy <dda-scipy>` and :ref:`SymPy <cas>`
+  solvers exist. Notably, the C++ solver can also solve integro-differential
+  equations.
 * generate and manipulate
   :ref:`netlists and VHDL-like circuit descriptions <fpaa>`
 * compile against machine architectures on a macrocell-level,
   set digital potentiometer arrays, cross bar switches, digital switches,
   etc.
 * :ref:`interface a Model-1 hybrid controller <hycon>` in order to run
-  a program, steer the operation and gain output data.
+  a program, steer the operation, gain and visualize/postprocess output data.
   
 The codes are supposed to work well in the
 `Scientific Python <https://www.scipy.org/>`_ ecosystem. The target 
 audience are clearly software engineers and scientists. The user
 interface is either command line (bash or python shell) or scripting
-(python or C/YAML-like domain specific languages). This code can
-interface with remote analog computers (AAAS - analog computing
-as a service).
+(Python or C/YAML-like domain specific languages). This code can
+interface with remote analog computers (AAAS – *analog computing
+as a service*).
 
-The `pyanalog` code is open-source,  *currently work in progress* and
-authored by `Anabrid GmbH <http://www.anabrid.com>`_. The code is currently
+The ``pyanalog`` code is open-source and a *research code which is worked
+actively on*, ie. it is "work in progress". It is authored 
+`Anabrid GmbH <http://www.anabrid.com>`_. The code is currently
 dual-licensed by `GPL-3 <https://github.com/anabrid/pyanalog/blob/master/LICENSE.GPL3>`_
 and `a proprietary/commercial use license <https://github.com/anabrid/pyanalog/blob/master/LICENSE.ANABRID>`_.
 See http://www.anabrid.com/licensing for further details.
@@ -83,15 +89,14 @@ just go to the ``doc`` directory and type ``make html`` or ``make pdf`` to
 generate the docs locally. If you have a mixed Python2/Python3 system, call
 ``make html SPHINXBUILD="python3 -msphinx"`` to ensure using Python3.
 
-Since the code is currently developed in a private repository, we do not yet make
-use of services such as `ReadTheDocs <http://readthedocs.io/>`_ but generate and
-upload the documentation on code change to a private website using Gitlab-CI.
-You find these automatically built files at:
+This documentation is both hosted at  `ReadTheDocs <http://readthedocs.io/>`_
+as well as an `Anabrid Dev Server <https://www.anabrid.dev/>`_.  You can find
+the docs at
 
-- http://ai.svenk.org/html/ for HTML pages
-- http://ai.svenk.org/dirhtml/ for HTML pages with nicer links
-- http://ai.svenk.org/text/ for text files ;-)
-- http://ai.svenk.org/latex/pydda.pdf for a PDF version
+- https://pyanalog.readthedocs.io/en/latest/
+- https://www.anabrid.dev/dirhtml/ a mirror
+- https://www.anabrid.dev/text/ for text files ;-)
+- https://www.anabrid.dev/latex/pydda.pdf for a PDF version
 
 
 Indices and tables

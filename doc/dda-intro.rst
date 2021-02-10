@@ -30,7 +30,8 @@ details on the *traditional* DDA file format.
 
 The module can also be used from the command line as a utility. The
 behaviour is similar to the ``simulate.pl`` and ``dda2c.pl`` utilities but also
-covers a few more features. Usage example:
+covers a few more features. Usage example (implementation
+provided by :meth:`dsl.cli()` ):
 
 ::
 
@@ -50,10 +51,47 @@ covers a few more features. Usage example:
 
     A Command Line Interface (CLI) for PyDDA...
 
-See :meth:`dsl.cli()` for the implementation/further details.
+Here is a full bash script which demonstrates how to use PyDDA as a drop-in replacement
+for the traditional Perl-based DDA code. It allows using the PyDDA C++ code generator
+without writing a single line of Python:
+
+::
+
+    #!/usr/bin/bash
+    
+    # given the DDA file "notch_simplified.dda", we simulate the system
+    # for 2000 timesteps and plot the time evolution of the fields "cn", "cd" and "cnr"
+    # which are part of the DDA file (in terms of "cn = int(...)")
+
+    python -m dda notch_simplified.dda C --output notch_simplified.cc
+    g++ --std=c++17  notch_simplified.cc -onotch_simplified.exe
+
+    ./notch_simplified.exe --max_iterations=2000 --skip_header=1  cn cd cnr  > scratch.dat
+
+    cat <<GNUPLOT_FILE > gnuplot.dat
+
+    set terminal pdf
+    set output "notch_simplified_gnuplot.pdf"
+    set key autotitle columnheader
+    set title "Notch simplified (with PyDDA/Gnuplot)"
+
+    plot "scratch.dat" using 1 with lines title "cn", \
+         "scratch.dat" using 2 with lines title "cd", \
+         "scratch.dat" using 3 with lines title "cnr"
+
+    GNUPLOT_FILE
+
+    gnuplot gnuplot.dat
+    open notch_simplified_gnuplot.pdf
+
+
 
 Known Bugs and limitations
 --------------------------
 
-Please see the issue list at https://lab.analogparadigm.com/software/pyanalog/-/issues
-for a list of bugs.
+Please see the issue list at https://github.com/anabrid/pyanalog/issues for
+a list of bugs.
+
+We also have an internal bug tracker at
+https://lab.analogparadigm.com/software/pyanalog/-/issues
+which is subject to be merged into the public one.
