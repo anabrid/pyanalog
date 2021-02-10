@@ -197,12 +197,12 @@ void compute_aux(%(state_type)s const& %(state_name)s, %(aux_type)s &%(aux_name)
 
 struct csv_writer {
     std::vector<std::string> query_variables;
-    bool write_initial_conditions, always_compute_aux_before_printing, binary_output;
+    bool write_initial_conditions, always_compute_aux_before_printing, binary_output, skip_header;
 
     const char* sep(size_t i) const { return (i!=query_variables.size() ? "\\t" : "\\n"); }
     
     void write_header() const {
-        if(binary_output) return;
+        if(binary_output || skip_header) return;
         for(size_t i=0; i<query_variables.size();)
             std::cout << query_variables[i++] << sep(i);
     }
@@ -331,6 +331,7 @@ int main(int argc, char** argv) {
     flags["write_initial_conditions"] = false;
     flags["always_compute_aux_before_printing"] = true;
     flags["binary_output"] = false;
+    flags["skip_header"] = false;
 
     // Our primitive argument processing:
     vector<string> args(argv + 1, argv + argc);
@@ -401,6 +402,7 @@ int main(int argc, char** argv) {
     writer.write_initial_conditions = flags["write_initial_conditions"];
     writer.always_compute_aux_before_printing = flags["always_compute_aux_before_printing"];
     writer.binary_output = flags["binary_output"];
+    writer.skip_header = flags["skip_header"];
     
     simulate_dda(initial_data, numbers["max_iterations"], numbers["modulo_write"], numbers["rk_order"], numbers["modulo_progress"]);
 }
