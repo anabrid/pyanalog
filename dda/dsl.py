@@ -173,6 +173,16 @@ def read_traditional_dda(content, return_ordered_dict=False):
     mapping = collections.OrderedDict(result)
     return mapping if return_ordered_dict else dda.State(mapping)
 
+def read_traditional_dda_file(filename, **kwargs):
+    """
+    Syntactic sugar for :meth:`read_traditional_dda`, so users can directly pass a filename
+    if the have their DDA code in a file.
+    """
+    with open(filename, "r") as fh:
+        content = fh.read()
+    return read_traditional_dda(content, **kwargs)
+
+
 def cli_exporter():
     """
     A Command Line Interface (CLI) for PyDDA.

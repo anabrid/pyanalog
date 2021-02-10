@@ -59,10 +59,12 @@ def export(state, to, **kw):
     """
     import re
     from .cpp_exporter import to_cpp
+    from .cpp_exporter import Solver as CppSolver
     from .dsl import to_traditional_dda
     from .sympy import to_sympy, to_latex
     from .scipy import to_scipy
     exporters = {
+        "CppSolver": CppSolver,
         r"c(\+\+|pp)?": to_cpp,
         "dda": to_traditional_dda,
         "sympy": to_sympy,
@@ -145,3 +147,4 @@ def clean(thing, target="C"):
 from .ast import Symbol, State, BreveState, symbols, is_symbol
 from .computing_elements import dda, dda_functions, dda_symbols
 from .sympy import to_sympy
+from .dsl import read_traditional_dda, to_traditional_dda, read_traditional_dda_file
