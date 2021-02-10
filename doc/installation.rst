@@ -3,21 +3,34 @@
 Obtaining and installing PyAnalog
 =================================
 
-PyAnalog can be used without dependencies. Only make sure you use a *recent* Python 3
-installation. We use `f-strings`, so at least Python 3.6 is required.
+PyAnalog can be used on a "vanilla" Python installation without any dependencies.
+Only make sure you use a *recent* Python 3 installation:
+We use ``f-strings``, so at least Python 3.6 is required.
 
-For more advanced usages, we recommend at least the following dependencies:
+In order to use some of the advanced features, we recommend to install the following
+Python packages:
 
-* `PyYAML <https://pyyaml.org/>`_, for a good experience of PyFPAA
-* `SymPy <https://www.sympy.org/>`_, for more features of PyDDA
+* `PyYAML <https://pyyaml.org/>`_, for the intended usage of :ref:`PyFPAA <fpaa>`
+* `SymPy <https://www.sympy.org/>`_, for the :ref:`SymPy/Computer Algebra interface <cas>` of PyDDA
+* `SciPy <http://www.scipy.org/>`_, for the :ref:`SciPy interface <scipy>` of PyDDA.
+  Furthermore, some additioanl postprocessing tools, as well as unit tests and examples of PyDDA
+  require `NumPy <https://numpy.org/>`_ and `Matplotlib <https://matplotlib.org/>`_ to be installed.
 
 Obtaining the code
 ------------------
 
-The code is currently developed in a *locked-down Gitlab installation* at
-https://lab.analogparadigm.com/software/pyanalog. In order to access this repository,
-you have to contact the authors/maintainers at http://www.anabrid.com
-(refered to as *the analogians* in the following).
+The PyAnalog code is public available at https://github.com/anabrid/pyanalog.
+Furthermore, we maintain an in-house (private) mirror at 
+https://lab.analogparadigm.com/software/pyanalog. You don't need access to the later repository
+right now.
+
+..
+    TODO: In our internal Gitlab, we currently have Continous Integration (CI) and also
+    a bug tracker. This should be improved.
+    
+    In order to access this repository,
+    you have to contact the authors/maintainers at http://www.anabrid.com
+    (refered to as *the analogians* in the following).
 
 Recommended way of installation (developer machine setup)
 ---------------------------------------------------------
@@ -30,12 +43,14 @@ on your developer machine using *setuptools* by using the
 .. code-block:: bash
 
     $ cd prefered/directory/for/code/of/the/analogians
-    $ git clone git@lab.analogparadigm.com:software/pyanalog.git
+    $ git clone https://github.com/anabrid/pyanalog.git # this works always
+    $ git clone git@github.com:anabrid/pyanalog.git     # use this if you are experienced at github
     $ cd pyanalog
     $ python3 setup.py develop --user
 
 After these steps you are ready to use import the pyanalog package modules from any
-Python3 script anywhere on your system, but only *as your current user*:
+Python3 script anywhere on your system, but only *as your current user*. The installation
+is successful when you can for instance ``import dda`` somewhere:
 
 .. code-block::
 
@@ -55,7 +70,7 @@ in the repository root directory after cloning or without any cloning by just ru
 
 .. code-block:: bash
 
-   $ pip install git+ssh://git@lab.analogparadigm.com:software/pyanalog.git
+   $ pip install git+ssh://git@github.com:anabrid/pyanalog.git
 
 This will automatically install all the dependencies from the ``requirements.txt`` file.
 

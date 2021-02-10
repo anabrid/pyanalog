@@ -28,7 +28,10 @@ interface with remote analog computers (AAAS - analog computing
 as a service).
 
 The `pyanalog` code is open-source,  *currently work in progress* and
-authored by `Anabrid GmbH <http://www.anabrid.com>`_. 
+authored by `Anabrid GmbH <http://www.anabrid.com>`_. The code is currently
+dual-licensed by `GPL-3 <https://github.com/anabrid/pyanalog/blob/master/LICENSE.GPL3>`_
+and `a proprietary/commercial use license <https://github.com/anabrid/pyanalog/blob/master/LICENSE.ANABRID>`_.
+See http://www.anabrid.com/licensing for further details.
 
 
 Contents
