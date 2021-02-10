@@ -61,14 +61,12 @@ def setup_state(alpha=-1., y0=+1.):
     return state
 
 def run_simulation():
-    c_code = setup_state().export(to="C++")
-    compile(c_code)
-    return run(arguments={
-        'max_iterations': N,
-        'modulo_write': 1,
-        "always_compute_aux_before_printing": 1,
-        "write_initial_conditions": 0,
-    }, return_recarray=True)
+    return setup_state().export(to="CppSolver").run(
+        max_iterations = N,
+        modulo_write = 1,
+        always_compute_aux_before_printing = 1,
+        write_initial_conditions = 0
+    ).as_recarray()
 
 def test_run_simulation():
     output = run_simulation()

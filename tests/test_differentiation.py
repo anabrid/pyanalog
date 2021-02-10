@@ -39,7 +39,7 @@ import dda.cpp_exporter as cpp
 # postprocessing:
 import numpy as np
 
-diff_in, diff_out, int_diff  = symbols("diff_in, diff_out, int_diff")
+diff_in, diff_out, int_diff, int_out  = symbols("diff_in, diff_out, int_diff, int_out")
 dt = 0.01
 t_final = 5
 
@@ -48,8 +48,7 @@ ic     = 0
 
 
 def run(s):
-    cpp.compile(s.export(to="C"))
-    data = cpp.run(arguments={'max_iterations': t_final / dt, "rk_order": 4}, return_recarray=True)
+    data = s.export(to="CppSolver").run(max_iterations=t_final / dt, rk_order=4).as_recarray()
     xtime = np.arange(0, t_final, dt)
     assert len(data) == len(xtime)
     
@@ -109,8 +108,9 @@ def test_sinusodial_diff():
 
 
 # interactive testing goes like:
-
+"""
 from pylab import *
 s = setup_polynomial()
 t,d = run(s)
 plot_simulation(t,d)
+"""

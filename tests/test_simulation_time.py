@@ -37,9 +37,14 @@ We then test the output of the C++ for consistency of times.
 """
 
 from dda.computing_elements import symbols, state
-from dda.cpp_exporter import compile, run
+from dda.cpp_exporter import compile, run, numpy_read
 # postprocessing:
 import numpy as np
+
+# turns all warnings into errors for this module
+## import pytest
+## pytestmark = pytest.mark.filterwarnings("error")
+# FIXME: test_setup_state() sometimes spills a warning, sometimes not...
 
 # numbers of iterations and time step size
 t_initial, t_final = 0.0, 2.0
@@ -65,12 +70,13 @@ def test_setup_state():
 def run_simulation(write_initial_conditions=False):
     c_code = setup_state().export(to="C++")
     compile(c_code)
-    return run(arguments={
+    rawdata = run(arguments={
         'max_iterations': N,
         'modulo_write': 1,
         "always_compute_aux_before_printing": 1,
         "write_initial_conditions": int(write_initial_conditions)
     })
+    return numpy_read(rawdata, return_recarray=True)
 
 def test_run_simulation():
     output_with_ic = run_simulation(True)
