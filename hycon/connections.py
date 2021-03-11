@@ -101,14 +101,16 @@ Using PyHyCon to connect to USB serial (without PySerial)
 The following code is a sketch how to connect to a char device or unix domain socket
 with vanilla python. It is kind-of-untested, thought.
 
->>> fd = io.open("/dev/ttyUSB0", buffering=0)            # doctest: +SKIP
->>> fh = open(fd, "wb+")                                 # doctest: +SKIP
->>> ac = HyCon(fh)                                       # doctest: +SKIP
+>>> import os
+>>> fd = os.open("/dev/ttyUSB0", os.O_RDWR | os.O_NOCTTY)      # doctest: +SKIP
+>>> fh = os.fdopen(self.fd, "wb+", buffering=0)                # doctest: +SKIP
+>>> ac = HyCon(fh)                                             # doctest: +SKIP
 
 You certainly want to set the connection parameters (baud rate, etc.) by
 ``ioctl``, for instance in before on your linux terminal using a command
 like ``stty -F /dev/ttyUSB0 115200``, or with ``stty ospeed 115200``
-and ``stty ispeed 115200`` on Mac.
+and ``stty ispeed 115200`` on Mac. Furthermore, when using this approach, consider
+writing a small wrapper which runs ``fh.flush()`` after writing.
 """
 
 class human:
@@ -131,7 +133,7 @@ class tcpsocket:
         return self.fh.readline()
     
 class serial:
-    "Small wrapper for making the use of PySerial more handy"
+    "Small wrapper for making the use of PySerial more handy (no need for extra import)"
     def __init__(self, port, baudrate, **passed_options):
         try:
             import Serial from serial
