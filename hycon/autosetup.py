@@ -172,8 +172,13 @@ class AutoConfHyCon(HyCon):
     
     TODO: Should also provide other methods for high level value read
     and set access.
+    
+    ``conf`` can either be a string holding the YAML filename  or a dictionary (holding the
+    configuration content, i.e. parsed YAML file).
     """
     def __init__(self, conf):
+        if isinstance(conf, str):
+            conf = yaml_load(conf)
         fh = autoconnect(conf)
         super().__init__(self, fh)
         self.setup(conf)
