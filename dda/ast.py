@@ -759,8 +759,8 @@ class State(collections.UserDict):
         State({'x': const(42)})
         >>> State({ x: const(42) }).name_computing_elements(strict=True)
         State({'const_1': const(42), 'x': const_1})
-        >>> State({ x: const(42) }).name_computing_elements(strict=True).name_computing_elements(strict=True) # doctest:+ELLIPSIS +NORMALIZE_WHITESPACE
-        /.../ast.py:813: serWarning: State.named_computing_elements(): While counting const, I notice that  const_1 is already part of the state. Maybe you want to run name_computing_elements(strict=False) for idempotence.
+        >>> State({ x: const(42) }).name_computing_elements(strict=True).name_computing_elements(strict=True) # doctest:+ELLIPSIS +NORMALIZE_WHITESPACE +SKIP
+        /.../ast.py:819: UserWarning: State.named_computing_elements(): While counting const, I notice that  const_1 is already part of the state. Maybe you want to run name_computing_elements(strict=False) for idempotence.
           warnings.warn(...)
         State({'const_1': const_1_, 'const_1_': const(42), 'x': const_1})
         
@@ -875,6 +875,16 @@ class State(collections.UserDict):
         
         >>> from dda.computing_elements import neg,int,mult
         >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
+        >>> dda_state.name_computing_elements() # doctest: +NORMALIZE_WHITESPACE
+        State({'int_1': int(neg_1),
+               'int_2': int(neg_2),
+               'mult_1': mult(1, x),
+               'neg_1': neg(mult_1, 0.005, 1),
+               'neg_2': neg(int_1, 0.005, 0),
+               'x': neg(int_2)})
+        >>> 
+        ### FIXME should continue here.
+        
         >>> dda_state.variable_ordering()
         x is in vars.aux.unneeded! But it should not FIXME
         >>> dda_state.name_computing_elements(strict=True).variable_ordering()
