@@ -4,7 +4,7 @@ from pathlib import Path # Python > 3.5
 import numpy as np
 import dda
 
-base = Path("../examples/traditional-dda-circuits")
+base = Path(__file__).parent / Path("../examples/traditional-dda-circuits")
 
 def run_file(name, *args, **kwargs):
     return dda.read_traditional_dda_file(base/name).export(to="CppSolver").run(*args, **kwargs)
