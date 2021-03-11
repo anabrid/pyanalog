@@ -36,40 +36,20 @@ implementation, it tries to be minimal/low-level and won't implement any
 client-side luxury (such as address mapping). It is the task of the
 user to implement something high-level ontop of this.
 
-Furthermore, this single-file module currently does not (yet) depend
-on PySerial or similar. This is because it was mainly texted against
-textual output or TCP/IP communication with the HyCon microcontroller.
-It is up to the user to ensure proper communication. A few examples
-are given at the end of this file.
+Especially, the following tasks are implemented by different modules which
+can but do not needed to be used:
 
-
-Examples
---------
-
-Run these examples with an interactive python REPL to play with them:
-    
-* Example how to use PyHyCon with a microcontroller "simulator":
-
->>> ac = HyCon(serialdummy())                                                                                            
->>> ac.set_ic_time(1234)                                  # doctest: +SKIP                                                                                  
-<< Sending [C001234] to uC
-[type reply of uC]>> T_IC=1234
-HyConRequest(C001234, expect(eq: T_IC=1234), self.executed=True, response=T_IC=1234, reply=T_IC=1234)
-
-* Example how to use PyHyCon only for writing firmware command:
-    
->>> ac = HyCon(sys.stdout, unidirectional=True)
->>> ac.set_ic_time(234)
-C000234HyConRequest(C000234, expect(eq: T_IC=234), self.executed=True, response=n.a., reply=n.a.)
-
-* Example how to use PyHyCon over TCP/IP:
-
->>> sock = tcpsocket("localhost", 12345)                 # doctest: +SKIP
->>> ac = HyCon(sock)                                     # doctest: +SKIP
->>> ac.reset()                                           # doctest: +SKIP
->>> ac.digital_output(3, True)                           # doctest: +SKIP
->>> ac.set_op_time(123)                                  # doctest: +SKIP
->>> ac.set_xbar(0x0040, "0000000210840000781B")          # doctest: +SKIP
+* Connection managament: HyCon just assumes a file handle, but different
+  connection types are proposed in the :mod:`connections` module.
+* Autosetup: PyHyCon is plain python and has no dependency, for instance 
+  on YAML. There is :mod:`autosetup` which implements the "autosetup"
+  functionality of Perl-HyCon.
+* High level functionality is implemented on top of HyCon and not within.
+  See for instance :cls:`fpaa.fpaa` for an abstraction which can generate
+  HyCon instructions and is aware of the circuit design at the same time.
+  
+The hycon module also includes an interpreter for the HyCon serial stream
+"protocol". See :mod:`replay` for further details.
 
 """
 
@@ -213,6 +193,11 @@ class HyCon:
         a (unix/inet) domain socket, a special device (serial port),
         some serial port library, etc.
         
+        .. note:: We expect the `fh` to have an API compatible to
+            `ABC.IOBase <https://docs.python.org/3/library/io.html>`_. The two methods
+            `fh.readline()` and `fh.write()` are required. You find some example "polyfills"
+            in the :mod:`connections` module.
+        
         Make sure you disable output buffering (on print/write to fh), since commands do
         not end with newlines. Responses from the uC always end with newlines.
         
@@ -325,22 +310,4 @@ class HyCon:
     get_op_time = command('t', expect(re=r"t_OP=(?P<time>-?\d*)", ret='time', type=float), help="Asks about current OP time")
     reset = command('x', expect(eq='RESET'), help="Resets the HybridController (has no effect on python instance itself)")
     
-class serialdummy:
-    "Dummy IOWrapper for testing HyCon.py without the actual hardware"
-    def write(self, sth):      print(f"<< Sending [{sth}] to uC")
-    def readline(self): return input("[type reply of uC]>> ")
 
-class tcpsocket:
-    "Wrapper for communicating with HyCon over TCP/IP. See also HyCon-over-TCP.README for further instructions"
-    def __init__(self, host, port):
-        from socket import socket # builtin
-        self.s = socket()
-        self.s.connect((host,port))
-        self.fh = self.s.makefile(mode="rw", encoding="utf-8")
-    def write(self, sth):
-        "Expects sth to be a string"
-        self.s.sendall(sth.encode("ascii"))
-    def readline(self):
-        # instead also: self.s.recv(123)
-        return self.fh.readline()
-        

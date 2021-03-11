@@ -116,6 +116,54 @@ def autosetup(hycon, conf, reset=True):
     #if (defined($self->{problem}) and defined($xbar_address)) {
     # TODO: Skipping here...
 
+def autoconnect(conf):
+    """
+    Opens a file handle to the target position found in the YAML file. Follows the same
+    rules as the perl routine, i.e. looks for *serial* or *tcp* key and connects
+    according to the parameters.
+    
+    Example serial port configuration:
+    
+    ::
+        serial:
+          port: /dev/cu.usbserial-DN050L21
+          bits: 8
+          baud: 250000
+          parity: none
+          stopbits: 1
+          poll_interval: 10
+          poll_attempts: 20000
+          
+    Note that we only take into account port and baud rate, since everything else looks standard
+    and the pySerial port cannot deal with an integer stopbit ``1`` but expects something like ``serial.STOPBITS_ONE``.
+    As a note to the future, https://tools.ietf.org/html/rfc2217.html is supported by pySerial and
+    should be adopted by the YAML definition.,
+    
+    Example TCP port configuration:
+    
+    ::
+        tcp:
+            addr: 192.168.31.190
+            port: 12345
+            connection_timeout: 2
+            timeout: 0.1
+            poll_interval: 10
+            poll_attempts: 2000
+            quick_start: False
+            
+    Again, we only take into account the IP address and the TCP port, everything else is ignored for the
+    time being.
+    """
+    import connections
+    
+    c = DotDict(conf)
+    if 'tcp' in c:
+        return connections.tcpsocket(c.tcp.addr, c.tcp.portr)
+    elif 'serial' in conf:
+        return connections.serial(c.serial.port, c.serial.baud)
+    else:
+        raise ValueError("Could neither find `tcp` nor `serial` section in configuration. Available keys: {list(c)}")
+    
 
 class AutoConfHyCon(HyCon):
     """
@@ -125,6 +173,11 @@ class AutoConfHyCon(HyCon):
     TODO: Should also provide other methods for high level value read
     and set access.
     """
+    def __init__(self, conf):
+        fh = autoconnect(conf)
+        super().__init__(self, fh)
+        self.setup(conf)
+    
     def setup(self, conf):
         "Will store conf as DotDict for easier later access"
         self.conf = DotDict(yaml_load(conf) if isinstance(conf, str) else conf)
