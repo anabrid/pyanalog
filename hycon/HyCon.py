@@ -51,6 +51,16 @@ can but do not needed to be used:
 The hycon module also includes an interpreter for the HyCon serial stream
 "protocol". See :mod:`replay` for further details.
 
+Logging and Debugging
+^^^^^^^^^^^^^^^^^^^^^
+
+There are several ways to inspect what HyCon is doing. One of the simplest
+is to activate logging on ``INFO`` level:
+
+>>> import logging
+>>> logging.basicConfig(level=logging.INFO)
+>>> # proceed here as usual, i.e.: hc = HyCon(...)
+
 """
 
 # All these modules are Python internals
@@ -309,5 +319,6 @@ class HyCon:
 
     get_op_time = command('t', expect(re=r"t_OP=(?P<time>-?\d*)", ret='time', type=float), help="Asks about current OP time")
     reset = command('x', expect(eq='RESET'), help="Resets the HybridController (has no effect on python instance itself)")
+
     
 

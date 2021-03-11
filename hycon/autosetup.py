@@ -63,9 +63,9 @@ class PotentiometerAddress(namedtuple("PotentiometerAddress", ["address", "numbe
     
     @classmethod
     def fromText(cls, text):
-        "Parses something like 0x200/2 to (0x200, 2)"
-        if not isinstance(text,str) or text.count("/") != 1 or not "0x" in text:
-            raise ValueError("'%s' doesn't look like a valid potentiometer address. Should be like 0x200/2", text)
+        "Parses something like 0x200/2 to (0x200, 2). Will also accept 0200/2 as hex."
+        if not isinstance(text,str) or text.count("/") != 1:# or not "0x" in text:
+            raise ValueError("'%s' doesn't look like a valid potentiometer address. Should be like 0x200/2 or 0200/2", text)
         address,number = text.split("/")
         return cls(int(address,16), int(number,16))
     def toText(self):
@@ -105,7 +105,7 @@ def autosetup(hycon, conf, reset=True):
             dp = PotentiometerAddress.fromText(elements[name])
             hycon.set_pt(dp.address, dp.number, value)
 
-        # Define read out group if specified:s
+        # Define read out group if specified:
         if "ro-group" in problem:
             addresses = list(map(elements.get, problem["ro-group"]))
             hycon.set_ro_group(addresses)
@@ -154,13 +154,13 @@ def autoconnect(conf):
     Again, we only take into account the IP address and the TCP port, everything else is ignored for the
     time being.
     """
-    import connections
+    from .connections import tcpsocket, serial
     
     c = DotDict(conf)
     if 'tcp' in c:
-        return connections.tcpsocket(c.tcp.addr, c.tcp.portr)
-    elif 'serial' in conf:
-        return connections.serial(c.serial.port, c.serial.baud)
+        return tcpsocket(c.tcp.addr, c.tcp.portr)
+    elif 'serial' in c:
+        return serial(c.serial.port, c.serial.baud)
     else:
         raise ValueError("Could neither find `tcp` nor `serial` section in configuration. Available keys: {list(c)}")
     
@@ -177,16 +177,11 @@ class AutoConfHyCon(HyCon):
     configuration content, i.e. parsed YAML file).
     """
     def __init__(self, conf):
-        if isinstance(conf, str):
-            conf = yaml_load(conf)
-        fh = autoconnect(conf)
-        super().__init__(self, fh)
-        self.setup(conf)
-    
-    def setup(self, conf):
-        "Will store conf as DotDict for easier later access"
+        # Will store conf as DotDict for easier later access
         self.conf = DotDict(yaml_load(conf) if isinstance(conf, str) else conf)
-        autosetup(self, self.conf)
+        self.fh = autoconnect(self.conf)
+        self.unidirectional = False # could be steered by conf, too
+        autosetup(self, self.conf, reset=False)
         
     def get_data_by_name(self):
         "Get readout group data handily labeled by name"

@@ -85,33 +85,44 @@ actual hardware. The target TCP server is expected to route the contents to a
 serial port/USB UART without introducing buffering. Examples for this kind of
 stub servers are given at networking-hc_.
 
-Using PyHyCon with PySerial
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Using PyHyCon over Serial
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Should go like (still untested):
+>>> fh = serial("/dev/ttyUSB0", 115200)                     # doctest: +SKIP
+>>> ac = HyCon(fh)                                          # doctest: +SKIP
+>>> ac.digital_output(3, True)                              # doctest: +SKIP
+>>> # etc.
+
+You are encouraged to use the :cls:`serial` class, which uses
+`PySerial <https://pythonhosted.org/pyserial/>`_ under the hood and does the
+clearing/resetting of the stream for you (something which is more cumbersome over serial
+then over TCP).
+
+If you really want, you can also use PySerial directly:
 
 >>> import Serial from serial                               # doctest: +SKIP
 >>> fh = Serial("/dev/ttyUSB0", 115200)                     # doctest: +SKIP
 >>> ac = HyCon(fh)                                          # doctest: +SKIP
 
+Note that this approach suffers from binary/string conversions, but you could
+probably wrap ``open(fh)`` in some text mode.
 
-Using PyHyCon to connect to USB serial (without PySerial)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The following code is a sketch how to connect to a char device or unix domain socket
-with vanilla python. It is kind-of-untested, thought.
+If you (also) do not like PySerial, you can connect to a char device on a unixoid
+operating system with vanilla python (this example is kind-of-untested):
 
 >>> import os
 >>> fd = os.open("/dev/ttyUSB0", os.O_RDWR | os.O_NOCTTY)      # doctest: +SKIP
 >>> fh = os.fdopen(self.fd, "wb+", buffering=0)                # doctest: +SKIP
 >>> ac = HyCon(fh)                                             # doctest: +SKIP
 
-You certainly want to set the connection parameters (baud rate, etc.) by
+In this case, you certainly want to set the connection parameters (baud rate, etc.) by
 ``ioctl``, for instance in before on your linux terminal using a command
 like ``stty -F /dev/ttyUSB0 115200``, or with ``stty ospeed 115200``
 and ``stty ispeed 115200`` on Mac. Furthermore, when using this approach, consider
 writing a small wrapper which runs ``fh.flush()`` after writing.
 """
+
+import logging
 
 class human:
     "Dummy IOWrapper for testing HyCon.py without the actual hardware"
@@ -122,9 +133,11 @@ class tcpsocket:
     "Wrapper for communicating with HyCon over TCP/IP. See also HyCon-over-TCP.README for further instructions"
     def __init__(self, host, port):
         from socket import socket # builtin
+        log = logging.getLogger('tcpsocket')
         self.s = socket()
         self.s.connect((host,port))
         self.fh = self.s.makefile(mode="rw", encoding="utf-8")
+        log.info(f"Connected to TCP {host}:{port}")
     def write(self, sth):
         "Expects sth to be a string"
         self.s.sendall(sth.encode("ascii"))
@@ -135,13 +148,32 @@ class tcpsocket:
 class serial:
     "Small wrapper for making the use of PySerial more handy (no need for extra import)"
     def __init__(self, port, baudrate, **passed_options):
+        log = logging.getLogger('serial')
         try:
-            import Serial from serial
+            from serial import Serial  # requires pyserial
         except ImportError:
             raise ImportError("Please install PySerial in order to use it.")
-        self.s = Serial(port, baudrate, **passed_options)
+        # in the following, some arguments are added for debugging...
+        self.s = Serial(port, baudrate, 
+            timeout=0.2, # in seconds            
+            **passed_options)
+        log.info(f"Connected to serial port {port} with {baudrate} baud")
+        
+        # As this class is for the HyCon, you should reset when reconnecting since
+        # the UART tends to hold old data.
+        
+        import time
+        max_reset_attempts = 10
+        for i in range(max_reset_attempts):
+            log.info(f"Attempt {i}/{max_reset_attempts} to reset the controller/connection...")
+            self.write("x")  # reset instruction
+            time.sleep(1) # sleep one second to allow reset
+            res = self.readline()
+            if res == "RESET\n":
+                break
+        
     def write(self, sth):
         self.s.write(sth.encode("ascii"))
     def readline(self):
-        return self.s.readline()
+        return self.s.readline().decode("ascii")
             
