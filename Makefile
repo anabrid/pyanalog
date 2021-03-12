@@ -1,7 +1,5 @@
-# Test Makefile to simplify some works...
-
 MODULES := dda fpaa hycon
-.PHONY: all doc
+.PHONY: all doc help
 
 # Note: these tests only run when you have installed the pyanalog package
 # on your local computer. Since this is not the case for the docker images, cf.
@@ -30,3 +28,6 @@ test:
 	
 clean:
 	@find -type d -iname __pycache__ | xargs rm -r
+
+help:
+	@cat Makefile

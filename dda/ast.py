@@ -273,7 +273,12 @@ class Symbol:
         as :meth:`map_tails` does and is handy when you have numbers within your expressions:
         
         >>> x = Symbol("x")
-        >>> x(123, x(9.1), x, x(x, 0.1, x)).map_variables(lambda xx: Symbol("y"))
+        >>> expr = x(123, x(9.1), x, x(x, 0.1, x))
+        >>> res1 = expr.map_variables(lambda xx: "y")
+        >>> res2 = expr.map_variables(lambda xx: Symbol("y"), returns_symbol=True)
+        >>> res1 == res2
+        True
+        >>> res1
         x(123, x(9.1), y, x(y, 0.1, y))
         
         If you want to use ``map_variables`` to change a variable to a term, and/or if your
@@ -301,6 +306,8 @@ class Symbol:
         
         >>> x,y,z = symbols("x,y,z")
         >>> x(y, z(x), x(y)).map_tails(lambda smb: Symbol("foo")(smb))
+        x(foo(y), foo(z(foo(x))), foo(x(foo(y))))
+        >>> x(y, z(x), x(y)).map_tails(lambda smb: Symbol("foo")(smb), map_root=True)
         foo(x(foo(y), foo(z(foo(x))), foo(x(foo(y)))))
         
         Example for recursively removing certain unary functions ``z(x)`` for any ``x``:
@@ -316,25 +323,23 @@ class Symbol:
         Example:
         
         >>> (a, b), flip = symbols("a,b"), lambda smb: b if smb.head==a.head else a
-        >>> a(b,a,b).map_tails(flip)
+        >>> a(b,a,b).map_tails(flip, map_root=True)
         b
         >>> a(b,a,b).map_tails(flip, map_root=False)
-        b(a, b, a)
+        a(a, b, a)
         
         Note how the ``flip`` function cuts every tail and returns variables only.
         Here is a variant which perserves any tail:
         
         >>> (a, b) = symbols("a,b")
         >>> flipper = lambda smb: (b if smb.head==a.head else a)(*smb.tail)
-        >>> a(b,a,b).map_tails(flipper)
+        >>> a(b,a,b).map_tails(flipper, map_root=True)
         b(a, b, a)
-        >>> b(a, b, a)
-        a(a, b, a)
         
         Here is another example which highlights how ``map_tails`` can convert terms to
         variables:
         
-        >>> x, map, y = Symbol("x"), lambda _: "y", Symbol("y")
+        >>> x, map, y = Symbol("x"), lambda _: Symbol("y"), Symbol("y")
         >>> x(x,x).map_tails(map, map_root=False)
         x(y, y)
         >>> x(x,x(x,x)).map_tails(map, map_root=False)
@@ -688,12 +693,35 @@ class State(collections.UserDict):
         pass # TBD, probably not here
     
     def dependency_graph(self):
-        """Returns the edge list of the variable dependency graph of this state.
-        We can call :meth:`topological_sort()` on the result of this method.
         """
+        Returns the edge list of the variable dependency graph of this state.
+        We can call :meth:`topological_sort()` on the result of this method.
+        
+        A weird example including some corner cases:
+
+        >>> s1 = State.from_string("foo = const(0.7)", "bar=mult(bar,baz)", "baz=f(bar)")
+        >>> s1.dependency_graph()
+        [('bar', 'bar'), ('bar', 'baz'), ('baz', 'bar')]
+        
+        Another even more weird example which exploits raw value assignment,
+        something which is not following the ``foo=call(bar)`` requirement for DDA
+        files:
+        
+        >>> a,b,c,d,f = symbols("a,b,c,d,f")
+        >>> s2 = State({ a: f(0.7), b: c(b,b), c: 42, d: c })
+        >>> s2.dependency_graph()
+        [('b', 'b'), ('d', 'c')]
+        
+        Note that this function always returns list of tuples of strings. No more
+        symbols. See also :meth:`draw_dependency_graph` for a quick way of exporting
+        or plotting this graph.
+        """
+        def dependent(rhs):
+            if not isinstance(rhs, Symbol): return []
+            if rhs.is_term(): return map(str, rhs.all_variables())
+            if rhs.is_variable(): return [str(rhs)]
         # Comptue adjacency list of dependencies. All is strings, no more symbols
-        adjacency_list = { k: list(map(str, self[k].all_variables())) for k in self }
-        # Edge list
+        adjacency_list = { k: list(dependent(self[k])) for k in sorted(self) }
         edge_list = [ (k,e) for k,dep in adjacency_list.items() for e in dep ]
         return edge_list
         
@@ -780,7 +808,7 @@ class State(collections.UserDict):
         >>> s = State.from_string("foo = const(0.7)", "baz=mult(bar,bar)", "bar = neg(int(neg(baz), foo, 0.3))")
         >>> s
         State({'bar': neg(int(neg(baz), foo, 0.3)), 'baz': mult(bar, bar), 'foo': const(0.7)})
-        >>> print(s.name_computing_elements().to_string())    # doctest: +NORMALIZE_WHITESPACE
+        >>> print(s.name_computing_elements(strict=True).to_string())    # doctest: +NORMALIZE_WHITESPACE
         bar = neg_2
         baz = mult_1
         const_1 = const(0.7)
@@ -789,6 +817,12 @@ class State(collections.UserDict):
         mult_1 = mult(bar, bar)
         neg_1 = neg(baz)
         neg_2 = neg(int_1)
+        >>> print(s.name_computing_elements(strict=False).to_string())    # doctest: +NORMALIZE_WHITESPACE
+        bar = neg(int_1)
+        baz = mult(bar, bar)
+        foo = const(0.7)
+        int_1 = int(neg_1, foo, 0.3)
+        neg_1 = neg(baz)
 
         Here one sees immediately that ``int_1`` is the actual integral solution while
         ``bar`` is only a derived quantity. Calls like ``const(float)`` remain unchanged
@@ -800,11 +834,11 @@ class State(collections.UserDict):
         >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
         >>> dda_state.name_computing_elements().variable_ordering().where_is # doctest: +NORMALIZE_WHITESPACE
         {'x': 'vars.aux.sorted',
-         'mult_1': 'vars.aux.sorted',
-         'neg_1': 'vars.aux.sorted',
-         'int_1': 'vars.evolved',
-         'int_2': 'vars.evolved',
-         'neg_2': 'vars.aux.unneeded'}
+        'mult_1': 'vars.aux.sorted',
+        'neg_2': 'vars.aux.sorted',
+        'neg_1': 'vars.aux.sorted',
+        'int_1': 'vars.evolved',
+        'int_2': 'vars.evolved'}
 
         """
         symbol_counter = collections.defaultdict(lambda:0)
@@ -870,25 +904,70 @@ class State(collections.UserDict):
         This method returns a namespace object, which is basically a fancy dictionary. It
         is used over a simple dictionary just for shorter syntax.
         
-        ### TODO FIXME
-        ### THIS EXAMPLE DOES NOT RUN properly:
+        The following examples demonstrate a deeply nested corner case, i.e. a 
+        compute graph consisting of a single "long" Euler cycle. By breaking up this
+        cycle at the integrations, ``variable_ordering()`` can linearize these cycles
+        correctly. This works both for non-strict and strict element naming.
         
         >>> from dda.computing_elements import neg,int,mult
         >>> dda_state = State({"x": neg(int(neg(int(neg(mult(1, Symbol("x")), 0.005, 1)), 0.005, 0))) })
-        >>> dda_state.name_computing_elements() # doctest: +NORMALIZE_WHITESPACE
+        >>> # variable ordering is made based on non-strict naming:
+        >>> dda_state.name_computing_elements(strict=False) # doctest: +NORMALIZE_WHITESPACE
         State({'int_1': int(neg_1),
                'int_2': int(neg_2),
                'mult_1': mult(1, x),
                'neg_1': neg(mult_1, 0.005, 1),
                'neg_2': neg(int_1, 0.005, 0),
                'x': neg(int_2)})
-        >>> 
-        ### FIXME should continue here.
-        
-        >>> dda_state.variable_ordering()
-        x is in vars.aux.unneeded! But it should not FIXME
-        >>> dda_state.name_computing_elements(strict=True).variable_ordering()
-        neg_2 and neg_3 are unneeded! But they should not FIXME
+        >>> dda_state.name_computing_elements(strict=True) # doctest: +NORMALIZE_WHITESPACE
+        State({'int_1': int(neg_1),
+        'int_2': int(neg_2),
+        'mult_1': mult(1, x),
+        'neg_1': neg(mult_1, 0.005, 1),
+        'neg_2': neg(int_1, 0.005, 0),
+        'neg_3': neg(int_2),
+        'x': neg_3})
+        >>> dda_state.variable_ordering()  # doctest: +NORMALIZE_WHITESPACE
+        namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'x'],
+                                sorted=['x', 'mult_1', 'neg_2', 'neg_1'],
+                                cyclic=[],
+                                unneeded=set()),
+                evolved=['int_1', 'int_2'],
+                explicit_constants=[],
+                all=['int_1', 'int_2', 'mult_1', 'neg_1', 'neg_2', 'x'],
+                ordering=OrderedDict([('vars.explicit_constants', []),
+                                        ('vars.aux.sorted',
+                                        ['x', 'mult_1', 'neg_2', 'neg_1']),
+                                        ('vars.aux.cyclic', []),
+                                        ('vars.evolved', ['int_1', 'int_2']),
+                                        ('vars.aux.unneeded', set())]),
+                where_is={'x': 'vars.aux.sorted',
+                            'mult_1': 'vars.aux.sorted',
+                            'neg_2': 'vars.aux.sorted',
+                            'neg_1': 'vars.aux.sorted',
+                            'int_1': 'vars.evolved',
+                            'int_2': 'vars.evolved'})
+        >>> dda_state.name_computing_elements(strict=True).variable_ordering() # doctest: +NORMALIZE_WHITESPACE
+        namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'neg_3', 'x'],
+                                sorted=['neg_3', 'x', 'mult_1', 'neg_2', 'neg_1'],
+                                cyclic=[],
+                                unneeded=set()),
+                evolved=['int_1', 'int_2'],
+                explicit_constants=[],
+                all=['int_1', 'int_2', 'mult_1', 'neg_1', 'neg_2', 'neg_3', 'x'],
+                ordering=OrderedDict([('vars.explicit_constants', []),
+                                        ('vars.aux.sorted',
+                                        ['neg_3', 'x', 'mult_1', 'neg_2', 'neg_1']),
+                                        ('vars.aux.cyclic', []),
+                                        ('vars.evolved', ['int_1', 'int_2']),
+                                        ('vars.aux.unneeded', set())]),
+                where_is={'neg_3': 'vars.aux.sorted',
+                            'x': 'vars.aux.sorted',
+                            'mult_1': 'vars.aux.sorted',
+                            'neg_2': 'vars.aux.sorted',
+                            'neg_1': 'vars.aux.sorted',
+                            'int_1': 'vars.evolved',
+                            'int_2': 'vars.evolved'})
         
         """
         
@@ -905,15 +984,21 @@ class State(collections.UserDict):
         # The order of dqdt should not be touched, as there CAN NOT be any
         # dependency, since dqdt.foo = int(lin).
 
-        vars.all = sorted(set.union(*[set(map(str, lin[k].all_variables())) for k in self], set(self)))
+        vars.all = sorted(set.union(*[set(map(str, lin[k].all_variables())) for k in lin], set(lin)))
         vars.aux.all = [ v for v in vars.all if not v in vars.evolved and not v in vars.explicit_constants  ]
 
         # Linearize aux expressions by dependency sorting.
         dep_edge_list = lin.dependency_graph()
         # Edge direction: (a,b) = [dependent variable a]--[depends on]-->[dependency b]
-        aux_dep_edges = [ (a,b) for a,b in dep_edge_list if a in vars.aux.all and b in vars.aux.all ]
-        #sorted_vars, cyclic_vars = topological_sort(dep_edge_list)
-        vars.aux.sorted, vars.aux.cyclic = topological_sort(aux_dep_edges)
+        aux_dep_edges = [ (a,b) for a,b in dep_edge_list if b in vars.aux.all ]  # a in vars.aux.all and
+        # Note:
+        #  In order to detect auxers dependent on evolved vars, we only filter for b being aux and let a free.
+        #  We cannot feed the dep_edge_list directly into topological_sort since it would yield cyclic
+        #  dependency for any meaningful compute circuit, which always has feedback loops.
+        #  These loops are breaked by the evolved variables.
+        dep_sorted, dep_cyclic = topological_sort(aux_dep_edges)
+        vars.aux.sorted = [ v for v in dep_sorted if v in vars.aux.all ]
+        vars.aux.cyclic = [ v for v in dep_cyclic if v in vars.aux.all ]
 
         vars.aux.unneeded = set(vars.aux.all) - (set(vars.aux.sorted) | set(vars.aux.cyclic) | set(vars.explicit_constants))
         

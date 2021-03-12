@@ -90,7 +90,7 @@ def to_traditional_dda(state, cleanup=True, prefix="# Canonical DDA file generat
     if cleanup:
         # Not sure about scattered consts, maybe just remove them for the time being.
         remove_const = lambda x: x.tail[0] if isinstance(x,dda.Symbol) and x.head=="const" else x
-        state = clean(state, target="dda").map_tails(remove_const)
+        state = clean(state, target="dda").map_tails(remove_const, map_root=False)
         # TODO: Treat constants better. They have deserved it!
 
     dda_lines = []

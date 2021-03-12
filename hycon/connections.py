@@ -54,7 +54,8 @@ the APIs.
 Using PyHyCon with a microcontroller "simulator"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
->>> ac = HyCon(serialdummy())                                                                                            
+>>> from hycon import HyCon
+>>> ac = HyCon(human())                                                                                            
 >>> ac.set_ic_time(1234)                                  # doctest: +SKIP                                                                                  
 << Sending [C001234] to uC
 [type reply of uC]>> T_IC=1234
@@ -62,8 +63,9 @@ HyConRequest(C001234, expect(eq: T_IC=1234), self.executed=True, response=T_IC=1
 
 Using PyHyCon only for writing firmware commands
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    
->>> ac = HyCon(sys.stdout, unidirectional=True)
+
+>>> import hycon, sys
+>>> ac = hycon.HyCon(sys.stdout, unidirectional=True)
 >>> ac.set_ic_time(234)
 C000234HyConRequest(C000234, expect(eq: T_IC=234), self.executed=True, response=n.a., reply=n.a.)
 
