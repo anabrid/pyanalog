@@ -27,21 +27,21 @@
 """
 Connection or "backends" for the PyHyCon.
 
-The :cls:`HyCon.HyCon` class requires a file handle to be passed. Usually, file
+The :class:`HyCon.HyCon` class requires a file handle to be passed. Usually, file
 APIs are cursed in many languages (also python), but you can get your way out
 with the following examples and also classes in this module.
 
 Tested or "proven" connection interfaces are:
 
-* :cls:`tcpsocket`: A small adapter for the :meth:`socket` python builtin.
-* :cls:`human`: A small dummy adapter which prints to the interactive user terminal session
+* :class:`tcpsocket`: A small adapter for the :meth:`socket` python builtin.
+* :class:`human`: A small dummy adapter which prints to the interactive user terminal session
   and expects commands from there (the naming is ironically pointing to the human acting as
   actual Hybrid controller hardware endpoint).
 
 Somewhat experimental but known to work is especially for unidirectional access:
 
-* :cls:`StringIO.StringIO`: Circumventing file access by reading from/to strings.
-* :cls:`sys.stdout` for just dumping HyCon-generated instructions
+* :class:`StringIO.StringIO`: Circumventing file access by reading from/to strings.
+* :class:`sys.stdout` for just dumping HyCon-generated instructions
 
 We expect `PySerial <https://pythonhosted.org/pyserial/>`_ to work without needing this module.
 
@@ -95,7 +95,7 @@ Using PyHyCon over Serial
 >>> ac.digital_output(3, True)                              # doctest: +SKIP
 >>> # etc.
 
-You are encouraged to use the :cls:`serial` class, which uses
+You are encouraged to use the :class:`serial` class, which uses
 `PySerial <https://pythonhosted.org/pyserial/>`_ under the hood and does the
 clearing/resetting of the stream for you (something which is more cumbersome over serial
 then over TCP).

@@ -125,6 +125,7 @@ def autoconnect(conf):
     Example serial port configuration:
     
     ::
+    
         serial:
           port: /dev/cu.usbserial-DN050L21
           bits: 8
@@ -142,6 +143,7 @@ def autoconnect(conf):
     Example TCP port configuration:
     
     ::
+    
         tcp:
             addr: 192.168.31.190
             port: 12345

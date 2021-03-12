@@ -1,4 +1,4 @@
-.. _networking hc:
+.. _networking-hc:
 
 HyCon Serial (USB/RS-232) over TCP/IP
 =====================================

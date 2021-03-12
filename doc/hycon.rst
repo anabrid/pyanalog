@@ -6,6 +6,12 @@ The Python Hybrid Controller interface
 .. automodule:: hycon.HyCon
    :members:
    
+Connection managers
+-------------------
+
+.. automodule:: hycon.connections
+   :members:
+   
 Autosetup features
 ------------------
 
