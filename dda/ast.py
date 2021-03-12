@@ -927,8 +927,8 @@ class State(collections.UserDict):
         'neg_2': neg(int_1, 0.005, 0),
         'neg_3': neg(int_2),
         'x': neg_3})
-        >>> from pprint import pprint # adopting only for having doctests be fine
-        >>> pprint(dda_state.variable_ordering())  # doctest: +NORMALIZE_WHITESPACE
+        >>> # This is how the full output looks like
+        >>> dda_state.variable_ordering()  # doctest: +SKIP
         namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'x'],
                                 sorted=['x', 'mult_1', 'neg_2', 'neg_1'],
                                 cyclic=[],
@@ -948,27 +948,19 @@ class State(collections.UserDict):
                             'neg_1': 'vars.aux.sorted',
                             'neg_2': 'vars.aux.sorted',
                             'x': 'vars.aux.sorted'})
-        >>> pprint(dda_state.name_computing_elements(strict=True).variable_ordering()) # doctest: +NORMALIZE_WHITESPACE
-        namespace(aux=namespace(all=['mult_1', 'neg_1', 'neg_2', 'neg_3', 'x'],
-                                sorted=['neg_3', 'x', 'mult_1', 'neg_2', 'neg_1'],
-                                cyclic=[],
-                                unneeded=set()),
-                  evolved=['int_1', 'int_2'],
-                  explicit_constants=[],
-                  all=['int_1', 'int_2', 'mult_1', 'neg_1', 'neg_2', 'neg_3', 'x'],
-                  ordering=OrderedDict([('vars.explicit_constants', []),
-                                        ('vars.aux.sorted',
-                                         ['neg_3', 'x', 'mult_1', 'neg_2', 'neg_1']),
-                                        ('vars.aux.cyclic', []),
-                                        ('vars.evolved', ['int_1', 'int_2']),
-                                        ('vars.aux.unneeded', set())]),
-                  where_is={'int_1': 'vars.evolved',
-                            'int_2': 'vars.evolved',
-                            'mult_1': 'vars.aux.sorted',
-                            'neg_1': 'vars.aux.sorted',
-                            'neg_2': 'vars.aux.sorted',
-                            'neg_3': 'vars.aux.sorted',
-                            'x': 'vars.aux.sorted'})
+        >>> # Compare the strict and nonstrict orderings:
+        >>> for k, v in dda_state.variable_ordering().ordering.items(): print(f"{k:25s}: {v}")
+        vars.explicit_constants  : []
+        vars.aux.sorted          : ['x', 'mult_1', 'neg_2', 'neg_1']
+        vars.aux.cyclic          : []
+        vars.evolved             : ['int_1', 'int_2']
+        vars.aux.unneeded        : set()
+        >>> for k, v in dda_state.name_computing_elements(strict=True).variable_ordering().ordering.items(): print(f"{k:25s}: {v}")
+        vars.explicit_constants  : []
+        vars.aux.sorted          : ['neg_3', 'x', 'mult_1', 'neg_2', 'neg_1']
+        vars.aux.cyclic          : []
+        vars.evolved             : ['int_1', 'int_2']
+        vars.aux.unneeded        : set()
         
         """
         
