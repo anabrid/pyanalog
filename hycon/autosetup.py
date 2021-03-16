@@ -30,7 +30,31 @@ from collections import namedtuple
 from .HyCon import HyCon
 
 class DotDict(dict):
-    """small syntactic sugar: dot.notation access to dictionary attributes"""
+    """
+    Small syntactic sugar: Dot notation to access to dictionary attributes, which is especially
+    handy for deeply nested dicts. There are plenty of similar library for python around, but
+    this implementation is only five lines (yes, five). The following usage example is longer
+    then the implementation:
+    
+    >>> a = { "b": 42, "non-identifier": 3, "foo": { "bar": { 3: 123 } }}
+    >>> a = DotDict(a)
+    >>> a.b
+    42
+    >>> a.foo.bar
+    {3: 123}
+    >>> a["non-identifier"]   # traditional __getitem__ access is still possible
+    3
+    >>> a.foo.bar[3]          # especially hand for non-pure-ascii identifiers
+    123
+    >>> DotDict(DotDict(a)).b # DotDict can be applied repeatedly without loss of functionality
+    42
+    >>> c = DotDict()
+    >>> c.foo = "b"
+    >>> c                     # also works for setting, not only reading
+    {'foo': 'b'}
+    >>> c.bar = DotDict()
+    >>> c.bar.baz = "bla"     # Limitation for nested setting: create nested DotDicts first.
+    """
     def __getattr__(*args):
         val = dict.get(*args)
         return DotDict(val) if type(val) is dict else val
