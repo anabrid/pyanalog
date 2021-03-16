@@ -26,5 +26,6 @@
 # Please see HyCon.py or ../doc/ for documentation.
 
 from .HyCon import HyCon, HyConRequest
+from .connections import repeated_reset
 from .autosetup import yaml_load, PotentiometerAddress, autosetup, autoconnect, AutoConfHyCon
 from .replay import HyConRequestReader, replay

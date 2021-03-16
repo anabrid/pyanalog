@@ -168,9 +168,9 @@ class HyConRequest:
             log.debug("Unidirectional channel, skipping reading from HyCon...")
             return self # chainable
         if not expected_response:
-            log.info("No response expected, skipping reading from HyCon...")
+            log.debug("No response expected, skipping reading from HyCon...")
             return self # chainable
-        log.info(f"Waiting for response {expected_response} ... ")
+        log.debug(f"Waiting for response {expected_response} ... ")
         if read_again or not hasattr(self, "response"):
             self.response = hycon.fh.readline().strip() # Note: The HyConAVR always answers with a full line.
         if not self.response:
@@ -244,22 +244,28 @@ class HyCon:
     single_run       = command('E', '^SINGLE-RUN',    help="One IC-OP-HALT-cycle")
     pot_set          = command('S', '^PS',            help="Activate POTSET-mode")
 
+
+    def repeated_reset(self):
+        from .connections import repeated_reset
+        repeated_reset(self.fh)
+        
     def single_run_sync(self):
         "Synchronous run (finishes after a single run finished). Return value is true if terminated by ext. halt condition"
         q = self.query('F', '^SINGLE-RUN')
         timeout = 1.1 * (self.ictime + self.optime) # raises error if set_ic_time/set_op_time not called before
-        time.sleep(timeout / 1000 / 1000)  # converting timeout (microseconds) to seconds
+        log.info(f"Waiting for single run sync to finish for {timeout} ms...")
+        time.sleep(timeout / 1000)  # converting timeout (microseconds) to seconds
         res = q.read(self, expect(re='^EOSR(HLT)?'), read_again=True)
         was_terminated_by_ext_halt_condition = res.reply.groups()[0]=="HLT" # EOSRHLT
         return was_terminated_by_ext_halt_condition
     
     def set_ic_time(self, ictime):
-        "Sets IC (initial condition) time in microseconds"
+        "Sets IC (initial condition) time in MILLISECONDS."
         ensure(ictime, within=range(0,999999)); self.ictime = ictime
         return self.query('C%06d' % ictime, expect(eq=f"T_IC={ictime}"))
     
     def set_op_time(self, optime):
-        "Sets OP (operation mode) time in microseconds"
+        "Sets OP (operation mode) time in MILLISECONDS"
         ensure(optime, inrange=(0,999999)); self.optime = optime
         return self.query('c%06d' % optime, expect(eq=f"T_OP={optime}"))
     

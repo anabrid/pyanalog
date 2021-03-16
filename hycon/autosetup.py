@@ -88,9 +88,11 @@ def autosetup(hycon, conf, reset=True):
     if reset: hycon.reset()
     
     if "times" in problem:
-        # Should say somewhere that times are always in micro seconds
-        if "ic" in problem.times: hycon.set_ic_time(problem.times.ic)
-        if "op" in problem.times: hycon.set_op_time(problem.times.op)
+        # Note: All these times are in MILLISECONDS
+        if "ic" in problem.times: 
+            hycon.set_ic_time(problem.times.ic)
+        if "op" in problem.times:
+            hycon.set_op_time(problem.times.op)
 
     # Initial Conditions
     # TODO: Skipping here, because mainly used in XBAR-relevant code...
@@ -160,7 +162,7 @@ def autoconnect(conf):
     
     c = DotDict(conf)
     if 'tcp' in c:
-        return tcpsocket(c.tcp.addr, c.tcp.portr)
+        return tcpsocket(c.tcp.addr, c.tcp.port)
     elif 'serial' in c:
         return serial(c.serial.port, c.serial.baud)
     else:
@@ -189,6 +191,7 @@ class AutoConfHyCon(HyCon):
         "Get readout group data handily labeled by name"
         if not "ro-group" in self.conf.problem: raise ValueError("No Read-out group defined")
         data = self.get_data() # shape (sample_points, readout_group_length)
+        if not data: return None
         return { name: [line[i] for line in data] for i,name in enumerate(self.conf.problem["ro-group"]) }
     
     def set_pt_by_name(self, name, value):

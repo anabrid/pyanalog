@@ -43,7 +43,11 @@ Somewhat experimental but known to work is especially for unidirectional access:
 * :class:`StringIO.StringIO`: Circumventing file access by reading from/to strings.
 * :class:`sys.stdout` for just dumping HyCon-generated instructions
 
-We expect `PySerial <https://pythonhosted.org/pyserial/>`_ to work without needing this module.
+.. note:: All functions in this module do some progress reporting if you enable python logging
+   facilities. Do so with
+   
+   >>> import logging
+   >>> logging.basicConfig(level=logging.INFO)
 
 Usage Examples
 --------------
@@ -124,7 +128,35 @@ and ``stty ispeed 115200`` on Mac. Furthermore, when using this approach, consid
 writing a small wrapper which runs ``fh.flush()`` after writing.
 """
 
-import logging
+import logging, time
+log = logging.getLogger('connections')
+
+
+def repeated_reset(fh):
+    """
+    This routine tries to *clear* output buffers of the hycon UART by sending repeated
+    reset instructions and waiting until the reply "RESET" appears on the line. Doing this,
+    it implements the HyCon protocol, but the :mod:`HyCon` code does not deal with
+    connection issues, which is why this function is aprt of :mod:`connections`.
+    
+    Calling this function on beginning the setup is recommended for direct serial
+    connections.
+    
+    You can also call to this method with the :fun:`HyCon.HyCon.repeated_reset()` shorthand.
+    
+    This function returns ``True`` when the connection suceeded, else ``False``.
+    """
+    max_reset_attempts = 10
+    for i in range(max_reset_attempts):
+        log.info(f"Attempt {i}/{max_reset_attempts} to reset the controller/connection...")
+        fh.write("x")               # HyCon protocol reset instruction
+        if max_reset_attempts > 0:  # save time: If connection is stable, do not sleep...
+            time.sleep(1)           # ...otherwise sleep one second to allow reset
+        res = fh.readline()
+        if res == "RESET\n":
+            return True
+    log.warn("Could not properly reset the controller!")
+    return False
 
 class human:
     "Dummy IOWrapper for testing HyCon.py without the actual hardware"
@@ -135,7 +167,6 @@ class tcpsocket:
     "Wrapper for communicating with HyCon over TCP/IP. See also HyCon-over-TCP.README for further instructions"
     def __init__(self, host, port):
         from socket import socket # builtin
-        log = logging.getLogger('tcpsocket')
         self.s = socket()
         self.s.connect((host,port))
         self.fh = self.s.makefile(mode="rw", encoding="utf-8")
@@ -150,7 +181,6 @@ class tcpsocket:
 class serial:
     "Small wrapper for making the use of PySerial more handy (no need for extra import)"
     def __init__(self, port, baudrate, **passed_options):
-        log = logging.getLogger('serial')
         try:
             from serial import Serial  # requires pyserial
         except ImportError:
@@ -160,19 +190,8 @@ class serial:
             timeout=0.2, # in seconds            
             **passed_options)
         log.info(f"Connected to serial port {port} with {baudrate} baud")
-        
-        # As this class is for the HyCon, you should reset when reconnecting since
-        # the UART tends to hold old data.
-        
-        import time
-        max_reset_attempts = 10
-        for i in range(max_reset_attempts):
-            log.info(f"Attempt {i}/{max_reset_attempts} to reset the controller/connection...")
-            self.write("x")  # reset instruction
-            time.sleep(1) # sleep one second to allow reset
-            res = self.readline()
-            if res == "RESET\n":
-                break
+
+        repeated_reset() # this is crucial for direct serial connections
         
     def write(self, sth):
         self.s.write(sth.encode("ascii"))
