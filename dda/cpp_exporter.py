@@ -119,13 +119,19 @@ struct %(aux_type)s  {
 };
 
 // Explicit constants
-static const struct %(const_type)s {
+// Originally, in this code, they just have been constexprs.
+// For some applications, it is useful to have them being runtime arguments. This has to
+// be chosen at code generation time, they are then compile time constants.
+#define %(const_type)s_is_really_const %(constexpr_consts)d
+static %(const_type_qualifier)s struct %(const_type)s {
     %(explicit_constant_definitions)s
-    const double* byName(std::string %(lookup_name)s) const {
+    %(const_type_qualifier)s double* byName(std::string %(lookup_name)s) %(const_type_qualifier)s {
         %(explicit_constants_by_name)s
         return nullptr;
     }
 } %(const_name)s;
+
+%(explicit_constant_initializations)s
 
 // All variables, time evolveds, constants, as well-ordered strings:
 %(all_variables_as_string)s
@@ -205,7 +211,7 @@ struct csv_writer {
             std::cout << query_variables[i++] << sep(i);
     }
     
-    void write_line(const %(state_type)s& %(state_name)s, const %(aux_type)s& %(aux_name)s, const %(const_type)s& %(const_name)s) const {
+    void write_line(const %(state_type)s& %(state_name)s, const %(aux_type)s& %(aux_name)s, %(const_type_qualifier)s %(const_type)s& %(const_name)s) const {
         %(aux_type)s recomputed__%(aux_name)s;
         const %(aux_type)s *actual__%(aux_name)s = &%(aux_name)s;
         if(always_compute_aux_before_printing) {
@@ -343,10 +349,13 @@ int main(int argc, char** argv) {
             cerr << "* Numeric arguments: (Usage --foo=123)" << endl;
             for(auto const& [key, val] : numbers) cerr << ind << key << " (default value: " << val << ")" << endl;
             cerr << "* Overwrite initial data: (Usage --dt:foo=1.23)" << endl;
-            for(auto const& key : all_%(state_type)s) cerr << ind << key << " (default value: " << dt.byName(key) << ")" << endl;
-            // Same for constexpr constants
-            for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
-                for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
+            for(auto const& key : all_%(state_type)s) cerr << ind << key << " (default value: " << *dt.byName(key) << ")" << endl;
+            #if %(const_type)s_is_really_const == 0
+            cerr << "* Overwrite (runtime) constants: (Usage --const:foo=1.23)" << endl;
+            for(auto const& key : all_%(const_type)s) cerr << ind << key << " (default value: " << *%(const_name)s.byName(key) << ")" << endl;
+            #else
+            cerr << "* Overwrite constants: Not possible since compiled as compile time constants." << endl;
+            #endif
             cerr << "* Query fields: (if none given, all are dumped)";
             for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
                 for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
@@ -360,10 +369,18 @@ int main(int argc, char** argv) {
             if(splitted.size() != 2) { cerr << "ERR: Usage: --dt:key=value"; exit(-2); }
             string key=splitted[0]; double value=extract<double>(splitted[1]);
             *(const_cast<double*>(dt.byName(key))) = value;
-
-        
-            // Could do the same as with --dt:field=dtvalue with initial data class
-    
+            // NOTE: Could do the same as with --dt:field=dtvalue with initial data class if neccessary
+        } else if(unprefix(arg, "--const:")) {
+            vector<string> splitted = split(arg);
+            if(splitted.size() != 2) { cerr << "ERR: Usage: --const:key=value"; exit(-2); }
+            string key=splitted[0]; double value=extract<double>(splitted[1]);
+            #if %(const_type)s_is_really_const == 0
+                *(%(const_name)s.byName(key)) = value;
+            #else
+                cerr << "ERR: Cannot overwrite compile time constant." << endl;
+                cerr << "ERR: Regenerate code with constexpr_consts=True in order to use this feature." << endl;
+                exit(-3);
+            #endif
         } else if(unprefix(arg, "--")) {
             vector<string> splitted = split(arg);
             if(splitted.size() == 1) splitted.push_back("1"); // for the booleans
@@ -412,7 +429,7 @@ int main(int argc, char** argv) {
 
 """
 
-def to_cpp(state, number_precision=math.inf):
+def to_cpp(state, number_precision=math.inf, constexpr_consts=True):
     """
     Given a state, returns standalone C++ code as string.
     
@@ -536,6 +553,7 @@ def to_cpp(state, number_precision=math.inf):
         ["all_"+k+" = "+enc("{}", Cw(', '.join([ enc('"',vi) for vi in v ])))
             for k,v in variable_namings.items() ]).lstrip()
     
+    # the above replaces repepetitive stuff such as:
     #all_variables_as_string = C(f'"{var}",' for var in vars.all)
     #all_state_vars_by_name = C(f'"{var}",' for var in vars.evolved)
     #all_constants_by_name = C(f'"{var}",' for var in vars.explicit_constants)
@@ -547,9 +565,19 @@ def to_cpp(state, number_precision=math.inf):
     either = lambda lst, otherwise: lst if lst else [otherwise]
     nonemptyvarlist = lambda lst: either(lst, otherwise="_none=-1")
     
-    explicit_constant_definitions = varlist("constexpr static double", 
-        nonemptyvarlist([f"{var}={state[var].tail[0]}" for var in vars.explicit_constants])) # extract x in const(x)
-
+    const_assignments = [f"{var}={state[var].tail[0]}" for var in vars.explicit_constants] # extract x in const(x)
+    if constexpr_consts:
+        const_type_qualifier = "const"
+        # generates a member in const struct foo { constexpr static double bla = 1, blo = 2, ...; }
+        explicit_constant_definitions = varlist("constexpr static double", nonemptyvarlist(const_assignments))
+        explicit_constant_initializations = ""
+    else:
+        const_type_qualifier = ""
+        # generates a member in struct foo { static double bla, blo, ...; }
+        explicit_constant_definitions = varlist("static double", either(vars.explicit_constants, otherwise="_none"))
+        # and subsequently foo::bla=1, foo::blo=2, ...
+        explicit_constant_initializations = C(f"double {const_type}::{ass};" for ass in const_assignments)
+    
     initial_data = J(str(initial_data[var]) for var in vars.evolved)
     timestep_data = J(str(timesteps[var]) for var in vars.evolved)
     
@@ -789,8 +817,8 @@ class Solver:
     ``compile()`` and ``run()`` you can just write ``Solver(state, runtime_arguments)``.
     This object will even clean up after running.
     """
-    def __init__(self, dda_state_or_code, *runtime_fields_to_export, **runtime_arguments):
-        self.c_code = to_cpp(dda_state_or_code) if isinstance(dda_state_or_code, State) else dda_state_or_code
+    def __init__(self, dda_state_or_code, *runtime_fields_to_export, constexpr_consts=True, **runtime_arguments):
+        self.c_code = to_cpp(dda_state_or_code, constexpr_consts=constexpr_consts) if isinstance(dda_state_or_code, State) else dda_state_or_code
         
         self.code_name = "cpp_generated.cc"
         self.output_name = "cpp_generated.exe"
