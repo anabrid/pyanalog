@@ -127,10 +127,8 @@ static const struct %(const_type)s {
     }
 } %(const_name)s;
 
-// All variables as well-ordered string:
-static const std::vector<std::string> all_variables = {
-    %(all_variables_as_string)s
-};
+// All variables, time evolveds, constants, as well-ordered strings:
+%(all_variables_as_string)s
 
 /// Compute the equations as given in the dda file
 /// It is actually %(dqdt_name)s = f(%(state_name)s, %(aux_name)s), or at least
@@ -344,6 +342,11 @@ int main(int argc, char** argv) {
             for(auto const& [key, val] : flags) cerr << ind << key << " (default value: " << val << ")" << endl;
             cerr << "* Numeric arguments: (Usage --foo=123)" << endl;
             for(auto const& [key, val] : numbers) cerr << ind << key << " (default value: " << val << ")" << endl;
+            cerr << "* Overwrite initial data: (Usage --dt:foo=1.23)" << endl;
+            for(auto const& key : all_%(state_type)s) cerr << ind << key << " (default value: " << dt.byName(key) << ")" << endl;
+            // Same for constexpr constants
+            for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
+                for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
             cerr << "* Query fields: (if none given, all are dumped)";
             for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
                 for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
@@ -509,17 +512,33 @@ def to_cpp(state, number_precision=math.inf):
     J = lambda whatever: ", ".join(whatever)
     C = lambda whatever: textwrap.indent(whatever if isinstance(whatever, str) else  "\n".join(whatever), indent)
     CC = lambda whatevr: C(C(whatevr)) # two indentations ;-)
-    varlist = lambda ctype, lst: C(textwrap.wrap(f"{ctype} {', '.join(lst)};", width=50)) if lst else ""
+    Cw = lambda whatever: C(textwrap.wrap(whatever, width=50))
+    enc = lambda ws, inner: ws[0] + inner + (ws[1] if len(ws)==2 else ws[0]) # enc('"','foo') or enc('{}','foo')
+    varlist = lambda ctype, lst: Cw(f"{ctype} {', '.join(lst)};") if lst else ""
 
     state_var_definition = varlist("double", vars.evolved)
     aux_var_definition = varlist("double", vars.aux.all)
-    all_variables_as_string = C(f'"{var}",' for var in vars.all)
     
-    # For runtime introspection capabilities
+    # For runtime (i.e. CLI invocation) introspection capabilities
     lookup = lambda struct: CC(f'if({lookup_name} == "{var}") return &{var};' for var in struct)
     state_vars_by_name = lookup(vars.evolved)
     aux_vars_by_name = lookup(vars.aux.all)
     explicit_constants_by_name = lookup(vars.explicit_constants)
+    
+    # For even more runtime (i.e. CLI invocation) introspection capabilities
+    variable_namings = {
+        "variables": vars.all,
+        state_type:  vars.evolved,
+        aux_type:    vars.aux.all,
+        const_type:  vars.explicit_constants,
+    }
+    all_variables_as_string = varlist("static const std::vector<std::string>",
+        ["all_"+k+" = "+enc("{}", Cw(', '.join([ enc('"',vi) for vi in v ])))
+            for k,v in variable_namings.items() ]).lstrip()
+    
+    #all_variables_as_string = C(f'"{var}",' for var in vars.all)
+    #all_state_vars_by_name = C(f'"{var}",' for var in vars.evolved)
+    #all_constants_by_name = C(f'"{var}",' for var in vars.explicit_constants)
 
     # For debugging:
     aux_var_set_to_nan = C(f"{var} = {nan_name};" for var in vars.aux.all)
@@ -780,7 +799,7 @@ class Solver:
         
         compile(self.c_code, c_filename=self.code_name, compiler_output=self.output_name)
         
-    def run(self, *runtime_fields_to_export, binary=False, **runtime_arguments):
+    def run(self, *runtime_fields_to_export, binary=False, cleanup=True, **runtime_arguments):
         "Chaining and Syntactic sugar for delayed argument setting/overwriting"
         self.runtime_arguments = { **runtime_arguments, **self.default_runtime_arguments }
         self.runtime_fields_to_export = list(runtime_fields_to_export if runtime_fields_to_export else self.default_runtime_fields_to_export)
@@ -796,8 +815,9 @@ class Solver:
         else:
             self.fields = self.runtime_fields_to_export
         
-        os.unlink(self.code_name)
-        os.unlink(self.output_name)
+        if cleanup:
+            os.unlink(self.code_name)
+            os.unlink(self.output_name)
         return self # chainable!
 
     def as_ndarray(self):
