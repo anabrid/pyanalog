@@ -35,10 +35,10 @@ to `NumPy <https://numpy.org/>`_.
 """
 
 from . import State, Symbol, symbols, clean
-import math, functools, itertools, operator, copy # builtins
+import math, functools, itertools, operator, copy, argparse, inspect, sys # builtins
 import numpy as np # externals
 from builtins import sum # just to be explicit, sum is not overwritten
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 is_number = lambda obj: isinstance(obj, float) or isinstance(obj, int)
 first = lambda iterable: next(x for x in iterable if x)  # first element of iterator/list
@@ -303,3 +303,54 @@ class to_scipy:
         from scipy.integrate import solve_ivp
         return solve_ivp(self.rhst, [0, tfinal], self.y0, **kwargs)
 
+
+def cli_scipy():
+    """
+    A Command Line Interface (CLI) for dda.scipy.
+
+    This CLI API basically solves a DDA file (see :mod:dsl for the syntax).
+    This is a different approach then using the :mod:cpp_exporter: Instead
+    of code generation (and the need for a C++ compiler), this evaluates the
+    DDA file within python. The disadvantage is that this is damned slow, the
+    advantage is that the time integrator is much better then the selfmade one
+    in the :mod:cpp_exporter module.
+    
+    Invocation is like  ``python -m dda.scipy --help`` anywhere from the system.
+    Run this to explore the usage of this command line interface.
+    """
+    from .dsl import read_traditional_dda
+    
+    parser = argparse.ArgumentParser(description="PyDDA's scipy interface simulation runner", epilog=inspect.getdoc(cli_scipy))
+
+    parser.add_argument("circuit_file", nargs='?', type=argparse.FileType('r'), default=sys.stdin, help="DDA setup (traditional file). Default is stdin.")
+    parser.add_argument("-o", "--output", nargs='?', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output CSV to. Default is stdout.")
+    
+    g = parser.add_argument_group(title="Arguments passed to scipy.integrate.solve_ivp")
+    g.add_argument("-t", "--tfinal", required=True, type=float, help="Time (in simulation units) to run up to. Do not confuse this with some iteration counter.")
+    g.add_argument("--method", nargs="?", help="Integration method to use")
+    # add whatever you want to expose
+    
+    arg = parser.parse_args()
+    
+    dda_text = arg.circuit_file.read()
+    dda_state = read_traditional_dda(dda_text)
+    scipy_state = to_scipy(dda_state)
+    
+    scipy_args = {}
+    if arg.method: scipy_args["method"] = arg.method
+    
+    sol = scipy_state.solve(arg.tfinal, **scipy_args)
+    
+    writeout = OrderedDict()
+    writeout["t"] = sol.t
+    for i,fieldname in enumerate(sorted(scipy_state.vars.evolved)):
+        writeout[fieldname] = sol.y[i]
+
+    sep = "\t"
+    # don't using np.savetxt(header=...) because it prepends a comment sign "# "
+    print(sep.join(writeout.keys()), file=arg.output)
+    np.savetxt(arg.output, np.array(list(writeout.values())).T, delimiter=sep)
+
+    
+if __name__ == "__main__":
+    cli_scipy()

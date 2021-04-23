@@ -53,8 +53,8 @@ You can now plot the output for instance with gnuplot:
 
 Or do anything else on the CSV data.
 
-Inspecting the command line interface of the ODE solver
--------------------------------------------------------
+Inspecting the command line interface of the C++ ODE solver
+-----------------------------------------------------------
 
 Run the executable with ``--help`` to see all possible options:
 
@@ -94,3 +94,23 @@ Run the executable with ``--help`` to see all possible options:
       ./rosenbrock.o --foo=1 --bar=0 --baz=7 --ic:var1=0.5 --dt:var2=0.01 --const:something=42 var1 var2 var3
     
     For more options and help, see the PyDDA code documentation at https://pyanalog.readthedocs.io/
+
+But I want a better ODE Solver!
+-------------------------------
+
+The C++ based solver is really very basic. It allows to introspect all the quantities
+in a dense output, but for instance does not have adaptive time step size. Time to use
+something more mature, such as the `mature ODE/IVP solvers by scipy <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html>`_
+(which used to be a frontend for ODEPACK). There is a DDA interface to Scipy (see
+package ``dda.scipy``) and it can also be used from command line:
+
+::
+
+    python -m dda.scipy  -t 10 rosenbrock.dda | tee output2.txt
+    
+
+Note that in this example, ``output.txt`` and ``output2.txt`` hold similar data, since
+in the C++ solver case, the solver was run until ``t_final = dt * N = 0.0001 * 100000 = 10``,
+the same as in the scipy solver case. However, by convention, the C++ solver does not include
+a time column (you have to generate it by yourself with ``t=int(const(1), dt, 0)`` if you need
+one).
