@@ -88,10 +88,14 @@ class PotentiometerAddress(namedtuple("PotentiometerAddress", ["address", "numbe
     @classmethod
     def fromText(cls, text):
         "Parses something like 0x200/2 to (0x200, 2). Will also accept 0200/2 as hex."
-        if not isinstance(text,str) or text.count("/") != 1:# or not "0x" in text:
+        if not cls.isPotentiometerAddress(text):
             raise ValueError("'%s' doesn't look like a valid potentiometer address. Should be like 0x200/2 or 0200/2", text)
         address,number = text.split("/")
         return cls(int(address,16), int(number,16))
+    @classmethod
+    def isPotentiometerAddress(cls, text):
+        # should rather have a regexp or so...
+        return isinstance(text,str) and text.count("/") == 1 # or not "0x" in text:
     def toText(self):
         return "0x%x/%x" % (self.address,self.number)
 
@@ -209,7 +213,11 @@ class AutoConfHyCon(HyCon):
         self.conf = DotDict(yaml_load(conf) if isinstance(conf, str) else conf)
         self.fh = autoconnect(self.conf)
         self.unidirectional = False # could be steered by conf, too
-        autosetup(self, self.conf, reset=False)
+        self.autosetup()
+        
+    def autosetup(self, conf=None, reset=False):
+        if not conf: conf = self.conf
+        autosetup(self, conf, reset)
         
     def get_data_by_name(self):
         "Get readout group data handily labeled by name"
@@ -222,4 +230,26 @@ class AutoConfHyCon(HyCon):
         "Set a digital potentiometer by name"
         dp = PotentiometerAddress.fromText(self.conf.elements[name])
         return self.set_pt(dp.address, dp.number, value)
-    
+
+    def read_element_by_name(self, name):
+        "Reads element by name"
+        if not name in self.conf.elements:
+            raise ValueError(f"{name} not defined in yaml element dict")
+        address = self.conf.elements[name]
+        # address is already an int, correctly parsed...
+        return self.read_element_by_address(address)
+
+    def read_dpts_by_name(self):
+        """
+        Asks the Hybridcontroller for reading out *all* DPTs in the machine (also DPT24 modules).
+        Returns single map of DPT name to value (as float).
+        """
+        floats = self.read_dpts()
+        interesting_potentiometers = \
+          { PotentiometerAddress.fromText(addr): name for name,addr in self.conf.elements.items() \
+            if PotentiometerAddress.isPotentiometerAddress(addr) }
+        named_values = {}
+        for p, name in interesting_potentiometers.items():
+            if p.address in floats and p.number < len(floats[p.address]):
+                named_values[name] = floats[p.address][p.number]
+        return named_values

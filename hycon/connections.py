@@ -171,6 +171,8 @@ class tcpsocket:
         self.s.connect((host,port))
         self.fh = self.s.makefile(mode="rw", encoding="utf-8")
         log.info(f"Connected to TCP {host}:{port}")
+        
+        repeated_reset(self)
     def write(self, sth):
         "Expects sth to be a string"
         self.s.sendall(sth.encode("ascii"))
@@ -191,7 +193,7 @@ class serial:
             **passed_options)
         log.info(f"Connected to serial port {port} with {baudrate} baud")
 
-        repeated_reset() # this is crucial for direct serial connections
+        repeated_reset(self) # this is crucial for direct serial connections
         
     def write(self, sth):
         self.s.write(sth.encode("ascii"))

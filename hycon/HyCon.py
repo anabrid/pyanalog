@@ -313,7 +313,21 @@ class HyCon:
         value = int(value * self.DPT_MAX_INT_VALUE) # 0000 <= value <= 1023
         return self.query(f"P{address:04X}{number:02X}{value:04d}", expect(eq=f"P{address:X}.{number:X}={value:d}"))
     
-    read_dpts = wont_implement("because it doesn't actually self.query the hardware but just ask the HC about its internal storage.")
+    def read_dpts(self):
+        """
+        Asks the Hybridcontroller for reading out *all* DPTs in the machine (also DPT24 modules).
+        Returns mapping of PT module to list of values in that module.
+        """
+        response = self.query("q", '.*,.*').reply.string
+        # strings looks like:
+        #{'200': '204,44,244,102,89,244,89,639,639,1023,1023,1023,639,639,1023,1023,1023,300,300,79,79,102,102,300',
+        # '300': '0,0,0,0,0,0,0,306'} 
+        # numbers is the same parsed as hex/int.
+        strings = dict([ items.split(":") for items in response.strip().split(";") ])
+        numbers = { int(k, base=16): list(map(int, v.split(","))) for k,v in strings.items() }
+        dpt2float = lambda val: val / 2**self.DPT_RESOLUTION
+        floats = { k: list(map(dpt2float, v)) for k,v in numbers.items() }
+        return floats
     
     def get_status(self):
         "Queries the HybridController about it's current status. Will return a dictionary."
