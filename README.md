@@ -15,9 +15,10 @@ analog computers on a software developer/mathematican level:
   
 ## Please see the docs!
 See doc/index.rst or call "make docs".
-You can also go to https://www.anabrid.dev/html/ or
-https://pyanalog.readthedocs.io/ for the rendered docs
-(yes, we will finally decide on one place...).
+You also find the generated docs at https://www.anabrid.dev/pyanalog/
+
+We used to serve them from https://pyanalog.readthedocs.io/ but this
+page is known to be faulty.
   
 ## PyFPAA: An approach to programmable analog computers
 

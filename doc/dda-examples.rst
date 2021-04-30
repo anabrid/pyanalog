@@ -32,6 +32,15 @@ Traditional DDA circuits
    angles as degrees of freedom. The example stems from section 6.25 in
    Bernds new book (ap2.pdf). Again, we have a small Python code for plotting
    the results.
+   
+Command line DDA usage
+----------------------
+
+.. toctree::
+   :maxdepth: 1
+   
+   shell-example
+   
 
 Python DDA circuits
 -------------------

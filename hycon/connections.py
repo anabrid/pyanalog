@@ -171,6 +171,8 @@ class tcpsocket:
         self.s.connect((host,port))
         self.fh = self.s.makefile(mode="rw", encoding="utf-8")
         log.info(f"Connected to TCP {host}:{port}")
+        
+        repeated_reset(self)
     def write(self, sth):
         "Expects sth to be a string"
         self.s.sendall(sth.encode("ascii"))
