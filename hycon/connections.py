@@ -191,7 +191,7 @@ class serial:
             **passed_options)
         log.info(f"Connected to serial port {port} with {baudrate} baud")
 
-        repeated_reset() # this is crucial for direct serial connections
+        repeated_reset(self) # this is crucial for direct serial connections
         
     def write(self, sth):
         self.s.write(sth.encode("ascii"))
