@@ -25,7 +25,7 @@ parts of Bernds auto-setup code to python in order to be able to use the
 same YAML files.
 """
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 from .HyCon import HyCon
 
@@ -225,7 +225,7 @@ class AutoConfHyCon(HyCon):
         if not "ro-group" in self.conf.problem: raise ValueError("No Read-out group defined")
         data = self.get_data() # shape (sample_points, readout_group_length)
         if not data: return None
-        return { name: [line[i] for line in data] for i,name in enumerate(self.conf.problem["ro-group"]) }
+        return OrderedDict( (name, [line[i] for line in data]) for i,name in enumerate(self.conf.problem["ro-group"]) )
     
     def set_pt_by_name(self, name, value):
         "Set a digital potentiometer by name"
@@ -254,3 +254,8 @@ class AutoConfHyCon(HyCon):
             if p.address in floats and p.number < len(floats[p.address]):
                 named_values[name] = floats[p.address][p.number]
         return named_values
+    
+    def read_ro_group_by_name(self):
+        "Returns an OrderedDict of read-out group elements, with names"
+        req = self.read_ro_group()
+        return OrderedDict(zip(self.conf.problem["ro-group"], map(float,req.response.split(";"))))
