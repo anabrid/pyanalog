@@ -137,6 +137,7 @@ def autosetup(hycon, conf, reset=True):
 
         # Define read out group if specified:
         if "ro-group" in problem:
+            # Remark: This will fail with weird "None" errors for elements in ro-group which are not defined.
             addresses = list(map(elements.get, problem["ro-group"]))
             hycon.set_ro_group(addresses)
     except KeyError as e:
