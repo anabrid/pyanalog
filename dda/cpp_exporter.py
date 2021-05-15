@@ -860,9 +860,11 @@ class Solver:
         return self # chainable!
 
     def as_ndarray(self):
+        "Return run results as a ``np.ndarray`` (i.e. like a table without headers, typically 2D data)"
         if not hasattr(self, "stdout"): raise LogicError("First call run() on the simulator before data readout.")
         return numpy_read(self.stdout, binary=self.binary, return_ndarray=True, return_recarray=False, fields_to_export=self.fields)
         
     def as_recarray(self):
+        "Return run results as a ``np.recarray`` (i.e. like CSV table with named headers)"
         if not hasattr(self, "stdout"): raise LogicError("First call run() on the simulator before data readout.")
         return numpy_read(self.stdout, binary=self.binary, return_ndarray=True, return_recarray=True,  fields_to_export=self.fields)
