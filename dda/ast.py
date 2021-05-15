@@ -41,7 +41,7 @@ represents a (traditional) DDA file. From a python perspective, a
 """
 
 # all "batteries included":
-import os, sys, pprint, collections, types, warnings
+import os, sys, pprint, collections, types, warnings, itertools
 identity = lambda x:x
 flatten = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
@@ -859,7 +859,7 @@ class State(collections.UserDict):
         linearized_state = self.map_tails(register_computing_element, map_root=strict)
         linearized_state.update(intermediates)
         return linearized_state
-        
+    
     def variable_ordering(self):
         """
         Will perform an analysis of all variables occuring in this state (especially in the RHS).
@@ -1009,6 +1009,43 @@ class State(collections.UserDict):
                 # could also raise an issue, because it is kind of serious.
         
         return vars
+
+    def remove_duplicates(self):
+        """
+        Assuming a linearized state, this function simplifies the system by removing/resolving
+        duplicate entries. No further renaming takes place: Always the first encounter of a
+        term determines the name for all equivalent terms.
+        
+        Returns a new state.
+        """
+        # 1. equivalence classes (master_key: [equivalents]} and reverse lookup values {term: master_key}
+        classes, values = {}, {}
+        for i,iv in self.items():
+            if iv in values:
+                classes[ values[iv] ].append(i)
+            else: # new equivalence class
+                classes[ i ] = []
+                values[ iv ] = i
+        # 2. Create the new state based on the equivalence classes
+        #    Start with a straight copy of the master classes
+        ret = State({ master: self[master] for master in classes.keys() })
+        # 3. Recurvsively replace equivalent class members in any term in ret
+        for master, equivalents in classes.items():
+            slave2master = lambda varname: master if varname in equivalents else varname
+            for testkey, testval in ret.items():
+                ret[testkey] = testval.map_variables(slave2master, returns_symbol=False)
+        return ret
+    
+    def term_statistics(self):
+        """
+        Assuming a linearized state, tells how much each term occurs within this state.
+        Returns instance of ``collections.Counter``. For simplicity, the term heads
+        are returned as strings.
+        
+        Typical usage is like ``state.name_computing_elements().remove_duplicates().term_statistics()``
+        """
+        return collections.Counter([ term.head for term in self.values() ])
+        
 
     def export(self, to, **passed_args):
         "Syntactic sugar for dda.export(), for convenience"
