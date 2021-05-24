@@ -12,7 +12,7 @@ MODULES := dda fpaa hycon
 PYTEST=python -m pytest
 
 doc: 
-	cd doc && $(MAKE) clean && $(MAKE) -j html dirhtml
+	cd doc && $(MAKE) clean && $(MAKE) -j html dirhtml text
 
 doctest:
 	$(PYTEST) --doctest-modules --pyargs dda --ignore=dda/__main__.py  -v

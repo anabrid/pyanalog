@@ -89,14 +89,13 @@ just go to the ``doc`` directory and type ``make html`` or ``make pdf`` to
 generate the docs locally. If you have a mixed Python2/Python3 system, call
 ``make html SPHINXBUILD="python3 -msphinx"`` to ensure using Python3.
 
-This documentation is both hosted at  `ReadTheDocs <http://readthedocs.io/>`_
-as well as an `Anabrid Dev Server <https://www.anabrid.dev/>`_.  You can find
-the docs at
+This documentation is built by our Gitlab Continous Integration tool and uploaded
+as static files to our `Anabrid Dev Server <https://www.anabrid.dev/>`_
+(formally ReadTheDocs). you can find the docs at:
 
-- https://pyanalog.readthedocs.io/en/latest/
-- https://www.anabrid.dev/dirhtml/ a mirror
-- https://www.anabrid.dev/text/ for text files ;-)
-- https://www.anabrid.dev/latex/pydda.pdf for a PDF version
+- https://www.anabrid.dev/pyanalog/html/ primary ressources
+- https://www.anabrid.dev/pyanalog/text/ for text files ;-)
+- https://www.anabrid.dev/pyanalog/latex/pydda.pdf for a PDF version (known to be buggy)
 
 
 Indices and tables
