@@ -21,6 +21,8 @@
 # packaging of this file. Please review the following information to
 # ensure the GNU General Public License version 3 requirements
 # will be met: https://www.gnu.org/licenses/gpl-3.0.html.
+# For Germany, additional rules exist. Please consult /LICENSE.DE
+# for further agreements.
 # ANABRID_END_LICENSE
 #
 
