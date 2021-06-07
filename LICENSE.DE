@@ -1,0 +1,85 @@
+ZUSÄTZLICHER APPENDIX FÜR GPL3-LIZENSIERUNG IN DEUTSCHLAND
+==========================================================
+
+Der Sourcecode in diesem Repository ist für nicht-gewerbliche Zwecke GPL3-lizensiert.
+Damit beabsichtigt die Urheberrechtshalterin, Anabrid GmbH, die Benutzung zu
+Ausbildungs-, Lehr- und Forschungszwecken zu unterstützen. Dies geschieht in bestem
+Wissen der internationalen Open Source-Kultur.
+
+Leider reicht es in Deutschland nicht, eine Software GPL zu lizensieren, da der in
+der GPL beschriebene Ausschluss von Haftungs- und Gewährleistungsrechten in der
+Regel keine Gültigkeit hat. Insbesondere trift dies zu, wenn eine lizenznehmende
+Partei abmahnfähig ist und von diesen Rechten Gebrauch machen will.
+
+Die Anabrid schützt sich gegen diese Ansprüche in mehrfacher Hinsicht:
+
+1. Die Software ist dual lizensiert, die Open-Source-Lizenz gilt ausschließlich für
+   Privatpersonen und nicht-gewerblichen Gebrauch. Für jeden anderen Gebrauch muss
+   ein proprietärer Lizenzvertrag mit der Anabrid GmbH abgeschlossen werden.
+   Bitte erkundigen Sie sich diesbezüglich auf http://www.anabrid.com/licensing
+   oder per E-Mail/Telefon, siehe www.anabrid.com/imprint/ für Kontaktdaten.
+   
+2. Für die freie Lizenz führen wir den APPENDIX DE ein, der in Deutschland und
+   Ländern mit ähnlicher Rechtsprechung gilt. Dieser ist unten angehängt.
+   
+3. Wir weisen ferner darauf hin, dass:
+
+   (a.) die Anabrid GmbH dem Lizenznehmer keine Rechte einräumt, sondern vielmehr
+        der Hersteller der Open-Source-Software die Weitergabe und den Einsatz
+        durch den Lizenznehmer unter bestimmten Bedingungen freigegeben hat.
+        Hersteller sind alle natürlichen Personen, die den Code des
+        Open-Source-Produktes hergestellt haben. Sie sind z.T. in der Git-History
+        ersichtlich.
+
+   (b.) Es wird klargestellt, dass die Open-Source-Software kostenlos zur Verfügung
+        gestellt wird. Damit ist das Schenkungsrecht anwendbar, sodass die 
+        Haftung vermutlich nur auf Vorsatz und grobe Fahrlässigkeit beschränkt wird.
+        
+   Diese beiden Punkte entstammen Empfehlungen von RA Dr. Wolf Günther, Quelle:
+   http://www.medizin-edv.de/ARCHIV/Haftung_fuer_Fehler....pdf
+
+   Es sei ferner betont, dass die PyAnalog-Software eine Library ist, das heisst
+   als Grundlage zur Herstellung von Anwendungen dient, aus welchen erst ein
+   Haftungsrisiko entstehen kann. Die PyAnalog-Software implementiert grundlegende
+   Methoden und Algorithmen der Informatik und angewandten Mathematik und keine
+   Anwendungen. Sämtliche beigelegte Testanwendungen sind derart trivial, dass es
+   quasi ausgeschlossen ist, dass daraus ein Fahrlässigkeitsanspruch entsteht.
+   
+
+Berlin, den 07.06.2021,
+die Geschäftsführung der Anabrid GmbH
+
+   
+APPENDIX DE für freie Lizenzen
+------------------------------
+
+Vorab: "Herausgeber" meint jede Person, die dieses Programm bzw. Programmteil an
+andere Personen weitergibt. "Verwender" meint jede Person, die dieses Programm bzw.
+Programmteil verwendet.
+
+(1.)
+Für die Haftung des Herausgebers – gleich aus welchem Rechtsgrund – gelten folgende
+Regelungen:
+
+Der Herausgeber haftet unbeschränkt bei eigenem Vorsatz und eigener grober
+Fahrlässigkeit. Bei grober Fahrlässigkeit ist die Haftung im unternehmerischen
+Verkehr jedoch auf den Ersatz des typischen vorhersehbaren Schadens begrenzt.
+Im Übrigen haftet der Herausgeber nicht.
+
+Die Verjährungsfrist für Ansprüche auf Schadenersatz gegen den Herausgeber beträgt
+ein Jahr, gerechnet ab dem gesetzlichen Verjährungsbeginn, es sei denn, der
+Schaden wurde vorsätzlich herbeigeführt.
+Die vorstehenden Haftungsbeschränkungen und -begrenzungen gelten nicht für Ansprüche
+nach dem Produkthaftungsgesetz sowie bei Schäden aus der Verletzung des Lebens,
+des Körpers oder der Gesundheit.
+
+(2.)
+Ist die Haftung des Herausgebers ausgeschlossen oder eingeschränkt, so gilt das
+Gleiche auch für die Haftung seiner Mitarbeiter, Erfüllungs- und Verrichtungsgehilfen.
+
+(3.)
+Dieser Appendix DE selbst steht unter der Lizenz CC0 und ebenfalls unter
+Appendix DE. Er kann, aber muss nicht zusammen mit dem Programm an Dritte 
+eitergegeben werden.
+
+Er wurde geschrieben von RA Thomas Meier-Bading, Quelle: https://www.meier-bading.de/blog/gpl/
