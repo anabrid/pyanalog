@@ -13,6 +13,8 @@ PYTEST=python -m pytest
 
 doc: 
 	cd doc && $(MAKE) clean && $(MAKE) -j html dirhtml
+	# also zip docs for download
+	cd _build && tar cvfz pyanalog-docs-html.tar.gz html
 
 doctest:
 	$(PYTEST) --doctest-modules --pyargs dda --ignore=dda/__main__.py  -v
