@@ -512,10 +512,12 @@ def to_cpp(state, number_precision=math.inf, constexpr_consts=True):
         if not is_number(var): raise ValueError(f"Got a weird {type(var)} in a constant context: {var}")
         return number2cstr(var)
 
-    # rename reserved keywords in the C language
-    #c_names = { "const": "constant", "int": "Int", "div": "Div" }
-    #c_substitute = lambda head: c_names.get(head, head)
-    #c_state = State({ var: map_heads(state[var], c_substitute) for var in state })
+    # HOTFIX rename reserved keywords in the C language
+    # FIXME: Should have a better solution valid for *every* possible collision. 
+    # C++ namespaces are apparently not enough.
+    c_names = { "div": "Div", "abs": "Abs" }
+    c_substitute = lambda head: c_names.get(head, head)
+    state = State({ var: state[var].map_heads(c_substitute) for var in state })
 
     # Extract int(..., timestep, initial_data) and rewrite reserved C keyword
     # Also extract diff(..., timestep) and rewrite symbol

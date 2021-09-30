@@ -120,7 +120,7 @@ cpp_impl = """
 // cstdlib. TODO: Should rename div to Div; following int->Int.
 
 A neg(double a) { return -a; }
-A div(double a, double b) { return a/b; }
+A Div(double a, double b) { return a/b; }
 D Int(T... a) { return -(a + ...); } // int() is reserved in C
 D Diff(T... a) { return -(a + ...); } // diff() is not reserved in C, but this is symmetric to Int.
 D sum(T... a) { return -(a + ...); }
@@ -134,7 +134,7 @@ A le(double a, double b, double c, double d) { return a <= b ? c : d; }
 A gt(double a, double b, double c, double d) { return a >  b ? c : d; }
 A ge(double a, double b, double c, double d) { return a >= b ? c : d; }
 // A sqrt(double a) is part of <cmath>
-A abs(double a) { return a < 0 ? -a : a; } // abs(int) part of cstdlib
+A Abs(double a) { return a < 0 ? -a : a; } // abs(int) part of cstdlib
 // A exp(double a) is part of <cmath>
 A floor(double a) { return (int)(a); } // also part of cmath since c++11
 A logical_xor(double a, double b) { return a != b ? 1 : 0; } // attention with floats!
