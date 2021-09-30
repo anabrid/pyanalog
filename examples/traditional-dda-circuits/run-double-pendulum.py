@@ -35,8 +35,8 @@ def sh(cmd):
 # Run the double pendulum
 run_simulation = True
 if run_simulation:
-    sh("python -m dda  double-pendulum.dda C > double-pendulum.cpp")
-    sh("g++ --std=c++17 -o double-pendulum.out double-pendulum.cpp")
+    sh("python3 -m dda  double-pendulum.dda C > double-pendulum.cpp")
+    sh("g++ --std=c++1z -o double-pendulum.out double-pendulum.cpp")
     sh("./double-pendulum.out --max_iterations=15000 --modulo_write=10 > data.out")
 
 from pylab import *

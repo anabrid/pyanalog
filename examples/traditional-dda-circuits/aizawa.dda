@@ -1,0 +1,24 @@
+# http://www.algosome.com/articles/aizawa-attractor-chaos.html
+
+dt = const(.01)
+# a  = const(.95)
+# b  = const(.7)
+# c  = const(.325) # Original 0.6, dann 0.65, dann mit 1/2 wg. z skaliert
+# d  = const(3.5)  # Mit den Skalierungskonstanten zusammengezogen 
+# e  = const(.25)
+# f  = const(1)    # War .1, dann auf 1 skaliert um den Faktor 27 handlicher zu bekommen
+
+x_cubed = mult(x, mult(x, x)) # OK
+z_cubed = mult(z, mult(z, z)) # OK
+
+# zb mit .4 skalieren
+zb = sum(neg(mult(.8, z)), .28)
+
+#x mit .3333 skalieren
+x = int(mult(4.6666, y), neg(mult(x, mult(2.5, zb))), dt, 1) # OK
+
+#y mit .25 skalieren
+y = int(neg(mult(2.625, x)), mult(neg(y), mult(2.5, zb)), dt, 0) # OK
+
+#scale z by 1/2:
+z = int(-.325, neg(mult(.95, z)), mult(1.3333, z_cubed), mult(4.5, mult(x, x)), neg(mult(z, mult(2.7, x_cubed))), dt, 0) # OK
