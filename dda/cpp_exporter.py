@@ -209,8 +209,8 @@ struct csv_writer {
     
     void write_header() const {
         if(binary_output || skip_header) return;
-        for(size_t i=0; i<query_variables.size();)
-            std::cout << query_variables[i++] << sep(i);
+        for(size_t i=0; i<query_variables.size(); i++)
+            std::cout << query_variables[i] << sep(i);
     }
     
     void write_line(const %(state_type)s& %(state_name)s, const %(aux_type)s& %(aux_name)s, %(const_type_qualifier)s %(const_type)s& %(const_name)s) const {
@@ -361,8 +361,8 @@ int main(int argc, char** argv) {
             cerr << "* Overwrite constants: Not possible since compiled as compile time constants." << endl;
             #endif
             cerr << "* Query fields: (if none given, all are dumped)";
-            for(size_t i=0; i<all_variables.size();) { cerr << endl << ind;
-                for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i++] << (i!=all_variables.size() ? ", " : ""); }
+            for(size_t i=0; i<all_variables.size(); i++) { cerr << endl << ind;
+                for(size_t j=0;j<5 && i<all_variables.size();j++) cerr << all_variables[i] << (i!=all_variables.size() ? ", " : ""); }
             cerr << endl << endl << "Exemplaric usage:" << endl;
             cerr << ind << argv[0] << " --foo=1 --bar=0 --baz=7 --ic:var1=0.5 --dt:var2=0.01 --const:something=42 var1 var2 var3" << endl;
             cerr << endl << "For more options and help, see the PyDDA code documentation at https://pyanalog.readthedocs.io/" << endl;
