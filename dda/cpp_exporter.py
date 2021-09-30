@@ -442,7 +442,7 @@ int main(int argc, char** argv) {
 
 """
 
-def to_cpp(state, number_precision=math.inf, constexpr_consts=True):
+def to_cpp(state, number_precision=math.inf, constexpr_consts=False):
     """
     Given a state, returns standalone C++ code as string.
     
@@ -552,10 +552,10 @@ def to_cpp(state, number_precision=math.inf, constexpr_consts=True):
     aux_var_definition = varlist("double", vars.aux.all)
     
     # For runtime (i.e. CLI invocation) introspection capabilities
-    lookup = lambda struct: CC(f'if({lookup_name} == "{var}") return &{var};' for var in struct)
+    lookup = lambda struct, prefix="": CC(f'if({lookup_name} == "{var}") return &{prefix}{var};' for var in struct)
     state_vars_by_name = lookup(vars.evolved)
     aux_vars_by_name = lookup(vars.aux.all)
-    explicit_constants_by_name = lookup(vars.explicit_constants)
+    explicit_constants_by_name = lookup(vars.explicit_constants, prefix=const_type+"::")
     
     # For even more runtime (i.e. CLI invocation) introspection capabilities
     variable_namings = {
