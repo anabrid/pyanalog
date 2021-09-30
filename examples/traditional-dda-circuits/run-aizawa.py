@@ -68,9 +68,6 @@ def show2(mat):
     ylim(yedges[[0, -1]])
     #plt.show()
 
-
 show2(mat)
-
-
 
 savefig("aizawa.pdf")
