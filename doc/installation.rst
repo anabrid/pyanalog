@@ -40,6 +40,20 @@ right now.
    `at the github commit history <<https://github.com/anabrid/pyanalog/commits/master>`_
    where there is a green checkmark at the tests (and not a red crossmark).
    I promise there will be releases/versions/tags soon :-)
+   
+Minimal starter (Mac OS X)
+--------------------------
+
+.. code-block:: bash
+    $ pip3 install scipy numpy matplotlib # the only dependencies you really need
+    $ git clone https://github.com/anabrid/pyanalog.git
+    $ cd pyanalog
+    $ python3 setup.py develop --user # this way you can import the python module from anwhere
+    $ cd examples/traditional-dda-circuits
+    $ python3 -m dda chua.dda c > chua.cpp
+    $ c++ --std=c++1z chua.cpp     # c++1z-Standard is specific to Mac / clang
+    $ ./a.out > chua.dat
+    $ gnuplot etc...
 
     
 Recommended way of installation (developer machine setup)
