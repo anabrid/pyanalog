@@ -45,9 +45,7 @@ s[yi]  = dda.neg(dda.int(dda.mult(yd,1/dt), dt, 0))
 s[y2]  = dda.mult(y,y)
 s[y2ohne] = dda.diff(y2, dt, 0)
 
-from dda.cpp_exporter import compile, run
-compile(s.export(to="C"))
-data = run(arguments={'max_iterations': t_final / dt, "rk_order": 1}, return_recarray=True)
+data = s.export(to="CppSolver").run(max_iterations= t_final / dt, rk_order=1).as_recarray()
 xtime = np.arange(0, t_final, dt)
 assert len(data) == len(xtime)
 

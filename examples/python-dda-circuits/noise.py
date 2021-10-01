@@ -19,18 +19,16 @@ s["a"] = dda.noise(0)
 s["i"] = dda.int(Symbol("a"), dt, 0)
 
 
-from dda.cpp_exporter import compile, run
-compile(s.export(to="C"))
-data = run(arguments={'max_iterations': t_final / dt, "rk_order": 4} )# return_recarray=True)
+data = s.export(to="CppSolver").run(max_iterations= t_final / dt, rk_order=4).as_recarray()
 xtime = np.arange(0, t_final, dt)
-assert len(data) == len(xtime)
+#assert len(data) == len(xtime)
 
 from matplotlib.pylab import *
-ion(); clf()
+#ion(); clf()
 
 #cols = data.dtype.names
 cols = "a i".split()
 
 for n in cols: plot(xtime, data[n], label=n)
 legend()
- 
+show()

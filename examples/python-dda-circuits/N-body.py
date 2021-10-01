@@ -112,12 +112,9 @@ def run_with_old_dda2c_code(dda_fname):
     return result_data
 
 def run_with_new_pydda(dda_content):
-    from pydda.dsl import read_traditional_dda
-    from pydda.cpp_exporter import compile, run
+    from dda import read_traditional_dda
     state = read_traditional_dda(dda_content)
-    cpp_code = state.export(to="C++")
-    compile(cpp_code)
-    result_data = run()
+    result_data = state.export(to="CppSolver").run().as_ndarray()
     return result_data
 
 run_with_new_pydda(dda_content)

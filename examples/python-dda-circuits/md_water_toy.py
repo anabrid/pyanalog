@@ -194,14 +194,12 @@ from os import system
 from numpy import * 
 from numpy import abs, sum # especially overwrites abs, sum, ... again
 from matplotlib.pyplot import *
-from dda.cpp_exporter import compile, run
 
 # choose what to plot
 fields = evolved_fields
 #fields = [] # by default, all
 
-compile(c_code, "md_water.cc")
-data = run(fields_to_export=fields, return_ndarray=True, arguments=c_runtime_args)
+data = cstate.export(to="CppSolver").run(*fields, **c_runtime_args).as_recarray()
 
 all_columns = data.dtype.names
 
