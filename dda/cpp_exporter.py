@@ -684,7 +684,7 @@ def compile(code, c_filename=default_c_filename, compiler="g++", compiler_output
     Will raise an error if compilation fails.
     """
     from os import system
-    with open(c_filename, "w") as fh:
+    with open(c_filename, "w", encoding="utf-8") as fh:
         print(code, file=fh)
     if system(f"{compiler} -o{compiler_output} {options} {c_filename}"):
         raise ValueError("Could not compile C source!")
