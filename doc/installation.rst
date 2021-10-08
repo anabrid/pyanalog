@@ -37,14 +37,18 @@ right now.
    We try to keep the `master branch <https://github.com/anabrid/pyanalog/commits/master>`_
    in a working condition. If things do not work, you might want to checkout the last
    working commit in the master. You can recognize it 
-   `at the github commit history <<https://github.com/anabrid/pyanalog/commits/master>`_
+   `at the github commit history <https://github.com/anabrid/pyanalog/commits/master>`_
    where there is a green checkmark at the tests (and not a red crossmark).
    I promise there will be releases/versions/tags soon :-)
    
-Minimal starter (Mac OS X)
---------------------------
+Mac OS X-specific installation notes
+------------------------------------
+
+The following code block shows a minimal way how quickly to start on Mac OS X.
+This assumes you have some C++ compiler available, e.g. from Xcode (Clang).
 
 .. code-block:: bash
+
     $ pip3 install scipy numpy matplotlib # the only dependencies you really need
     $ git clone https://github.com/anabrid/pyanalog.git
     $ cd pyanalog
@@ -55,7 +59,49 @@ Minimal starter (Mac OS X)
     $ ./a.out > chua.dat
     $ gnuplot etc...
 
-    
+Note that with the Clang/LLVM compiler, you have to set ``--std=c++1z`` instead of 
+``--std=c++17`` (as with GCC).
+
+Microsoft Windows-specific installation notes
+---------------------------------------------
+
+On Windows, we have made best experiences with *MinGW* providing the compiler. Make sure
+you add the installation directory to your PATH in order to be able to access the compiler
+from everywhere (i.e. every terminal).
+
+For the Python environment, you can install it from the Windows store (and use pip as usual)
+or install an IDE such as *Spyder*. This is particularly handy because it provides also a
+lean way to setup the developer machine. For instance, there is a menu item
+*Tools/Current user environment variables...* which allows you to set the system wide
+PATH. The ``HKEY_CURRENT_USER\Environment`` should, as a list, probably contain paths such
+as
+
+.. code-block::
+
+    C:\MinGW\bin
+    C:\Program Files\Spyder\Python
+
+This way, you are fully flexible to use both the C compiler as well as the Python binaries
+from everywhere. If you do not have a comfortable IDE, you might want to look into
+*Powershell* as well as the new
+`Windows Terminal <https://www.microsoft.com/de-de/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab>`_
+which can be obtained in the Microsoft store for free.
+
+.. note::
+
+   At Windows, we have experienced some hazzles with *UTF-16* encoded files. While we are
+   working on getting more compatibility with the PyAnalog tools, you can convert any
+   file to *UTF-8* by using such a  Powershell command:
+   
+   .. code-block::
+
+       Get-Content nameOfYourFile.txt | Out-File -Encoding UTF8 nameOfYourFile-fixed.txt
+   
+   Also don't forget that Windows generally does not allow you to open files for writing while
+   they are opened for reading. If you are used to the unix kind of dealing with files, this can
+   make some steps more cumbersome and result in more copies of files.
+
+
 Recommended way of installation (developer machine setup)
 ---------------------------------------------------------
 
