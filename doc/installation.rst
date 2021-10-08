@@ -82,7 +82,23 @@ as
     C:\Program Files\Spyder\Python
 
 This way, you are fully flexible to use both the C compiler as well as the Python binaries
-from everywhere. If you do not have a comfortable IDE, you might want to look into
+from everywhere. If you still experience that Windows wants you to visit the Microsoft
+store in order to do a *second and independent* installation of Python (which means you also
+have two sets of completely independent module installations, individually managed by *pip*),
+you might want to carry out `these steps <https://stackoverflow.com/a/63203720>`_ in order
+to get rid of the python stub pointers to the store:
+
+.. code-block::
+
+    cd C:\Users\<you name>\AppData\Local\Microsoft\WindowsApps
+    del python.exe
+    del python3.exe
+
+
+Further software recommendations for Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you do not have a comfortable IDE, you might want to look into
 *Powershell* as well as the new
 `Windows Terminal <https://www.microsoft.com/de-de/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab>`_
 which can be obtained in the Microsoft store for free.
