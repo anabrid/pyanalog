@@ -254,7 +254,7 @@ class Symbol:
         """
         return Symbol(mapping(self.head), *[(el.map_heads(mapping) if is_symbol(el) else el) for el in self.tail])
 
-    def map_variables(self, mapping, /, returns_symbol=False):
+    def map_variables(self, mapping, returns_symbol=False):
         """
         Calls a mapping function on all variables within the (nested) subexpressions.
         The mapping is effectively carried out on the head (ie. maps strings). This
@@ -296,7 +296,7 @@ class Symbol:
         return (identity if returns_symbol else Symbol)(mapping(self.head)) if self.is_variable() else \
             Symbol(self.head, *[ (el.map_variables(mapping, returns_symbol=returns_symbol) if is_symbol(el) else el) for el in self.tail ])
 
-    def map_tails(self, mapping, /, map_root=False):
+    def map_tails(self, mapping, map_root=False):
         """
         Calls a mapping function on all tails in all (nested) subexpressions.
         The mapping is carried out on the tail symbols (ie. maps Symbols).
@@ -356,7 +356,7 @@ class Symbol:
         return mapping(r) if map_root else r
 
     
-    def map_terms(self, mapping, /, returns_symbol=False):
+    def map_terms(self, mapping, returns_symbol=False):
         """
         Calls a mapping function on all terms within the (nested) subexpressions.
         The mapping is effectively carried out on the term head (ie. maps strings).
