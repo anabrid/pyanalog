@@ -87,6 +87,11 @@ from everywhere. If you do not have a comfortable IDE, you might want to look in
 `Windows Terminal <https://www.microsoft.com/de-de/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab>`_
 which can be obtained in the Microsoft store for free.
 
+While it is attractive to download the PyAnalog software as a ZIP file from Github, we
+recommend you instead to install a proper Git client, such as the comprehensible
+`Github Desktop <https://desktop.github.com>_` GUI. This way it is as easy as a single click
+on *update* to obtain a more recent version of the PyAnalog code.
+
 .. note::
 
    At Windows, we have experienced some hazzles with *UTF-16* encoded files. While we are
