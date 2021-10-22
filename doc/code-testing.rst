@@ -31,6 +31,97 @@ Acceptance/Integration tests
     automatically. This differs them from other code contributions, such
     as the example codes in the ``examples/`` directory, which cannot be
     evaluated for correctnes.
+    
+How to run the tests
+--------------------
+
+Just run ``make test`` in the root directory to run all of the tests. The output
+should look somewhat like this one:
+
+::
+
+    $make test
+    make doctest unittests
+    make[1]: Verzeichnis ..../dda wird betreten
+    python3 -m pytest --doctest-modules --pyargs dda --ignore=dda/__main__.py  -v
+    ============================================= test session starts =============================================
+    platform linux -- Python 3.9.7, pytest-6.2.5, py-1.10.0, pluggy-0.13.1 -- /usr/bin/python3
+    cachedir: .pytest_cache
+    rootdir: /home/sven/Analog/Software/dda
+    collected 22 items                                                                                            
+
+    dda/__init__.py::dda.clean PASSED                                                                       [  4%]
+    dda/ast.py::dda.ast.BreveState PASSED                                                                   [  9%]
+    dda/ast.py::dda.ast.State PASSED                                                                        [ 13%]
+    dda/ast.py::dda.ast.State.dependency_graph PASSED                                                       [ 18%]
+    dda/ast.py::dda.ast.State.equation_adder PASSED                                                         [ 22%]
+    dda/ast.py::dda.ast.State.name_computing_elements PASSED                                                [ 27%]
+    dda/ast.py::dda.ast.State.variable_ordering PASSED                                                      [ 31%]
+    dda/ast.py::dda.ast.Symbol PASSED                                                                       [ 36%]
+    dda/ast.py::dda.ast.Symbol.draw_graph PASSED                                                            [ 40%]
+    dda/ast.py::dda.ast.Symbol.map_heads PASSED                                                             [ 45%]
+    dda/ast.py::dda.ast.Symbol.map_tails PASSED                                                             [ 50%]
+    dda/ast.py::dda.ast.Symbol.map_terms PASSED                                                             [ 54%]
+    dda/ast.py::dda.ast.Symbol.map_variables PASSED                                                         [ 59%]
+    dda/ast.py::dda.ast.symbols PASSED                                                                      [ 63%]
+    dda/computing_elements.py::dda.computing_elements PASSED                                                [ 68%]
+    dda/cpp_exporter.py::dda.cpp_exporter.run PASSED                                                        [ 72%]
+    dda/dsl.py::dda.dsl PASSED                                                                              [ 77%]
+    dda/dsl.py::dda.dsl.read_traditional_dda SKIPPED (all tests skipped by +SKIP option)                    [ 81%]
+    dda/scipy.py::dda.scipy.to_scipy PASSED                                                                 [ 86%]
+    dda/scipy.py::dda.scipy.to_scipy.rhs PASSED                                                             [ 90%]
+    dda/sympy.py::dda.sympy.to_latex PASSED                                                                 [ 95%]
+    dda/sympy.py::dda.sympy.to_sympy PASSED                                                                 [100%]
+
+    ======================================== 21 passed, 1 skipped in 1.82s ========================================
+    python3 -m pytest --doctest-modules --pyargs hycon  -v
+    ============================================= test session starts =============================================
+    platform linux -- Python 3.9.7, pytest-6.2.5, py-1.10.0, pluggy-0.13.1 -- /usr/bin/python3
+    cachedir: .pytest_cache
+    rootdir: /home/sven/Analog/Software/dda
+    collected 12 items                                                                                            
+
+    hycon/HyCon.py::hycon.HyCon PASSED                                                                      [  8%]
+    hycon/HyCon.py::hycon.HyCon.ensure PASSED                                                               [ 16%]
+    hycon/HyCon.py::hycon.HyCon.expect PASSED                                                               [ 25%]
+    hycon/autosetup.py::hycon.autosetup.DotDict PASSED                                                      [ 33%]
+    hycon/autosetup.py::hycon.autosetup.PotentiometerAddress PASSED                                         [ 41%]
+    hycon/connections.py::hycon.connections PASSED                                                          [ 50%]
+    hycon/replay.py::hycon.replay.HyConRequestReader PASSED                                                 [ 58%]
+    hycon/replay.py::hycon.replay.consume PASSED                                                            [ 66%]
+    hycon/replay.py::hycon.replay.consume.list PASSED                                                       [ 75%]
+    hycon/replay.py::hycon.replay.consume.number PASSED                                                     [ 83%]
+    hycon/replay.py::hycon.replay.delayed PASSED                                                            [ 91%]
+    hycon/replay.py::hycon.replay.replay PASSED                                                             [100%]
+
+    ============================================= 12 passed in 0.03s ==============================================
+    # all other modules don't have useful tests anyway
+    python3 -m pytest -v
+    ============================================= test session starts =============================================
+    platform linux -- Python 3.9.7, pytest-6.2.5, py-1.10.0, pluggy-0.13.1 -- /usr/bin/python3
+    cachedir: .pytest_cache
+    rootdir: /home/sven/Analog/Software/dda
+    collected 15 items                                                                                            
+
+    tests/test_cpp_interface.py::test_similar_dtypes PASSED                                                 [  6%]
+    tests/test_differentiation.py::test_polynomial_diff PASSED                                              [ 13%]
+    tests/test_differentiation.py::test_sinusodial_diff PASSED                                              [ 20%]
+    tests/test_exponential_solution.py::test_run_simulation PASSED                                          [ 26%]
+    tests/test_latex_symbols.py::test_state PASSED                                                          [ 33%]
+    tests/test_latex_symbols.py::test_c_code PASSED                                                         [ 40%]
+    tests/test_latex_symbols.py::test_dda_code PASSED                                                       [ 46%]
+    tests/test_simulation_time.py::test_setup_state PASSED                                                  [ 53%]
+    tests/test_simulation_time.py::test_run_simulation PASSED                                               [ 60%]
+    tests/test_symbol_mappings.py::test_map_variable PASSED                                                 [ 66%]
+    tests/test_traditional_ddas.py::test_if_double_pendulum_is_scaled PASSED                                [ 73%]
+    tests/test_traditional_ddas.py::test_if_double_pendulum_is_working PASSED                               [ 80%]
+    tests/test_traditional_ddas.py::test_if_chua_is_scaled PASSED                                           [ 86%]
+    tests/test_traditional_ddas.py::test_notch_is_scaled PASSED                                             [ 93%]
+    tests/test_traditional_ddas.py::test_nose PASSED                                                        [100%]
+
+    ============================================= 15 passed in 11.23s =============================================
+    make[1]: Verzeichnis ..../dda wird verlassen
+
 
 Test scripts can also be run and inspected with python interactively, i.e.
   
@@ -75,11 +166,23 @@ doctest builtin, for instance:
 
 See also the ``Makefile`` provided in the root directory.
 
-What else about tests
----------------------
+Where are the tests running?
+----------------------------
 
-Continous integration
-   Tests are run whenever the code is committed. See for instance https://lab.analogparadigm.com/koeppel/dda/-/pipelines
+Tests are run by our *Gitlab Continous Integration* whenever the code is committed. You can
+view the file ``.gitlab-ci.yml`` in the root of the repository in order to see what is happening,
+which is at the moment something like
 
-What about hardware tests?
-   This would require having dedicated testing hardware somewhere. This is out of scope for the moment.
+  * Make the docs (run sphinx)
+  * Deploy the docs (upload them somewhere)
+  * Run all the tests (as above)
+
+The finished/running pipelines can be seen at https://lab.analogparadigm.com/software/dda/-/pipelines
+We also run these tests at our Gitlab CI when pushes happen to the Github repository
+https://github.com/anabrid/pyanalog thanks to mirroring at
+https://lab.analogparadigm.com/software/pyanalog-mirror-from-github
+
+What about hardware tests
+-------------------------
+
+This would require having dedicated testing hardware somewhere. This is out of scope for the moment.
