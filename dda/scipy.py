@@ -29,11 +29,28 @@
 The ``dda.scipy`` module allows in-python evaluation of DDA systems
 as well as their solution with ODE Integrators in Python,
 such as `scipy.integrate <https://docs.scipy.org/doc/scipy/reference/tutorial/integrate.html>`_.
+For the usage and examples, see the main class :class:`to_scipy`.
 
-For the usage and examples, see the class :class:`to_scipy`.
+.. note::
 
-In order to run this code, you need, obviously, `SciPy <https://www.scipy.org/>`_ next 
-to `NumPy <https://numpy.org/>`_.
+   In order to run this code, you need, obviously, `SciPy <https://www.scipy.org/>`_ next 
+   to `NumPy <https://numpy.org/>`_.
+   
+.. warning::
+
+   This module exposes a solver of a DDA system which is quite different to the
+   :mod:`cpp_exporter`. In particular,
+   
+   * The solver is required to be told the solution time span or final time in
+     time units, not iteration indices.
+   * The solver only spills out the evolved (integration) quantities and not any
+     derived quantities. You can recompute them at any timestep, but there is currently
+     no code helping you in order to archieve this result. This can result in confusion
+     when you cannot query the fields you asked for (in particular in the CLI frontend).
+   * The SciPy time integrator tries to find an optimal (and minimal) time step, yielding
+     in a quite "rough" solution. You can turn on *dense output* in order to tell the
+     SciPy solver to integrate between these time steps, yielding a more smooth output
+     with more datapoints.   
 """
 
 from . import State, Symbol, symbols, clean
@@ -308,17 +325,21 @@ class to_scipy:
 
 def cli_scipy():
     """
-    A Command Line Interface (CLI) for dda.scipy.
+    A Command Line Interface (CLI) for :mod:`dda.scipy`.
 
-    This CLI API basically solves a DDA file (see :mod:dsl for the syntax).
-    This is a different approach then using the :mod:cpp_exporter: Instead
+    This CLI API basically solves a DDA file (see :mod:`dda.dsl` for the syntax).
+    This is a different approach then using the :mod:`dda.cpp_exporter` Instead
     of code generation (and the need for a C++ compiler), this evaluates the
     DDA file within python. The disadvantage is that this is damned slow, the
     advantage is that the time integrator is much better then the selfmade one
-    in the :mod:cpp_exporter module.
+    in the :mod:`dda.cpp_exporter` module. And there is no need for a C++
+    compiler at all, all is (more or less) pure python.
     
     Invocation is like  ``python -m dda.scipy --help`` anywhere from the system.
     Run this to explore the usage of this command line interface.
+    
+    The output will be CSV (file or stdout), in terms of one line per integration
+    step (called *dense solution* in scipy ODESolver language).
     """
     from .dsl import read_traditional_dda
     
@@ -326,11 +347,17 @@ def cli_scipy():
 
     parser.add_argument("circuit_file", nargs='?', type=argparse.FileType('r'), default=sys.stdin, help="DDA setup (traditional file). Default is stdin.")
     parser.add_argument("-o", "--output", nargs='?', type=argparse.FileType('w'), default=sys.stdout, help="Where to write output CSV to. Default is stdout.")
+    parser.add_argument("-q", "--query-fields", nargs='*', help="List of fields to plot. Just pass whitespace seperated (i.e. -q a b c). Also add 't' if you want to have the solution time (recommended).")
     
     g = parser.add_argument_group(title="Arguments passed to scipy.integrate.solve_ivp")
     g.add_argument("-t", "--tfinal", required=True, type=float, help="Time (in simulation units) to run up to. Do not confuse this with some iteration counter.")
-    g.add_argument("--method", nargs="?", help="Integration method to use")
-    # add whatever you want to expose
+    g.add_argument("-m", "--method", nargs="?", default=False, help="Integration method to use")
+    g.add_argument("-d", "--dense-output", action='store_true', help="Dense Output (default is not dense)")
+    # add whatever you want to expose and add them to the passing list below:
+    scipy_args = [ "tfinal", "method", "dense_output" ]
+    
+    # FIXME: Dense output does not yet seem to work.
+    # FIXME: Leaving --method out does not yet work!
     
     arg = parser.parse_args()
     
@@ -338,15 +365,21 @@ def cli_scipy():
     dda_state = read_traditional_dda(dda_text)
     scipy_state = to_scipy(dda_state)
     
-    scipy_args = {}
-    if arg.method: scipy_args["method"] = arg.method
+    scipy_args = { k: vars(arg)[k] for k in scipy_args if k }
+    sol = scipy_state.solve(**scipy_args)
     
-    sol = scipy_state.solve(arg.tfinal, **scipy_args)
-    
-    writeout = OrderedDict()
-    writeout["t"] = sol.t
+    named_sol = OrderedDict()
+    named_sol["t"] = sol.t
     for i,fieldname in enumerate(sorted(scipy_state.vars.evolved)):
-        writeout[fieldname] = sol.y[i]
+        named_sol[fieldname] = sol.y[i]
+        
+    if arg.query_fields:
+        try:
+            writeout = OrderedDict((q, named_sol[q]) for q in arg.query_fields)
+        except KeyError as e:
+            raise KeyError(f"Make sure that your query fields {arg.query_fields} are within the available keys {list(named_sol)}.") from e
+    else:
+        writeout = named_sol
 
     sep = "\t"
     # don't using np.savetxt(header=...) because it prepends a comment sign "# "

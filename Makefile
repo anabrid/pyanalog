@@ -41,6 +41,8 @@ test:
 	
 clean:
 	@find -type d -iname __pycache__ | xargs rm -r
+#	and for heavens sake, clean any mess in the git root...
+	rm -rf *.exe *.out
 
 # this is the recommended way of ensuring Python can import the PyAnalog
 # modules (such as `dda`) from anywhere. It won't install binaries on the
