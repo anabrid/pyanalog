@@ -110,3 +110,14 @@ latex_show_urls = 'footnote'
 
 # SVG to PDF conversion for Latex output
 rsvg_converter_args = [ "--dpi-x=300", "--dpi-y=300", "--keep-aspect-ratio" ]
+
+# Options for the RTD ("Read the docs") sphinx theme
+# all these do not work!
+#html_theme_options = {
+#    'display_github': True
+#}
+#html_contenxt = {
+#    'source_url_prefix': "https://github.com/anabrid/pyanalog/tree/master/doc",
+#}
+#---> overwriting _templates/breadcrumbs.html instead, see the similar named file in
+#     this directory.

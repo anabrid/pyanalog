@@ -1,0 +1,24 @@
+<!--
+     Overriding Read The Docs Theme to add more "view source" and "view at github"
+     links at the top navigation.
+     
+     See https://www.sphinx-doc.org/en/master/templating.html#jinja-sphinx-templating-primer
+     
+     The file which is overwritten with this file is
+     https://github.com/readthedocs/sphinx_rtd_theme/blob/master/sphinx_rtd_theme/breadcrumbs.html
+
+-->
+
+{% extends "!breadcrumbs.html" %}
+
+{% block breadcrumbs_aside %}
+    <li class="wy-breadcrumbs-aside">
+        {% if hasdoc(pagename) %}
+            <!-- Manually injected Github -->
+            <a href="https://github.com/anabrid/pyanalog/blob/master/doc/{{ pagename }}{{ page_source_suffix }}" class="fa fa-github"> {{ _('Edit on GitHub') }}</a>
+        {% endif %}
+        {% if has_source and sourcename %}
+            <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow" class="fa fa-code"> {{ _('View page source') }}</a>
+        {% endif %}
+    </li>
+{% endblock %}
