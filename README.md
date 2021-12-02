@@ -80,7 +80,30 @@ Run `make` to see the various formats the documentation can be generated in.
 
 Basically, this code is *Open Sourced* by the *GPLv3*. However, we have a different license model
 for commercial use. In order to stay safe regarding liability questions, we also refer to the 
-[LICENSE.DE](LICENSE.DE) for legal issues relevant to Germany.
+[LICENSE.DE](LICENSE.DE) for legal issues relevant to Germany. Here is the full license
+text which typically prepends any file within this repository:
+
+```
+ANABRID_BEGIN_LICENSE:GPL
+Commercial License Usage
+Licensees holding valid commercial anabrid licenses may use this file in
+accordance with the commercial license agreement provided with the
+Software or, alternatively, in accordance with the terms contained in
+a written agreement between you and Anabrid GmbH. For licensing terms
+and conditions see https://www.anabrid.com/licensing. For further
+information use the contact form at https://www.anabrid.com/contact.
+
+GNU General Public License Usage
+Alternatively, this file may be used under the terms of the GNU 
+General Public License version 3 as published by the Free Software
+Foundation and appearing in the file LICENSE.GPL3 included in the
+packaging of this file. Please review the following information to
+ensure the GNU General Public License version 3 requirements
+will be met: https://www.gnu.org/licenses/gpl-3.0.html.
+For Germany, additional rules exist. Please consult /LICENSE.DE
+for further agreements.
+ANABRID_END_LICENSE
+```
 
 ## Further questions?
 
