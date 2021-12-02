@@ -182,7 +182,7 @@ We also run these tests at our Gitlab CI when pushes happen to the Github reposi
 https://github.com/anabrid/pyanalog thanks to mirroring at
 https://lab.analogparadigm.com/software/pyanalog-mirror-from-github
 
-What about hardware tests
+What about analog hardware tests
 -------------------------
 
 This would require having dedicated testing hardware somewhere. This is out of scope for the moment.

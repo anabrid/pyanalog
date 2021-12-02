@@ -5,7 +5,8 @@ Obtaining and installing PyAnalog
 
 PyAnalog can be used on a "vanilla" Python installation without any dependencies.
 Only make sure you use a *recent* Python 3 installation:
-We use ``f-strings``, so at least Python 3.6 is required.
+We use `f-strings <https://docs.python.org/3.6/whatsnew/3.6.html#whatsnew36-pep498>`_,
+so at least *Python 3.6* is required.
 
 In order to use some of the advanced features, we recommend to install the following
 Python packages:
@@ -44,6 +45,17 @@ right now.
 Mac OS X-specific installation notes
 ------------------------------------
 
+First, make sure you have some (recent) Python 3 installed on your machine. You can
+check by opening a terminal and executing ``python --version ``. If still have installed
+a very old version such as Python 2.7, you need to update it.
+There are `many guides in the web <https://docs.python-guide.org/starting/install3/osx/>`_.
+It is likely that the manual installation of a newer Python version will give you two
+Pythons installed on your system. In many situations, you have to call the more recent
+version by invoking a command such as ``python3`` in place of ``python``. The same
+aplies with the Python package manager ``pip3`` instead of ``pip``. There is nothing
+wrong with this, and similar situations exist on some older Linux distributions where
+Python2 and Python3 live next to each other on the same system.
+
 The following code block shows a minimal way how quickly to start on Mac OS X.
 This assumes you have some C++ compiler available, e.g. from Xcode (Clang).
 
@@ -70,7 +82,8 @@ you add the installation directory to your PATH in order to be able to access th
 from everywhere (i.e. every terminal).
 
 For the Python environment, you can install it from the Windows store (and use pip as usual)
-or install an IDE such as *Spyder*. This is particularly handy because it provides also a
+or install an IDE such as `Spyder <https://www.spyder-ide.org/>`_.
+This is particularly handy because it provides also a
 lean way to setup the developer machine. For instance, there is a menu item
 *Tools/Current user environment variables...* which allows you to set the system wide
 PATH. The ``HKEY_CURRENT_USER\Environment`` should, as a list, probably contain paths such
@@ -99,13 +112,13 @@ Further software recommendations for Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you do not have a comfortable IDE, you might want to look into
-*Powershell* as well as the new
+`Microsoft Powershell <https://docs.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7.2>`_ as well as the new
 `Windows Terminal <https://www.microsoft.com/de-de/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab>`_
 which can be obtained in the Microsoft store for free.
 
 While it is attractive to download the PyAnalog software as a ZIP file from Github, we
 recommend you instead to install a proper Git client, such as the comprehensible
-`Github Desktop <https://desktop.github.com>_` GUI. This way it is as easy as a single click
+`Github Desktop <https://desktop.github.com>`_ GUI. This way it is as easy as a single click
 on *update* to obtain a more recent version of the PyAnalog code.
 
 .. note::

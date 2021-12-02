@@ -14,14 +14,15 @@ The syntax tree representation allows for fine-grained manipulations of
 terms where the older Perl code could only apply regular expressions.
 
 This code can replace the old ``dda2c.pl`` Perl implementation
-(see ``misc/`` directory for it's code). It is a
+(see ``misc/`` directory for it's code,
+`or also here <https://github.com/anabrid/pyanalog/tree/master/misc/DDA.pl>`_). It is a
 standalone Python 3 code with no third party dependencies. It generates
 standalone C++ code with no dependencies (not even on the old ``dda.h``).
 
 Usage: As a library or from the command line
 --------------------------------------------
 
-The ``dda`` module can either be used from a DDA file written in Python or 
+The :mod:`dda` module can either be used from a DDA file written in Python or 
 directly from old-style traditional DDA plaintext files. While pythonic
 dda files have the advantage to be able to use all the flexibility of
 Python scripting (such as using numpy for linear algebra computations
@@ -32,7 +33,7 @@ details on the *traditional* DDA file format.
 The module can also be used from the command line as a utility. The
 behaviour is similar to the ``simulate.pl`` and ``dda2c.pl`` utilities but also
 covers a few more features. Usage example (implementation
-provided by :meth:`dsl.cli()` ):
+provided by :func:`dda.dsl.cli_exporter` ):
 
 ::
 
@@ -98,13 +99,15 @@ This can be handy for anyone who cannot or does not want to deal with C++
 or all the fundamentals.
 
 Therefore, instead of following all the tedious way of C++ code generation,
-compilation and running, you can also take the short track by making use of
-SciPy. This also works from the command line:
-
+compilation and running (which also requires that you have all the build
+tools installed for compiling C++ on your system), you can also take the
+short track by making use of SciPy, which is also much easier to install
+on many systems. This also works from the command line:
 
 ::
 
-    me@localhost $ usage: scipy.py [-h] [-o [OUTPUT]] -t TFINAL [--method [METHOD]] [circuit_file]
+    me@localhost $ python -m dda.scipy --help
+    usage: scipy.py [-h] [-o [OUTPUT]] -t TFINAL [--method [METHOD]] [circuit_file]
 
     PyDDA's scipy interface simulation runner
 
@@ -128,8 +131,8 @@ SciPy. This also works from the command line:
 
     A Command Line Interface (CLI) for :mod:`dda.scipy`. This CLI API basically solves a DDA file ...
 
-Here is an example, again with the notch DDA file, of using SciPy instead of the C++ based
-solver:
+Here is a shell script example, again with the notch DDA file, of using SciPy instead
+of the C++ based solver:
 
 ::
 

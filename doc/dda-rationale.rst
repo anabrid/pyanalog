@@ -112,7 +112,7 @@ as an approximation of the analog computer, as it allows for checking the boundn
 (correct scaling) of all variables during the cycles (time evolution).
 
 Having said that, the DDA simulator allows for simulating a DDA circuit iteration by
-iteration and dumping (outputting) values every *n*th iteration. Therefore, while
+iteration and dumping (outputting) values every ``n`` iterations. Therefore, while
 the input of a circuit is always fixed by the constants (``const`` statements, no
 focus has given to the point of interfacing other codes, which is left as an exercise
 for the reader), the output is always a time series for a given set of quantities. We
@@ -193,3 +193,43 @@ archivements with a single code:
 - Avoid dependencies if not neccessary. Don't reinvent the wheel, but try out how
   far we can get without employing a large computer algebra system.
 
+I want to simulate electronics or solve an ODE. Do I really need DDA?
+---------------------------------------------------------------------
+
+DDA is great if you want to learn about and work with analog computers.
+Expressing your equations in terms of this domain specific hardware
+description language (which includes all the "quirks" such as *negating*
+operational amplifiers used for summation/integration) can be helpful
+when it comes to implementing it on real analog computers. PyDDA is
+also a helpful tool if you want to learn about numerical vs. analog
+computing, or experiment with more challenging systems such as
+partial differential equations.
+
+If your goal is to simulate electronics on an advanced level, you might
+want to look into the `SPICE class <https://en.wikipedia.org/wiki/SPICE>`_
+of tools, such as `ngspice <http://ngspice.sourceforge.net/>`_.
+
+If your goal is to solve a differential equation or
+to study a small system of interest, you better do so by using
+tools particularly made for doing this job very well, such as 
+Matlab, GNU Octave or some computer algebra system. These are typically
+mature systems with decades of development, while PyAnalog is a small
+research code developed by a single person over a single year.
+
+Especially small systems with only a few
+unknowns, it is rather straightforward to transform them into analog
+circuits once required, and you can safely postpone this task up to
+when it gets relevant. The only thing to keep in mind is that when
+developing your applications within another (assumably numerical)
+toolkit, be careful about implementing your own algorithmic features.
+Ideally, you straightforwardly implement a closed set of mathematical
+equations in order to maintain the option to implement this system
+on an analog computer, without touching the solution vector with
+algorithms during the time evolution.
+
+In fact, you even can do a scaling study without PyAnalog. Most
+time evolution codes solve some ODE equation :math:`\dot y = f(y)`
+by allowing the user to implement the function ``f(y)`` freely.
+You could easily implement any checks on scaling within ``f(y)``
+in your favourite programming language/tool
+.
