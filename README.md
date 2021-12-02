@@ -53,23 +53,23 @@ PyAnalog is basically a collection of scripts, so there is no such thing as
 execute ``setup.py``. Read [doc/installation.rst](doc/installation.rst)
 for further details.
 
-### The shortest quick start
+### The shortest quick start (of PyDDA)
 
-This directory holds the package root directory (where setup.py lives)
+This directory holds the package root directory (where `setup.py` lives)
 of the PyDDA package. This is mostly a pure Python3 package with no
 dependencies.
 
 If you are lazy, you can start using PyDDA right from here:
 
 ```
-$ git clone git@lab.analogparadigm.com:koeppel/dda.git
-$ cd dda/PyDDA
+$ git clone git@github.com:anabrid/pyanalog.git
+$ cd pyanalog
 $ python3
->>> from pydda import *
+>>> from dda import *
 >>> s = BreveState()
 >>> s.x = Symbol("int", "x", 0.02, 0)
 >>> print(s)
-State({'x': int(x, 0.02, 0)})
+BreveState({'x': int(x, 0.02, 0)})
 ```
 
 Please read [doc/installation.rst](doc/installation.rst) for further instructions on how to use the
