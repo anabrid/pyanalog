@@ -123,6 +123,11 @@ latex_elements = {
 latex_show_pagerefs = True
 latex_show_urls = 'footnote'
 
+# we introduce chapters by our own.
+# This is an ugly workaround since RTD otherwise makes way too many chapters.
+# See also index.rst for raw latex \chapters.
+latex_toplevel_sectioning = "section"
+
 # SVG to PDF conversion for Latex output
 rsvg_converter_args = [ "--dpi-x=300", "--dpi-y=300", "--keep-aspect-ratio" ]
 

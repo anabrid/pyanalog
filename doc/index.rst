@@ -1,6 +1,11 @@
 Pyanalog: A pythonic analog computer demonstrator interface
 ===========================================================
 
+.. raw:: latex
+
+   \section*{Abstract and Summary of PyAnalog}
+
+
 ``pyanalog`` is a `Python3 <https://www.python.org/>`_ package and 
 demonstrator/research code for a software stack for analog computers.
 It empowers users to
@@ -40,19 +45,24 @@ and `a proprietary/commercial use license <https://github.com/anabrid/pyanalog/b
 See http://www.anabrid.com/licensing for further details.
 
 
-Contents
---------
+
+.. raw:: latex
+
+   \chapter{Introduction}
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Introduction
 
    overview
    installation
    tips
    code-testing
+   
+.. raw:: latex
 
-
+   \chapter{PyDDA}
+   
 .. toctree::
    :maxdepth: 2
    :caption: PyDDA
@@ -62,21 +72,33 @@ Contents
    dda/api-reference
    dda/examples
    
+.. raw:: latex
+
+   \chapter{PyFPAA}
+   
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: FPAA
    
    fpaa/fpaa
    fpaa/examples
+   fpaa/mini-m1
+   
+.. raw:: latex
+
+   \chapter{PyHyCon}
    
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Hybrid Controller
    
    hycon/hycon
    hycon/networking
    
-   
+.. raw:: latex
+
+   \appendix
+   \chapter{Appendix} % or: Endnotes
 
 About this documentation
 ------------------------
@@ -109,6 +131,10 @@ as static files to our `Anabrid Dev Server <https://www.anabrid.dev/>`_
 Indices and tables
 ------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+* :ref:`Python Function/Class index <genindex>`
+* :ref:`Python module index <modindex>`
+
+..
+   Linking to search makes no sense since the search box
+   is omnipresent in the RTD theme
+   * :ref:`search`
