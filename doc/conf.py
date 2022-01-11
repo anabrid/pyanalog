@@ -16,9 +16,9 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyAnalog'
-copyright = '2020, Anabrid GmbH'
-author = 'The Analog People'
+project   = 'PyAnalog'
+copyright = '2022, Anabrid GmbH'
+author    = 'The Analog People'
 
 
 # -- General configuration ---------------------------------------------------
@@ -98,10 +98,25 @@ nbsphinx_execute = 'never'  # we expect all notebooks to have output stored
 
 # -- Options for PDF output --------------------------------------------------
 
+latex_preamble = r'''
+\setcounter{tocdepth}{2}
+
+% Fix for allowing to show unicode delta character 
+% See also option 'textgreek' in latex_elements
+% (https://www.sphinx-doc.org/en/master/latex.html#latex-elements-confval)
+\DeclareUnicodeCharacter{0394}{\ensuremath{\Delta}}
+
+% another fix for minimal length bug
+\setlength{\headheight}{14pt} % https://tex.stackexchange.com/a/198694
+
+% another fix for very long equations
+\allowdisplaybreaks % https://tex.stackexchange.com/a/51883
+'''
+
 latex_elements = {
     'papersize': 'a4paper',  # default
     'pointsize': '11pt',     # default is microscopic 10pt
-    'preamble': '\setcounter{tocdepth}{2}',
+    'preamble': latex_preamble,
     'fncychap':  '\\usepackage[Bjornstrup]{fncychap}'  # cf https://ctan.mirror.norbert-ruehl.de/macros/latex/contrib/fncychap/fncychap.pdf
 }
 
