@@ -23,7 +23,8 @@ PYTHON=python3
 PYTEST=$(PYTHON) -m pytest
 
 doc: 
-	cd doc && $(MAKE) clean && $(MAKE) -j html dirhtml latexpdf text
+	cd doc && $(MAKE) clean && $(MAKE) -j html dirhtml latexpdf
+	cd doc/_build/latex && make clean # prepare for stripping latex zip
 	# also zip docs for download
 #	# this does not work due to $ signs
 #	cd doc/_build && for dir in */; do tar cvfz pyanalog-docs-$$dir.tar.gz $$dir; done
