@@ -20,7 +20,7 @@ Acceptance/Integration tests
     We can provide some DDA files
     where we know the solution analytically. It should be a useful exercise
     both for readers and testers to run these examples. We use the
-    `Pytest <https://pytest.org>`_ third party library for (unit) testing.
+    `pytest <https://pytest.org>`_ third party library for (unit) testing.
   
     These tests are located in the ``tests/`` directory. They can be executed
     by running ``pytest tests`` or just ``make test`` from the parent directory.
@@ -183,6 +183,6 @@ https://github.com/anabrid/pyanalog thanks to mirroring at
 https://lab.analogparadigm.com/software/pyanalog-mirror-from-github
 
 What about analog hardware tests
--------------------------
+--------------------------------
 
 This would require having dedicated testing hardware somewhere. This is out of scope for the moment.

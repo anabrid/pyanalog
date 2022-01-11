@@ -57,24 +57,24 @@ Contents
    :maxdepth: 2
    :caption: PyDDA
 
-   dda-intro
-   dda-rationale
-   dda-api-reference
-   dda-examples
+   dda/intro
+   dda/rationale
+   dda/api-reference
+   dda/examples
    
 .. toctree::
    :maxdepth: 1
    :caption: FPAA
    
-   fpaa
-   fpaa-examples
+   fpaa/fpaa
+   fpaa/examples
    
 .. toctree::
    :maxdepth: 1
    :caption: Hybrid Controller
    
-   hycon
-   hycon-networking
+   hycon/hycon
+   hycon/networking
    
    
 
@@ -89,13 +89,21 @@ just go to the ``doc`` directory and type ``make html`` or ``make pdf`` to
 generate the docs locally. If you have a mixed Python2/Python3 system, call
 ``make html SPHINXBUILD="python3 -msphinx"`` to ensure using Python3.
 
-This documentation is built by our Gitlab Continous Integration tool and uploaded
-as static files to our `Anabrid Dev Server <https://www.anabrid.dev/>`_
-(formally ReadTheDocs). you can find the docs at:
+If you want to start editing/improving this documentation, you might want to
+read the `ReStructuredText Primer <https://docutils.sourceforge.io/docs/user/rst/quickstart.html>`_. A handy tool for hot reloading (regenerating) the documentation
+during editing is `Sphinx-Reload <https://github.com/prkumar/sphinx-reload>`_. After
+installation, just run ``sphinx-reload doc/`` from the root directory and point your
+browser to an address such as http://localhost:5500/.
 
-- https://www.anabrid.dev/pyanalog/html/ primary ressources
-- https://www.anabrid.dev/pyanalog/text/ for text files ;-)
-- https://www.anabrid.dev/pyanalog/latex/pydda.pdf for a PDF version (known to be buggy)
+This documentation is automatically updated/built at Git commit/push time by our
+Gitlab Continous Integration infrastructured and uploaded
+as static files to our `Anabrid Dev Server <https://www.anabrid.dev/>`_
+(formally `Read The Docs <https://readthedocs.org/>`_). you can find the docs at:
+
+- https://anabrid.dev/pyanalog/dirhtml/ primary link
+- https://anabrid.dev/pyanalog/latex/pyanalog.pdf for a +100 page
+  printable/downloadable/searchable PDF version
+- Various different versions for download at https://anabrid.dev/pyanalog/
 
 
 Indices and tables

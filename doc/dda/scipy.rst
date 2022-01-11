@@ -1,4 +1,4 @@
-.. _scipy:
+.. _dda-scipy:
 
 DDA SciPy interface (to generic ODE solvers)
 ============================================

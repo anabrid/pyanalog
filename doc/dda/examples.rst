@@ -18,7 +18,7 @@ in the following.
 Traditional DDA circuits
 ------------------------
 
-:download:`chua.dda <../examples/traditional-dda-circuits/chua.dda>`
+:download:`chua.dda <../../examples/traditional-dda-circuits/chua.dda>`
    A traditional DDA code, implementing the Chua attractor from
    chapter 6.15 from Bernds new book (ap2.pdf). We have both a scaled
    and unscaled version along with a plotting code available in this
@@ -26,7 +26,7 @@ Traditional DDA circuits
    high-quality "phase space" histogram based on massive binary output of the
    C++ integrator.
    
-:download:`double-pendulum.dda <../examples/traditional-dda-circuits/double-pendulum.dda>`
+:download:`double-pendulum.dda <../../examples/traditional-dda-circuits/double-pendulum.dda>`
    Another traditional DDA code, implementing a planar coupled gravity pendulum
    in classical small-angle approximation and in a formulation with two
    angles as degrees of freedom. The example stems from section 6.25 in
@@ -45,7 +45,7 @@ Command line DDA usage
 Python DDA circuits
 -------------------
 
-:download:`N-body.py <../examples/python-dda-circuits/N-body.py>`
+:download:`N-body.py <../../examples/python-dda-circuits/N-body.py>`
    is an example python file which generates traditional DDA code.
    It implements N-body physics with an inverse square law force
    (Coulomb/Newton like); the initial data show two particles in a two
@@ -56,7 +56,7 @@ Python DDA circuits
    the PyDDA code. It is in general not recommended to write PyDDA
    code like that.
 
-:download:`md_water_toy.py <../examples/python-dda-circuits/md_water_toy.py>`
+:download:`md_water_toy.py <../../examples/python-dda-circuits/md_water_toy.py>`
    A minimal molecular dynamics water toy simulation, basically an
    application of the N-body paradigm. This is a good and running example of
    a prototypical PyDDA application in science. It requires ``numpy``
@@ -72,5 +72,5 @@ The notebooks are embedded within this documentation.
 .. toctree::
    :maxdepth: 1
 
-   examples/chua.ipynb
-   examples/Heat-Equation.ipynb
+   ../examples/chua.ipynb
+   ../examples/Heat-Equation.ipynb

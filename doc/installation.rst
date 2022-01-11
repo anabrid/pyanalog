@@ -13,7 +13,7 @@ Python packages:
 
 * `PyYAML <https://pyyaml.org/>`_, for the intended usage of :ref:`PyFPAA <fpaa>`
 * `SymPy <https://www.sympy.org/>`_, for the :ref:`SymPy/Computer Algebra interface <cas>` of PyDDA
-* `SciPy <http://www.scipy.org/>`_, for the :ref:`SciPy interface <scipy>` of PyDDA.
+* `SciPy <http://www.scipy.org/>`_, for the :ref:`SciPy interface <dda-scipy>` of PyDDA.
   Furthermore, some additioanl postprocessing tools, as well as unit tests and examples of PyDDA
   require `NumPy <https://numpy.org/>`_ and `Matplotlib <https://matplotlib.org/>`_ to be installed.
 
