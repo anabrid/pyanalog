@@ -1,0 +1,111 @@
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Introduction
+
+   overview
+   installation
+   tips
+   code-testing
+
+.. toctree::
+   :maxdepth: 2
+   :caption: PyDDA
+
+   dda/intro
+   dda/rationale
+   dda/api-reference
+   dda/examples
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: FPAA
+   
+   fpaa/fpaa
+   fpaa/examples
+   fpaa/mini-m1
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Hybrid Controller
+   
+   hycon/hycon
+   hycon/networking
+    
+
+    
+    
+.. toctree::
+   :maxdepth: 2
+   
+   introduction
+   dda/index
+   fpaa/index
+   hycon/index
+
+   
+   
+******************************************************************
+
+.. only:: latex
+
+   ############
+   Introduction
+   ############
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Introduction
+
+   overview
+   installation
+   tips
+   code-testing
+   
+.. only:: latex
+
+   #####
+   PyDDA
+   #####
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: PyDDA
+
+   dda/intro
+   dda/rationale
+   dda/api-reference
+   dda/examples
+   
+.. only:: latex
+
+   ######
+   PyFPAA
+   ######
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: FPAA
+   
+   fpaa/fpaa
+   fpaa/examples
+   fpaa/mini-m1
+   
+.. only:: latex
+
+   #######
+   PyHyCon
+   #######
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Hybrid Controller
+   
+   hycon/hycon
+   hycon/networking
+   
+.. only:: latex
+
+   ########
+   Endnotes
+   ########

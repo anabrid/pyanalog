@@ -29,9 +29,11 @@
 """
 PyHyCon -- a Python Hybrid Controller interface.
 
-Note that the IO::HyCon Perl 5 module is the reference implementation
+Note that the ``IO::HyCon`` Perl 5 module is the reference implementation
 that is maintained by the HyConAVR firmware author (Bernd). You can find
-the IO::HyCon Perl module at https://metacpan.org/pod/IO::HyCon
+the ``IO::HyCon`` Perl module as well as the mentioned Arduino firmware
+at https://github.com/anabrid/Model-1/tree/main/software/HC. The Perl
+code is also part of the CPAN at https://metacpan.org/pod/IO::HyCon.
 
 While this implementation tries to be API-compatible with the reference
 implementation, it tries to be minimal/low-level and won't implement any
@@ -47,7 +49,7 @@ can but do not needed to be used:
   on YAML. There is :mod:`autosetup` which implements the "autosetup"
   functionality of Perl-HyCon.
 * High level functionality is implemented on top of HyCon and not within.
-  See for instance :cls:`fpaa.fpaa` for an abstraction which can generate
+  See for instance :mod:`fpaa` for an abstraction which can generate
   HyCon instructions and is aware of the circuit design at the same time.
   
 The hycon module also includes an interpreter for the HyCon serial stream
