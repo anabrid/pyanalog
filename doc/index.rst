@@ -94,6 +94,7 @@ See http://www.anabrid.com/licensing for further details.
    
    hycon/hycon
    hycon/networking
+   hycon/aquisition
    
 .. raw:: latex
 
