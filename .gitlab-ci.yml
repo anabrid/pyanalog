@@ -18,7 +18,7 @@ docs:deploy:
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
     - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
-    - cd doc/_build && echo -e "cd anabrid.dev/pyanalog\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
+    - cd doc/_build && echo -e "cd anabrid.dev/docs/pyanalog\nput -R ." | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
   environment:
     name: docs
     url: https://anabrid.dev/pyanalog
