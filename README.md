@@ -19,7 +19,7 @@ analog computers on a software developer/mathematican level:
   
 > :information_source: **Please read the docs**:
 > As a starting point, see `docs/` or `make docs`. You can find
-> the generated docs at **https://www.anabrid.dev/pyanalog/docs/dirhtml/**
+> the generated docs at **https://www.anabrid.dev/docs/pyanalog/dirhtml/**
 >
 > We used to serve them from https://pyanalog.readthedocs.io/ but 
 > abandoned ReadTheDocs due to missing features.
